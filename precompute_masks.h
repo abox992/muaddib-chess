@@ -3,7 +3,8 @@
 
 #include <cstdint>
 
-extern uint64_t pawnMasks[64];
+extern uint64_t pawnMoveMasks[2][64];
+extern uint64_t pawnAttackMasks[2][64];
 extern uint64_t knightMasks[64];
 extern uint64_t kingMasks[64];
 extern uint64_t bishopMasks[64];
@@ -12,5 +13,18 @@ extern uint64_t queenMasks[64];
 
 extern uint64_t rookLegalMoves[64][16384];
 extern uint64_t bishopLegalMoves[64][16384];
+
+int lsb(uint64_t &b);
+void initPawnMasks();
+void initKnightMasks();
+void initKingMasks();
+void initBishopMasks();
+void initRookMasks();
+void initQueenMasks(); // bishop and rook masks must be init first
+
+void initBishopMovesTable();
+void initRookMovesTable();
+
+void initMasks();
 
 #endif

@@ -1,4 +1,19 @@
-# g++ -std=c++20 -o chess main.cpp board.cpp movegen.cpp
+CC := g++
+CFLAGS := -Wall -g -std=c++20
+TARGET := chess
+OBJDIR := objects
 
-chess:
-	g++ -std=c++20 -o chess main.cpp board.cpp movegen.cpp
+# $(wildcard *.cpp /xxx/xxx/*.cpp): get all .cpp files from the current directory and dir "/xxx/xxx/"
+SRCS := $(wildcard *.cpp)
+# $(patsubst %.cpp,%.o,$(SRCS)): substitute all ".cpp" file name strings to ".o" file name strings
+OBJS := $(patsubst %.cpp,%.o,$(SRCS))
+
+all: $(TARGET)
+$(TARGET): $(OBJS)
+	$(CC) -o $@ $^
+%.o: %.cpp
+	$(CC) $(CFLAGS) -c $<
+clean:
+	rm -rf $(TARGET) *.o
+	
+.PHONY: all clean

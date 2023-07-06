@@ -33,7 +33,7 @@ class Board {
         uint64_t pieces[12];
         uint64_t empty;
         uint64_t allPieces[2]; // 0 = white 1 = black
-        uint8_t  passant[2]; // 0 = white 1 = black
+        bool  passant[2][8]; // 0 = white 1 = black, index set to true if that file is takeable with enpesant
 
         Board();
 

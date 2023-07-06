@@ -6,6 +6,12 @@ using namespace std;
 Board::Board() {
     setStartPos();
     updateAllPieces();
+
+    // init passant to false
+    for (int i = 0; i < 8; i++) {
+        passant[0][i] = false;
+        passant[1][i] = false;
+    }
 }
 
 uint64_t Board::getPieceSet(int i) {

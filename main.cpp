@@ -32,10 +32,20 @@ int main() {
     generateMoves(board, moveList, white);
     cout << endl;
 
-    printBitboard(rookLegalMoves[0][12415]);
-    printBitboard(bishopLegalMoves[1][12415]);
+    printBitboard(knightMasks[5]);
+    // printBitboard(bishopLegalMoves[1][12415]);
+
+    // cout << endl;
+    // printBitboard(pawnMoveMasks[0][9]);
+    // cout << endl;
+    // printBitboard(pawnAttackMasks[0][9]);
+
+    // cout << endl;
+    // printBitboard(pawnMoveMasks[1][50]);
+    // cout << endl;
+    // printBitboard(pawnAttackMasks[1][50]);
 
     return 0;
 }
 
-// g++ -std=c++20 -o chess main.cpp board.cpp movegen.cpp
+// g++ -Wall -g -std=c++20 -o chess main.cpp board.cpp movegen.cpp precompute_masks.cpp
