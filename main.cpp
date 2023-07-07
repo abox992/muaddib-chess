@@ -4,21 +4,9 @@
 #include "precompute_masks.h"
 #include "movegen.h"
 #include "move.h"
+#include "helpers.h"
 
 using namespace std;
-
-void printBitboard(uint64_t bitboard) {
-    for (int rank = 7; rank >= 0; rank--) {
-        for (int file = 0; file < 8; file++) {
-            int i = ((7 - file) + (8 * rank));
-            uint64_t mask = uint64_t(1) << i;
-            int bit = ((bitboard & mask) >> i);
-            cout << bit << " ";
-        }
-
-        cout << endl;
-    }
-}
 
 int main() {
     Board board;
@@ -44,6 +32,10 @@ int main() {
     // printBitboard(pawnMoveMasks[1][50]);
     // cout << endl;
     // printBitboard(pawnAttackMasks[1][50]);
+
+    Board test = generateBoardFromFen("8/4k3/8/K2R1q2/8/8/8/8 w - - 0 1");
+    cout << test << endl;
+    printBitboard(generatePinMask(test, white));
 
     return 0;
 }

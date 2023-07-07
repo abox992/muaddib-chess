@@ -1,17 +1,10 @@
 #include "board.h"
-#include <chrono>
+#include "move.h"
 
 using namespace std;
 
 Board::Board() {
     setStartPos();
-    updateAllPieces();
-
-    // init passant to false
-    for (int i = 0; i < 8; i++) {
-        passant[0][i] = false;
-        passant[1][i] = false;
-    }
 }
 
 uint64_t Board::getPieceSet(int i) {
@@ -40,6 +33,16 @@ void Board::setStartPos() {
 
     pieces[wking]    = 0x000000000000008;
     pieces[bking]    = 0x800000000000000;
+
+    updateAllPieces();
+
+    enpassantPos = -1;
+
+    for (int i = 0; i < 4; i++) {
+        castle[i] = true;
+    }
+
+    blackToMove = false;
 }
 
 void Board::updateAllPieces() {
@@ -58,6 +61,17 @@ void Board::updateAllPieces() {
                     pieces[11]);
 
     empty = ~(allPieces[0] | allPieces[1]);
+}
+
+void Board::makeMove(struct Move move) {
+    // make the move (update bitboards)
+
+    // update enpassant
+
+    // update incheck
+
+    // update all pieces
+    updateAllPieces();
 }
 
 std::ostream& operator << (std::ostream& o, Board& board) {
