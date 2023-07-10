@@ -5,6 +5,7 @@
 #include "movegen.h"
 #include "move.h"
 #include "helpers.h"
+#include "check_pin_masks.h"
 
 using namespace std;
 
@@ -33,9 +34,10 @@ int main() {
     // cout << endl;
     // printBitboard(pawnAttackMasks[1][50]);
 
-    Board test = generateBoardFromFen("8/4k3/8/K2R1q2/8/8/8/8 w - - 0 1");
+    Board test = generateBoardFromFen("8/8/8/q7/4K3/8/8/1b3r1k w - - 0 1"); // 8/8/8/2pP4/8/4K3/8/7k w - c6 0 1 "" 8/q7/8/2pP4/8/4K3/8/7k w - c6 0 1
     cout << test << endl;
-    printBitboard(generatePinMask(test, white));
+    //printBitboard(generatePinMask(test, white));
+    generateMoves(test, moveList, white);
 
     return 0;
 }

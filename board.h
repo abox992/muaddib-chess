@@ -35,7 +35,6 @@ class Board {
         uint64_t allPieces[2]; // 0 = white 1 = black
         int enpassantPos; // legal square a pawn can move to to take with enpassant
         bool castle[4]; // 0 = white kingside, 1 = white queen side etc
-        bool inCheck[2];
         bool blackToMove; // 0 = white 1 = black
 
         Board();
@@ -43,6 +42,8 @@ class Board {
         uint64_t getPieceSet(int i);
 
         void setPieceSet(int i, uint64_t num);
+
+        int getPiecePos(int i);
 
         void setStartPos();
 

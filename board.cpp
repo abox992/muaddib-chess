@@ -1,5 +1,6 @@
 #include "board.h"
 #include "move.h"
+#include "helpers.h"
 
 using namespace std;
 
@@ -13,6 +14,11 @@ uint64_t Board::getPieceSet(int i) {
 
 void Board::setPieceSet(int i, uint64_t num) {
     pieces[i] = num;
+}
+
+int Board::getPiecePos(int i) {
+    uint64_t temp = pieces[i];
+    return lsb(temp);
 }
 
 void Board::setStartPos() {
@@ -68,7 +74,9 @@ void Board::makeMove(struct Move move) {
 
     // update enpassant
 
-    // update incheck
+    // update black to move
+
+    // update castle
 
     // update all pieces
     updateAllPieces();

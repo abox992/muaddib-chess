@@ -13,6 +13,10 @@ extern uint64_t queenMasks[64];
 
 extern uint64_t rookLegalMoves[64][16384];
 extern uint64_t bishopLegalMoves[64][16384];
+extern uint64_t queenLegalMoves[64][16384];
+
+extern uint64_t kingHVChecks[64][16384];
+extern uint64_t kingDiagChecks[64][16384];
 
 int lsb(uint64_t &b);
 void initPawnMasks();

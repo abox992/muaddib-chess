@@ -16,6 +16,11 @@ uint64_t queenMasks[64];
 uint64_t rookLegalMoves[64][16384];
 uint64_t bishopLegalMoves[64][16384];
 
+uint64_t queenLegalMoves[64][16384];
+
+uint64_t kingHVChecks[64][16384];
+uint64_t kingDiagChecks[64][16384];
+
 void initPawnMasks() {
     // white
     int relativePos[] = {9, 7};
@@ -327,6 +332,20 @@ void initBishopMovesTable() {
     }
 }
 
+void initQueenMoveTable() {
+    for (int bishopBlocker = 0; bishopBlocker < 16384; bishopBlocker++) {
+        for (int rookBlocker = 0; rookBlocker < 16384; rookBlocker++) {
+            for(int i = 0; i < 64; i++) {
+                int queenIndex = bishopBlocker ^ rookBlocker;
+                queenLegalMoves[i][queenIndex] = bishopLegalMoves[i][bishopBlocker] | rookLegalMoves[i][rookBlocker];
+            }
+
+        }
+
+        cout << "outer " << bishopBlocker << endl;
+    }
+}
+
 void initQueenMasks() {
     for (int i = 0; i < 64; i++) {
         queenMasks[i] = bishopMasks[i] | rookMasks[i];
@@ -345,4 +364,6 @@ void initMasks() {
 
     initBishopMovesTable();
     initRookMovesTable();
+
+    //initQueenMoveTable();
 }

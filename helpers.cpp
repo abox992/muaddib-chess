@@ -97,6 +97,10 @@ Board generateBoardFromFen(string fen) {
                 for (int i = 0; i < int(tokens[field].length()); i++) {
                     char currentChar = tokens[field][i];
 
+                    if (currentChar != '-') {
+                        break;
+                    }
+
                     if (currentChar == 'K') {
                         board.castle[0] = true;
                     } else if (currentChar == 'Q') {
@@ -111,12 +115,11 @@ Board generateBoardFromFen(string fen) {
 
                 break;
             } case 3: { // enpassant
-
-                int pos = 0;
+                int pos = -1;
                 for (int i = 0; i < int(tokens[field].length()); i++) {
                     char currentChar = tokens[field][i];
 
-                    if (currentChar != '-') {
+                    if (currentChar == '-') {
                         board.enpassantPos = -1;
                         break;
                     }
@@ -127,7 +130,7 @@ Board generateBoardFromFen(string fen) {
 
                     if (i == 1) {
                         pos += 8 * ((currentChar - '0') - 1);
-                        board.enpassantPos = pos;
+                        board.enpassantPos = pos + 1;
                     }
 
                 }
