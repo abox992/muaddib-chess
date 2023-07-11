@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <bit>
 #include <tuple>
+#include <immintrin.h>
 
 #include "movegen.h"
 #include "board.h"
@@ -11,6 +12,14 @@
 #include "check_pin_masks.h"
 
 using namespace std;
+
+#define SquareOf(X) _tzcnt_u64(X)
+#define Bitloop(X) for(;X; X = _blsr_u64(X))
+
+// Bitloop(bishops) {
+//      const Square sq = SquareOf(bishops);
+//      ...
+// }
 
 // move list to add moves to, color to gen moves for (0 for white 1 for black)
 void generateMoves(Board& board, struct Move moveList[], int color) {
@@ -85,24 +94,46 @@ void generateMoves(Board& board, struct Move moveList[], int color) {
                             pLegalMoves &= checkMask & pinHV;
                             pLegalAttacks &= checkMask & pinDiag;
 
-                            while (pLegalMoves != 0) {
-                                int index = lsb(pLegalMoves);
+                            // while (pLegalMoves != 0) {
+                            //     int index = lsb(pLegalMoves);
+
+                            //     struct Move Temp;
+                            //     Temp.from = currentSquare;
+                            //     Temp.to = index;
+
+                            //     moveList[moveCount++] = Temp;
+                            // }
+
+                            // while (pLegalAttacks != 0) {
+                            //     int index = lsb(pLegalAttacks);
+
+                            //     struct Move Temp;
+                            //     Temp.from = currentSquare;
+                            //     Temp.to = index;
+
+                            //     moveList[moveCount++] = Temp;
+                            // }
+
+                            Bitloop(pLegalMoves) {
+                                const int index = SquareOf(pLegalMoves);
 
                                 struct Move Temp;
                                 Temp.from = currentSquare;
                                 Temp.to = index;
 
                                 moveList[moveCount++] = Temp;
+                                  
                             }
 
-                            while (pLegalAttacks != 0) {
-                                int index = lsb(pLegalAttacks);
+                            Bitloop(pLegalAttacks) {
+                                const int index = SquareOf(pLegalAttacks);
 
                                 struct Move Temp;
                                 Temp.from = currentSquare;
                                 Temp.to = index;
 
                                 moveList[moveCount++] = Temp;
+                                  
                             }
                             
 
@@ -120,14 +151,15 @@ void generateMoves(Board& board, struct Move moveList[], int color) {
                             // adjust for checks
                             pLegalMoves &= checkMask & (pinHV | pinDiag);
 
-                            while (pLegalMoves != 0) {
-                                int index = lsb(pLegalMoves);
+                            Bitloop(pLegalMoves) {
+                                const int index = SquareOf(pLegalMoves);
 
                                 struct Move Temp;
                                 Temp.from = currentSquare;
                                 Temp.to = index;
 
                                 moveList[moveCount++] = Temp;
+                                  
                             }
 
                             chrono::high_resolution_clock::time_point end = chrono::high_resolution_clock::now();
@@ -139,19 +171,8 @@ void generateMoves(Board& board, struct Move moveList[], int color) {
                         case 2: { // bishop
                             chrono::high_resolution_clock::time_point start = chrono::high_resolution_clock::now();
 
-                            int compressedBlockers = 0;
                             uint64_t blockers = (~board.empty) & bishopMasks[currentSquare];
-                            uint64_t tempBishopMask = bishopMasks[currentSquare];
-                            int count = 0;
-                            while (tempBishopMask != 0) {
-                                int index = lsb(tempBishopMask);
-
-                                if ((blockers & (uint64_t(1) << index)) != 0) {
-                                    compressedBlockers |= (1 << count);
-                                }
-
-                                count++;
-                            }
+                            uint64_t compressedBlockers = _pext_u64(blockers, bishopMasks[currentSquare]);
 
                             uint64_t pLegalMoves = bishopLegalMoves[currentSquare][compressedBlockers];
                             pLegalMoves &= ~board.allPieces[color];
@@ -159,14 +180,15 @@ void generateMoves(Board& board, struct Move moveList[], int color) {
                             // adjust for checks
                             pLegalMoves &= checkMask & pinDiag;
 
-                            while (pLegalMoves != 0) {
-                                int index = lsb(pLegalMoves);
+                            Bitloop(pLegalMoves) {
+                                const int index = SquareOf(pLegalMoves);
 
                                 struct Move Temp;
                                 Temp.from = currentSquare;
                                 Temp.to = index;
 
                                 moveList[moveCount++] = Temp;
+                                  
                             }
 
                             chrono::high_resolution_clock::time_point end = chrono::high_resolution_clock::now();
@@ -178,19 +200,8 @@ void generateMoves(Board& board, struct Move moveList[], int color) {
 
                             chrono::high_resolution_clock::time_point start = chrono::high_resolution_clock::now();
 
-                            int compressedBlockers = 0;
                             uint64_t blockers = (~board.empty) & rookMasks[currentSquare];
-                            uint64_t tempRookMask = rookMasks[currentSquare];
-                            int count = 0;
-                            while (tempRookMask != 0) {
-                                int index = lsb(tempRookMask);
-
-                                if ((blockers & (uint64_t(1) << index)) != 0) {
-                                    compressedBlockers |= (1 << count);
-                                }
-
-                                count++;
-                            }
+                            uint64_t compressedBlockers = _pext_u64(blockers, rookMasks[currentSquare]);
 
                             uint64_t pLegalMoves = rookLegalMoves[currentSquare][compressedBlockers];
                             pLegalMoves &= ~board.allPieces[color];
@@ -198,14 +209,15 @@ void generateMoves(Board& board, struct Move moveList[], int color) {
                             // adjust for checks
                             pLegalMoves &= checkMask & pinHV;
 
-                            while (pLegalMoves != 0) {
-                                int index = lsb(pLegalMoves);
+                            Bitloop(pLegalMoves) {
+                                const int index = SquareOf(pLegalMoves);
 
                                 struct Move Temp;
                                 Temp.from = currentSquare;
                                 Temp.to = index;
 
                                 moveList[moveCount++] = Temp;
+                                  
                             }
 
                             chrono::high_resolution_clock::time_point end = chrono::high_resolution_clock::now();
@@ -217,33 +229,11 @@ void generateMoves(Board& board, struct Move moveList[], int color) {
 
                             chrono::high_resolution_clock::time_point start = chrono::high_resolution_clock::now();
 
-                            int rookCompressedBlockers = 0;
                             uint64_t blockers = (~board.empty) & rookMasks[currentSquare];
-                            uint64_t tempRookMask = rookMasks[currentSquare];
-                            int count = 0;
-                            while (tempRookMask != 0) {
-                                int index = lsb(tempRookMask);
+                            uint64_t rookCompressedBlockers = _pext_u64(blockers, rookMasks[currentSquare]);
 
-                                if ((blockers & (uint64_t(1) << index)) != 0) {
-                                    rookCompressedBlockers |= (1 << count);
-                                }
-
-                                count++;
-                            }
-
-                            int bishopCompressedBlockers = 0;
                             blockers = (~board.empty) & bishopMasks[currentSquare];
-                            uint64_t tempBishopMask = bishopMasks[currentSquare];
-                            count = 0;
-                            while (tempBishopMask != 0) {
-                                int index = lsb(tempBishopMask);
-
-                                if ((blockers & (uint64_t(1) << index)) != 0) {
-                                    bishopCompressedBlockers |= (1 << count);
-                                }
-
-                                count++;
-                            }
+                            uint64_t bishopCompressedBlockers = _pext_u64(blockers, bishopMasks[currentSquare]);
 
                             uint64_t pLegalMoves = rookLegalMoves[currentSquare][rookCompressedBlockers] | bishopLegalMoves[currentSquare][bishopCompressedBlockers];
                             pLegalMoves &= ~board.allPieces[color];
@@ -251,14 +241,15 @@ void generateMoves(Board& board, struct Move moveList[], int color) {
                             // adjust for checks
                             pLegalMoves &= checkMask & pinHV & pinDiag;
 
-                            while (pLegalMoves != 0) {
-                                int index = lsb(pLegalMoves);
+                            Bitloop(pLegalMoves) {
+                                const int index = SquareOf(pLegalMoves);
 
                                 struct Move Temp;
                                 Temp.from = currentSquare;
                                 Temp.to = index;
 
                                 moveList[moveCount++] = Temp;
+                                  
                             }
 
                             chrono::high_resolution_clock::time_point end = chrono::high_resolution_clock::now();
@@ -301,14 +292,28 @@ void generateMoves(Board& board, struct Move moveList[], int color) {
                             // adjust for checks
                             pLegalMoves &= ~attackedSquares;
 
-                            while (pLegalMoves != 0) {
-                                int index = lsb(pLegalMoves);
+                            // castles
+                            if (board.castle[color]) { // king side
+                                if ((board.empty & castleMasks[color]) != 0) {
+                                    pLegalMoves |= castleSquares[color];
+                                }
+                            }
+
+                            if (board.castle[color + 2]) { // queen side
+                                if ((board.empty & castleMasks[color + 2]) != 0) {
+                                    pLegalMoves |= castleSquares[color + 2];
+                                }
+                            }
+
+                            Bitloop(pLegalMoves) {
+                                const int index = SquareOf(pLegalMoves);
 
                                 struct Move Temp;
                                 Temp.from = currentSquare;
                                 Temp.to = index;
 
                                 moveList[moveCount++] = Temp;
+                                  
                             }
 
                             chrono::high_resolution_clock::time_point end = chrono::high_resolution_clock::now();

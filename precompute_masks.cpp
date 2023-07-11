@@ -1,8 +1,12 @@
 #include "precompute_masks.h"
 #include <iostream>
 #include <cstdint>
+#include <immintrin.h>
 
 using namespace std;
+
+#define SquareOf(X) _tzcnt_u64(X)
+#define Bitloop(X) for(;X; X = _blsr_u64(X))
 
 // 0 for white 1 for black
 uint64_t pawnMoveMasks[2][64];
@@ -18,8 +22,8 @@ uint64_t bishopLegalMoves[64][16384];
 
 uint64_t queenLegalMoves[64][16384];
 
-uint64_t kingHVChecks[64][16384];
-uint64_t kingDiagChecks[64][16384];
+uint64_t castleMasks[4];
+uint64_t castleSquares[4];
 
 void initPawnMasks() {
     // white
@@ -243,11 +247,12 @@ void initRookMovesTable() {
             uint64_t tempRookMask = rookMasks[currentSquare];
             int compressed = i;
             int count = 0;
-            while (tempRookMask != 0) {
-                int index = lsb(tempRookMask);
+            Bitloop(tempRookMask) {
+                const int index = SquareOf(tempRookMask);
 
                 blockMask |= (uint64_t((compressed >> count) & 1) << index);
                 count++;
+                    
             }
 
             //rookLegalMoves[currentSquare][i] = blockMask;
@@ -293,11 +298,12 @@ void initBishopMovesTable() {
             uint64_t tempBishopMask = bishopMasks[currentSquare];
             int compressed = i;
             int count = 0;
-            while (tempBishopMask != 0) {
-                int index = lsb(tempBishopMask);
+            Bitloop(tempBishopMask) {
+                const int index = SquareOf(tempBishopMask);
 
                 blockMask |= (uint64_t((compressed >> count) & 1) << index);
                 count++;
+                    
             }
 
             //rookLegalMoves[currentSquare][i] = blockMask;
@@ -352,6 +358,30 @@ void initQueenMasks() {
     }
 }
 
+void initCastleMasks() {
+    uint64_t castle = 0;
+    castle |= uint64_t(1) << 1;
+    castle |= uint64_t(1) << 2;
+
+    castleMasks[0] = castle;
+    castleMasks[1] = castle << 56;
+
+    castleSquares[0] = uint64_t(1) << 1;
+    castleSquares[1] = castleSquares[0] << 56;
+
+    castle = 0;
+    castle |= uint64_t(1) << 4;
+    castle |= uint64_t(1) << 5;
+    castle |= uint64_t(1) << 6;
+
+    castleMasks[2] = castle;
+    castleMasks[3] = castle << 56;
+
+    castleSquares[2] = uint64_t(1) << 5;
+    castleSquares[3] = castleSquares[2] << 56;
+
+}
+
 void initMasks() {
     initPawnMasks();
     initKnightMasks();
@@ -364,6 +394,8 @@ void initMasks() {
 
     initBishopMovesTable();
     initRookMovesTable();
+
+    initCastleMasks();
 
     //initQueenMoveTable();
 }

@@ -2,6 +2,7 @@
 #include "board.h"
 #include "helpers.h"
 #include <tuple>
+#include <immintrin.h>
 
 using namespace std;
 
@@ -29,34 +30,11 @@ uint64_t attacksOnSquare(Board& board, int color, int pos) {
     opRQ |= board.pieces[3 + enemyOffset];
     opBQ |= board.pieces[2 + enemyOffset];
 
-    int rookCompressedBlockers = 0;
     uint64_t blockers = (~board.empty) & rookMasks[pos];
-    uint64_t tempRookMask = rookMasks[pos];
+    uint64_t rookCompressedBlockers = _pext_u64(blockers, rookMasks[pos]);
 
-    int count = 0;
-    while (tempRookMask != 0) {
-        int index = lsb(tempRookMask);
-
-        if ((blockers & (uint64_t(1) << index)) != 0) {
-            rookCompressedBlockers |= (1 << count);
-        }
-
-        count++;
-    }
-
-    int bishopCompressedBlockers = 0;
     blockers = (~board.empty) & bishopMasks[pos];
-    uint64_t tempBishopMask = bishopMasks[pos];
-    count = 0;
-    while (tempBishopMask != 0) {
-        int index = lsb(tempBishopMask);
-
-        if ((blockers & (uint64_t(1) << index)) != 0) {
-            bishopCompressedBlockers |= (1 << count);
-        }
-
-        count++;
-    }
+    uint64_t bishopCompressedBlockers = _pext_u64(blockers, bishopMasks[pos]);
 
     uint64_t kingAttackers = (pawnAttackMasks[color][pos] & opPawns)
         | (knightMasks[pos] & opKnights)
@@ -80,34 +58,11 @@ uint64_t attacksToKing(Board& board, int color) {
     opRQ |= board.pieces[3 + enemyOffset];
     opBQ |= board.pieces[2 + enemyOffset];
 
-    int rookCompressedBlockers = 0;
     uint64_t blockers = (~board.empty) & rookMasks[kingPos];
-    uint64_t tempRookMask = rookMasks[kingPos];
+    uint64_t rookCompressedBlockers = _pext_u64(blockers, rookMasks[kingPos]);
 
-    int count = 0;
-    while (tempRookMask != 0) {
-        int index = lsb(tempRookMask);
-
-        if ((blockers & (uint64_t(1) << index)) != 0) {
-            rookCompressedBlockers |= (1 << count);
-        }
-
-        count++;
-    }
-
-    int bishopCompressedBlockers = 0;
     blockers = (~board.empty) & bishopMasks[kingPos];
-    uint64_t tempBishopMask = bishopMasks[kingPos];
-    count = 0;
-    while (tempBishopMask != 0) {
-        int index = lsb(tempBishopMask);
-
-        if ((blockers & (uint64_t(1) << index)) != 0) {
-            bishopCompressedBlockers |= (1 << count);
-        }
-
-        count++;
-    }
+    uint64_t bishopCompressedBlockers = _pext_u64(blockers, bishopMasks[kingPos]);
 
     uint64_t kingAttackers = (pawnAttackMasks[color][kingPos] & opPawns)
         | (knightMasks[kingPos] & opKnights)
@@ -122,8 +77,6 @@ uint64_t attacksToKingXray(Board& board, int color) {
     int enemyOffset = color == 0 ? 6 : 0;
     int myColorOffset = color == 0 ? 0 : 6;
 
-    int enemyColor = color == 0 ? 1 : 0;
-
     int kingPos = board.getPiecePos(5 + myColorOffset);
 
     uint64_t opPawns, opKnights, opRQ, opBQ;
@@ -133,34 +86,11 @@ uint64_t attacksToKingXray(Board& board, int color) {
     opRQ |= board.pieces[3 + enemyOffset];
     opBQ |= board.pieces[2 + enemyOffset];
 
-    int rookCompressedBlockers = 0;
-    uint64_t blockers = (board.allPieces[enemyColor]) & rookMasks[kingPos];
-    uint64_t tempRookMask = rookMasks[kingPos];
+    uint64_t blockers = (~board.empty) & rookMasks[kingPos];
+    uint64_t rookCompressedBlockers = _pext_u64(blockers, rookMasks[kingPos]);
 
-    int count = 0;
-    while (tempRookMask != 0) {
-        int index = lsb(tempRookMask);
-
-        if ((blockers & (uint64_t(1) << index)) != 0) {
-            rookCompressedBlockers |= (1 << count);
-        }
-
-        count++;
-    }
-
-    int bishopCompressedBlockers = 0;
-    blockers = (board.allPieces[enemyColor]) & bishopMasks[kingPos];
-    uint64_t tempBishopMask = bishopMasks[kingPos];
-    count = 0;
-    while (tempBishopMask != 0) {
-        int index = lsb(tempBishopMask);
-
-        if ((blockers & (uint64_t(1) << index)) != 0) {
-            bishopCompressedBlockers |= (1 << count);
-        }
-
-        count++;
-    }
+    blockers = (~board.empty) & bishopMasks[kingPos];
+    uint64_t bishopCompressedBlockers = _pext_u64(blockers, bishopMasks[kingPos]);
 
     uint64_t kingAttackers = (pawnAttackMasks[color][kingPos] & opPawns)
         | (knightMasks[kingPos] & opKnights)

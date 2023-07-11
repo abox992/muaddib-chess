@@ -22,12 +22,6 @@ void printBitboard(uint64_t bitboard) {
     }
 }
 
-int lsb(uint64_t &b) {
-    auto index = std::countr_zero(b);
-    b &= b - 1;
-    return index;
-}
-
 vector<string> split(const string &s, char delim) {
     vector<string> elems;
     stringstream ss(s);
@@ -97,16 +91,16 @@ Board generateBoardFromFen(string fen) {
                 for (int i = 0; i < int(tokens[field].length()); i++) {
                     char currentChar = tokens[field][i];
 
-                    if (currentChar != '-') {
+                    if (currentChar == '-') {
                         break;
                     }
 
                     if (currentChar == 'K') {
                         board.castle[0] = true;
                     } else if (currentChar == 'Q') {
-                        board.castle[1] = true;
-                    } else if (currentChar == 'k') {
                         board.castle[2] = true;
+                    } else if (currentChar == 'k') {
+                        board.castle[1] = true;
                     } else if (currentChar == 'q') {
                         board.castle[3] = true;
                     }
@@ -139,14 +133,14 @@ Board generateBoardFromFen(string fen) {
             } case 4: { // halfmove clock
 
                 for (int i = 0; i < int(tokens[field].length()); i++) {
-                    char currentChar = tokens[field][i];
+                    //char currentChar = tokens[field][i];
                 }
 
                 break;
             } case 5: { // full move number
 
                 for (int i = 0; i < int(tokens[field].length()); i++) {
-                    char currentChar = tokens[field][i];
+                    //char currentChar = tokens[field][i];
                 }
 
                 break;

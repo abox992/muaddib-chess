@@ -2,6 +2,8 @@
 #include "move.h"
 #include "helpers.h"
 
+#include <immintrin.h>
+
 using namespace std;
 
 Board::Board() {
@@ -18,7 +20,7 @@ void Board::setPieceSet(int i, uint64_t num) {
 
 int Board::getPiecePos(int i) {
     uint64_t temp = pieces[i];
-    return lsb(temp);
+    return _tzcnt_u64(temp);
 }
 
 void Board::setStartPos() {

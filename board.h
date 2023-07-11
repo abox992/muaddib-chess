@@ -29,13 +29,12 @@ enum Color {
 
 class Board {
     public:
-        // 0 = wpawns, 1 = wknights, 2 = wbishops, 3 = wrooks, 4 = wqueens, 5 = wkings ...
-        uint64_t pieces[12];
+        uint64_t pieces[12];   // 0 = wpawns, 1 = wknights, 2 = wbishops, 3 = wrooks, 4 = wqueens, 5 = wkings ...
         uint64_t empty;
         uint64_t allPieces[2]; // 0 = white 1 = black
-        int enpassantPos; // legal square a pawn can move to to take with enpassant
-        bool castle[4]; // 0 = white kingside, 1 = white queen side etc
-        bool blackToMove; // 0 = white 1 = black
+        int      enpassantPos; // legal square a pawn can move to to take with enpassant
+        bool     castle[4];    // wk, bk, wq, bq
+        bool     blackToMove;  // 0 = white 1 = black
 
         Board();
 

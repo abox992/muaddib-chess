@@ -34,7 +34,7 @@ int main() {
     // cout << endl;
     // printBitboard(pawnAttackMasks[1][50]);
 
-    Board test = generateBoardFromFen("8/8/8/q7/4K3/8/8/1b3r1k w - - 0 1"); // 8/8/8/2pP4/8/4K3/8/7k w - c6 0 1 "" 8/q7/8/2pP4/8/4K3/8/7k w - c6 0 1
+    Board test = generateBoardFromFen("rnb1kbnr/pp1ppppp/2p5/q7/3PP3/3B1N2/PPP2PPP/RNBQK2R b KQkq - 0 1"); // 8/8/8/2pP4/8/4K3/8/7k w - c6 0 1 "" 8/q7/8/2pP4/8/4K3/8/7k w - c6 0 1
     cout << test << endl;
     //printBitboard(generatePinMask(test, white));
     generateMoves(test, moveList, white);

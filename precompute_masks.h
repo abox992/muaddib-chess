@@ -15,10 +15,9 @@ extern uint64_t rookLegalMoves[64][16384];
 extern uint64_t bishopLegalMoves[64][16384];
 extern uint64_t queenLegalMoves[64][16384];
 
-extern uint64_t kingHVChecks[64][16384];
-extern uint64_t kingDiagChecks[64][16384];
+extern uint64_t castleMasks[4]; // wk, bk, wq, bq 
+extern uint64_t castleSquares[4]; // wk, bk, wq, bq 
 
-int lsb(uint64_t &b);
 void initPawnMasks();
 void initKnightMasks();
 void initKingMasks();
