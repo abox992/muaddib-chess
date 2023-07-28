@@ -120,6 +120,8 @@ void generateMoves(Board& board, struct Move moveList[], int color) {
                                 struct Move Temp;
                                 Temp.from = currentSquare;
                                 Temp.to = index;
+                                Temp.color = color;
+                                Temp.piece = piece;
 
                                 moveList[moveCount++] = Temp;
                                   
@@ -131,6 +133,8 @@ void generateMoves(Board& board, struct Move moveList[], int color) {
                                 struct Move Temp;
                                 Temp.from = currentSquare;
                                 Temp.to = index;
+                                Temp.color = color;
+                                Temp.piece = piece;
 
                                 moveList[moveCount++] = Temp;
                                   
@@ -157,6 +161,8 @@ void generateMoves(Board& board, struct Move moveList[], int color) {
                                 struct Move Temp;
                                 Temp.from = currentSquare;
                                 Temp.to = index;
+                                Temp.color = color;
+                                Temp.piece = piece;
 
                                 moveList[moveCount++] = Temp;
                                   
@@ -186,6 +192,8 @@ void generateMoves(Board& board, struct Move moveList[], int color) {
                                 struct Move Temp;
                                 Temp.from = currentSquare;
                                 Temp.to = index;
+                                Temp.color = color;
+                                Temp.piece = piece;
 
                                 moveList[moveCount++] = Temp;
                                   
@@ -215,6 +223,8 @@ void generateMoves(Board& board, struct Move moveList[], int color) {
                                 struct Move Temp;
                                 Temp.from = currentSquare;
                                 Temp.to = index;
+                                Temp.color = color;
+                                Temp.piece = piece;
 
                                 moveList[moveCount++] = Temp;
                                   
@@ -247,6 +257,8 @@ void generateMoves(Board& board, struct Move moveList[], int color) {
                                 struct Move Temp;
                                 Temp.from = currentSquare;
                                 Temp.to = index;
+                                Temp.color = color;
+                                Temp.piece = piece;
 
                                 moveList[moveCount++] = Temp;
                                   
@@ -311,6 +323,8 @@ void generateMoves(Board& board, struct Move moveList[], int color) {
                                 struct Move Temp;
                                 Temp.from = currentSquare;
                                 Temp.to = index;
+                                Temp.color = color;
+                                Temp.piece = piece;
 
                                 moveList[moveCount++] = Temp;
                                   

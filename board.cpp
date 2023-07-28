@@ -6,6 +6,13 @@
 
 using namespace std;
 
+#define SquareOf(X) _tzcnt_u64(X)
+#define Bitloop(X) for(;X; X = _blsr_u64(X))
+// Bitloop(bishops) {
+//      const Square sq = SquareOf(bishops);
+//      ...
+// }
+
 Board::Board() {
     setStartPos();
 }
@@ -72,13 +79,33 @@ void Board::updateAllPieces() {
 }
 
 void Board::makeMove(struct Move move) {
-    // make the move (update bitboards)
+    // make the move (update bitboards) - normal moves
+    uint64_t fromMask = uint64_t(1) << move.from;
+    uint64_t toMask = uint64_t(1) << move.to;
+    pieces[move.piece + move.color*6] &= ~fromMask;
+    pieces[move.piece + move.color*6] |= toMask;
+    int enemyColor = move.color == 0 ? 1 : 0;
 
-    // update enpassant
+    for (int i = move.color*6; i < move.color*6 + 6; i++) {
+        if (pieces[i] & fromMask != 0) { // found piece moved, update my pieces
+            pieces[i] &= fromMask; // add updated position
+            pieces[i] &= ~toMask; // remove old position
+        }
+    }
+
+    // check opponent pieces for a capture
+    for (int i = enemyColor*6; i < enemyColor*6 + 6; i++) {
+        if (pieces[i] & toMask != 0) { // found piece taken, update my pieces
+            pieces[i] &= fromMask; // add updated position
+            pieces[i] &= ~toMask; // remove old position
+        }
+    }
+
+    // update castle bitboards
+
+    // update enpassant bitboards
 
     // update black to move
-
-    // update castle
 
     // update all pieces
     updateAllPieces();
