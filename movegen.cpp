@@ -45,7 +45,7 @@ void generateMoves(Board& board, struct Move moveList[], int color) {
     for (int rank = 7; rank >= 0; rank--) {
         for (int file = 0; file < 8; file++) {
             int currentSquare = (7 - file) + (8 * rank);
-            currentSquareMask = uint64_t(1) << currentSquare;
+            currentSquareMask = MaskForPos(currentSquare);
 
             if ((board.empty & currentSquareMask) != 0) { // skip if empty
                 continue;
@@ -82,7 +82,7 @@ void generateMoves(Board& board, struct Move moveList[], int color) {
                                 board.updateAllPieces();
 
                                 if (generateCheckMask(board, color) == 0){
-                                    pLegalAttacks |= (initialAttackMask & (uint64_t(1) << board.enpassantPos));
+                                    pLegalAttacks |= (initialAttackMask & MaskForPos(board.enpassantPos));
                                 }
 
                                 board.pieces[enemyColor] = temp;
@@ -93,26 +93,6 @@ void generateMoves(Board& board, struct Move moveList[], int color) {
                             // adjust for checks
                             pLegalMoves &= checkMask & pinHV;
                             pLegalAttacks &= checkMask & pinDiag;
-
-                            // while (pLegalMoves != 0) {
-                            //     int index = lsb(pLegalMoves);
-
-                            //     struct Move Temp;
-                            //     Temp.from = currentSquare;
-                            //     Temp.to = index;
-
-                            //     moveList[moveCount++] = Temp;
-                            // }
-
-                            // while (pLegalAttacks != 0) {
-                            //     int index = lsb(pLegalAttacks);
-
-                            //     struct Move Temp;
-                            //     Temp.from = currentSquare;
-                            //     Temp.to = index;
-
-                            //     moveList[moveCount++] = Temp;
-                            // }
 
                             Bitloop(pLegalMoves) {
                                 const int index = SquareOf(pLegalMoves);
@@ -135,6 +115,10 @@ void generateMoves(Board& board, struct Move moveList[], int color) {
                                 Temp.to = index;
                                 Temp.color = color;
                                 Temp.piece = piece;
+
+                                if (index == SquareOf(board.enpassantPos)) {
+                                    Temp.enpessant = index;
+                                }
 
                                 moveList[moveCount++] = Temp;
                                   
@@ -296,7 +280,7 @@ void generateMoves(Board& board, struct Move moveList[], int color) {
                                 }
 
                                 if (attacksOnSquare(board, enemyColor, kingPos + offset) != 0) {
-                                    attackedSquares |= uint64_t(1) << (kingPos + offset);
+                                    attackedSquares |= MaskForPos(kingPos + offset);
                                 }
 
                             }
@@ -327,6 +311,12 @@ void generateMoves(Board& board, struct Move moveList[], int color) {
                                 Temp.to = index;
                                 Temp.color = color;
                                 Temp.piece = piece;
+
+                                if ((MaskForPos(index) & castleMasks[color]) != 0) {
+                                    Temp.castle = MaskForPos(color);
+                                }else if ((MaskForPos(index) & castleMasks[color + 2]) != 0) {
+                                    Temp.castle = MaskForPos(color + 2);
+                                }
 
                                 moveList[moveCount++] = Temp;
                                   

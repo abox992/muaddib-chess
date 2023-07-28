@@ -8,7 +8,9 @@ struct Move {
     uint8_t from;
     uint8_t to;
     bool color;
-    uint16_t piece; // 0 = pawns, 1 = knights, 2 = bishops, 3 = rooks, 4 = queens, 5 = kings
+    uint8_t piece; // 0 = pawns, 2 = knights, 4 = bishops, 6 = rooks, 8 = queens, 10 = kings
+    uint8_t enpessant = 0; // square of enpessant
+    uint8_t castle = 0; // wk, bk, wq, bq
 
     friend std::ostream& operator << (std::ostream& o, const Move& move) {
         char file[] = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'};

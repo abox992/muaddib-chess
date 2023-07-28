@@ -83,26 +83,23 @@ void Board::makeMove(struct Move move) {
     // make the move (update bitboards) - normal moves
     uint64_t fromMask = uint64_t(1) << move.from;
     uint64_t toMask = uint64_t(1) << move.to;
-    pieces[move.piece + move.color*6] &= ~fromMask;
-    pieces[move.piece + move.color*6] |= toMask;
     int enemyColor = move.color == 0 ? 1 : 0;
 
-    for (int i = move.color*6; i < move.color*6 + 6; i++) {
-        if (pieces[i] & fromMask != 0) { // found piece moved, update my pieces
-            pieces[i] &= fromMask; // add updated position
-            pieces[i] &= ~toMask; // remove old position
-        }
-    }
+    // update my pieces
+    pieces[move.piece + move.color] &= ~fromMask; // remove old position
+    pieces[move.piece + move.color] |= toMask; // add new position
 
-    // check opponent pieces for a capture
-    for (int i = enemyColor*6; i < enemyColor*6 + 6; i++) {
-        if (pieces[i] & toMask != 0) { // found piece taken, update my pieces
-            pieces[i] &= fromMask; // add updated position
-            pieces[i] &= ~toMask; // remove old position
+    // update opponent pieces
+    for (int i = enemyColor; i < 12; i+=2) {
+        if ((pieces[i] & toMask) != 0) { // found enemy piece taken
+            pieces[i] &= ~toMask;
         }
     }
 
     // update castle bitboards
+    if (move.castle != 0) {
+        int pos = _tzcnt_u64(move.castle);
+    }
 
     // update enpassant bitboards
 

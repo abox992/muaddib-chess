@@ -130,7 +130,7 @@ uint64_t generateCheckMask(Board& board, int color) {
             }
 
             // at this point we know currentpos + offset is at least valid, now check for piece
-            uint64_t currentMask = (uint64_t(1) << (currentPos + offset));
+            uint64_t currentMask = MaskForPos(currentPos + offset);
             if ((currentMask & kingAttackers) != 0) {
                 kingAttackers |= tempDirectionMask;
                 break;
@@ -170,7 +170,7 @@ uint64_t generatePinMask(Board& board, int color) {
             }
 
             // at this point we know currentpos + offset is at least valid, now check for piece
-            uint64_t currentMask = (uint64_t(1) << (currentPos + offset));
+            uint64_t currentMask = MaskForPos(currentPos + offset);
             if ((currentMask & kingAttackers) != 0) {
                 kingAttackers |= tempDirectionMask;
                 break;
