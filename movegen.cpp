@@ -24,9 +24,9 @@ using namespace std;
 // move list to add moves to, color to gen moves for (0 for white 1 for black)
 void generateMoves(Board& board, struct Move moveList[], int color) {
     int moveCount = 0;
-    int myColorOffset = color == 0 ? 0 : 6;
+    //int myColorOffset = color == 0 ? 0 : 6;
     int enemyColor = color == 0 ? 1 : 0;
-    int enemyColorOffset = color == 0 ? 6 : 0;
+    //int enemyColorOffset = color == 0 ? 6 : 0;
 
     uint64_t currentSquareMask;
 
@@ -51,8 +51,8 @@ void generateMoves(Board& board, struct Move moveList[], int color) {
                 continue;
             }
 
-            for (int piece = 0; piece < 6; piece++) {
-                uint64_t currentBB = board.getPieceSet(piece + myColorOffset);
+            for (int piece = 0; piece < 12; piece += 2) {
+                uint64_t currentBB = board.getPieceSet(piece + color);
 
                 if ((currentBB & currentSquareMask) != 0) { // found piece
 
@@ -78,14 +78,14 @@ void generateMoves(Board& board, struct Move moveList[], int color) {
                                 int offset = color == 0 ? -8 : 8;
 
                                 uint64_t temp = board.pieces[enemyColor];
-                                board.pieces[enemyColorOffset] &= ~(uint64_t(1) << (board.enpassantPos + offset));
+                                board.pieces[enemyColor] &= ~(uint64_t(1) << (board.enpassantPos + offset));
                                 board.updateAllPieces();
 
                                 if (generateCheckMask(board, color) == 0){
                                     pLegalAttacks |= (initialAttackMask & (uint64_t(1) << board.enpassantPos));
                                 }
 
-                                board.pieces[enemyColorOffset] = temp;
+                                board.pieces[enemyColor] = temp;
                                 board.updateAllPieces();
 
                             }
@@ -146,7 +146,7 @@ void generateMoves(Board& board, struct Move moveList[], int color) {
                             std::cout << "pawn: " << time_span.count() << "nanoseconds" << std::endl;
 
                             break;
-                        } case 1: { // knight 
+                        } case 2: { // knight 
 
                             chrono::high_resolution_clock::time_point start = chrono::high_resolution_clock::now();
 
@@ -174,7 +174,7 @@ void generateMoves(Board& board, struct Move moveList[], int color) {
                                 
                             break;
                         }
-                        case 2: { // bishop
+                        case 4: { // bishop
                             chrono::high_resolution_clock::time_point start = chrono::high_resolution_clock::now();
 
                             uint64_t blockers = (~board.empty) & bishopMasks[currentSquare];
@@ -204,7 +204,7 @@ void generateMoves(Board& board, struct Move moveList[], int color) {
                             std::cout << "bishop: " << time_span.count() << "nanoseconds" << std::endl;
 
                             break;
-                        } case 3: { // rook
+                        } case 6: { // rook
 
                             chrono::high_resolution_clock::time_point start = chrono::high_resolution_clock::now();
 
@@ -235,7 +235,7 @@ void generateMoves(Board& board, struct Move moveList[], int color) {
                             std::cout << "rook: " << time_span.count() << "nanoseconds" << std::endl;
 
                             break;
-                        } case 4: { // queen
+                        } case 8: { // queen
 
                             chrono::high_resolution_clock::time_point start = chrono::high_resolution_clock::now();
 
@@ -269,7 +269,7 @@ void generateMoves(Board& board, struct Move moveList[], int color) {
                             std::cout << "queen: " << time_span.count() << "nanoseconds" << std::endl;
 
                             break;
-                        } case 5: { // king 
+                        } case 10: { // king 
 
                             chrono::high_resolution_clock::time_point start = chrono::high_resolution_clock::now();
 
@@ -305,7 +305,8 @@ void generateMoves(Board& board, struct Move moveList[], int color) {
                             pLegalMoves &= ~attackedSquares;
 
                             // castles
-                            if (board.castle[color]) { // king side
+                            if (~checkMask == 0) { // can only castle if not in check
+                                if (board.castle[color]) { // king side
                                 if ((board.empty & castleMasks[color]) != 0) {
                                     pLegalMoves |= castleSquares[color];
                                 }
@@ -315,6 +316,7 @@ void generateMoves(Board& board, struct Move moveList[], int color) {
                                 if ((board.empty & castleMasks[color + 2]) != 0) {
                                     pLegalMoves |= castleSquares[color + 2];
                                 }
+                            }
                             }
 
                             Bitloop(pLegalMoves) {

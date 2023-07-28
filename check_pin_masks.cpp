@@ -21,14 +21,15 @@ using namespace std;
 // }
 
 uint64_t attacksOnSquare(Board& board, int color, int pos) {
-    int enemyOffset = color == 0 ? 0 : 6;
+    //int enemyOffset = color == 0 ? 0 : 6;
+    int enemyColor = color == 0 ? 1 : 0;
 
     uint64_t opPawns, opKnights, opRQ, opBQ;
-    opPawns = board.pieces[0 + enemyOffset];
-    opKnights = board.pieces[1 + enemyOffset];
-    opRQ = opBQ = board.pieces[4 + enemyOffset];
-    opRQ |= board.pieces[3 + enemyOffset];
-    opBQ |= board.pieces[2 + enemyOffset];
+    opPawns = board.pieces[0 + enemyColor];
+    opKnights = board.pieces[2 + enemyColor];
+    opRQ = opBQ = board.pieces[8 + enemyColor];
+    opRQ |= board.pieces[6 + enemyColor];
+    opBQ |= board.pieces[4 + enemyColor];
 
     uint64_t blockers = (~board.empty) & rookMasks[pos];
     uint64_t rookCompressedBlockers = _pext_u64(blockers, rookMasks[pos]);
@@ -46,17 +47,18 @@ uint64_t attacksOnSquare(Board& board, int color, int pos) {
 }
 
 uint64_t attacksToKing(Board& board, int color) {
-    int enemyOffset = color == 0 ? 6 : 0;
-    int myColorOffset = color == 0 ? 0 : 6;
+    //int enemyOffset = color == 0 ? 6 : 0;
+    //int myColorOffset = color == 0 ? 0 : 6;
+    int enemyColor = color == 0 ? 1 : 0;
 
-    int kingPos = board.getPiecePos(5 + myColorOffset);
+    int kingPos = board.getPiecePos(10 + color);
 
     uint64_t opPawns, opKnights, opRQ, opBQ;
-    opPawns = board.pieces[0 + enemyOffset];
-    opKnights = board.pieces[1 + enemyOffset];
-    opRQ = opBQ = board.pieces[4 + enemyOffset];
-    opRQ |= board.pieces[3 + enemyOffset];
-    opBQ |= board.pieces[2 + enemyOffset];
+    opPawns = board.pieces[0 + enemyColor];
+    opKnights = board.pieces[2 + enemyColor];
+    opRQ = opBQ = board.pieces[8 + enemyColor];
+    opRQ |= board.pieces[6 + enemyColor];
+    opBQ |= board.pieces[4 + enemyColor];
 
     uint64_t blockers = (~board.empty) & rookMasks[kingPos];
     uint64_t rookCompressedBlockers = _pext_u64(blockers, rookMasks[kingPos]);
@@ -74,17 +76,18 @@ uint64_t attacksToKing(Board& board, int color) {
 }
 
 uint64_t attacksToKingXray(Board& board, int color) {
-    int enemyOffset = color == 0 ? 6 : 0;
-    int myColorOffset = color == 0 ? 0 : 6;
+    //int enemyOffset = color == 0 ? 6 : 0;
+    //int myColorOffset = color == 0 ? 0 : 6;
+    int enemyColor = color == 0 ? 1 : 0;
 
-    int kingPos = board.getPiecePos(5 + myColorOffset);
+    int kingPos = board.getPiecePos(10 + color);
 
     uint64_t opPawns, opKnights, opRQ, opBQ;
-    opPawns = board.pieces[0 + enemyOffset];
-    opKnights = board.pieces[1 + enemyOffset];
-    opRQ = opBQ = board.pieces[4 + enemyOffset];
-    opRQ |= board.pieces[3 + enemyOffset];
-    opBQ |= board.pieces[2 + enemyOffset];
+    opPawns = board.pieces[0 + enemyColor];
+    opKnights = board.pieces[2 + enemyColor];
+    opRQ = opBQ = board.pieces[8 + enemyColor];
+    opRQ |= board.pieces[6 + enemyColor];
+    opBQ |= board.pieces[4 + enemyColor];
 
     uint64_t blockers = (~board.empty) & rookMasks[kingPos];
     uint64_t rookCompressedBlockers = _pext_u64(blockers, rookMasks[kingPos]);
@@ -103,9 +106,9 @@ uint64_t attacksToKingXray(Board& board, int color) {
 
 uint64_t generateCheckMask(Board& board, int color) {
 
-    int myColorOffset = color == 0 ? 0 : 6;
+    //int myColorOffset = color == 0 ? 0 : 6;
 
-    int kingPos = board.getPiecePos(5 + myColorOffset);
+    int kingPos = board.getPiecePos(10 + color);
 
     uint64_t kingAttackers = attacksToKing(board, color);
 
@@ -144,9 +147,9 @@ uint64_t generateCheckMask(Board& board, int color) {
 
 uint64_t generatePinMask(Board& board, int color) {
 
-    int myColorOffset = color == 0 ? 0 : 6;
+    //int myColorOffset = color == 0 ? 0 : 6;
 
-    int kingPos = board.getPiecePos(5 + myColorOffset);
+    int kingPos = board.getPiecePos(10 + color);
     uint64_t kingAttackers = attacksToKingXray(board, color);
 
     int directions[] = {9, 8, 7, 1, -1, -7, -8, -9};
@@ -183,9 +186,9 @@ uint64_t generatePinMask(Board& board, int color) {
 }
 
 tuple<uint64_t, uint64_t, uint64_t> generateCheckAndPinMask(Board& board, int color) {
-    int myColorOffset = color == 0 ? 0 : 6;
+    //int myColorOffset = color == 0 ? 0 : 6;
 
-    int kingPos = board.getPiecePos(5 + myColorOffset);
+    int kingPos = board.getPiecePos(10 + color);
 
     uint64_t checkMask = generateCheckMask(board, color);
     uint64_t pinMask = generatePinMask(board, color); // inlcudes checks as well

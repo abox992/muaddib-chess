@@ -25,6 +25,7 @@ void Board::setPieceSet(int i, uint64_t num) {
     pieces[i] = num;
 }
 
+// only use this on king/queen
 int Board::getPiecePos(int i) {
     uint64_t temp = pieces[i];
     return _tzcnt_u64(temp);
@@ -62,17 +63,17 @@ void Board::setStartPos() {
 
 void Board::updateAllPieces() {
     allPieces[0] = (pieces[0] | 
-                    pieces[1] | 
                     pieces[2] | 
-                    pieces[3] | 
                     pieces[4] | 
-                    pieces[5]);
-
-    allPieces[1] = (pieces[6] | 
-                    pieces[7] | 
+                    pieces[6] | 
                     pieces[8] | 
+                    pieces[10]);
+
+    allPieces[1] = (pieces[1] | 
+                    pieces[3] | 
+                    pieces[5] | 
+                    pieces[7] | 
                     pieces[9] | 
-                    pieces[10] | 
                     pieces[11]);
 
     empty = ~(allPieces[0] | allPieces[1]);
@@ -114,7 +115,7 @@ void Board::makeMove(struct Move move) {
 std::ostream& operator << (std::ostream& o, Board& board) {
 
     // white upper, black lower
-    char printPiece[] = {'P', 'N', 'B', 'R', 'Q', 'K', 'p', 'n', 'b', 'r', 'q', 'k'};
+    char printPiece[] = {'P', 'p', 'N', 'n', 'B', 'b', 'R', 'r', 'Q', 'q', 'K', 'k'};
 
     o << "    a   b   c   d   e   f   g   h  " << endl;
     o << "  +---+---+---+---+---+---+---+---+" << endl;

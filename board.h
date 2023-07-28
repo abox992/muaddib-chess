@@ -6,16 +6,16 @@
 
 enum Piece {
     wpawns,
+    bpawns, 
     wknights, 
-    wbishops, 
-    wrooks, 
-    wqueens, 
-    wking,
-    bpawns,
     bknights, 
-    bbishops, 
+    wbishops, 
+    bbishops,
+    wrooks,
     brooks, 
+    wqueens, 
     bqueens, 
+    wking, 
     bking
 };
 
@@ -29,7 +29,7 @@ enum Color {
 
 class Board {
     public:
-        uint64_t pieces[12];   // 0 = wpawns, 1 = wknights, 2 = wbishops, 3 = wrooks, 4 = wqueens, 5 = wkings ...
+        uint64_t pieces[12];   // 0 = wpawns, 1 = bpawns, ... knights, bishops, rooks, queens, kings
         uint64_t empty;
         uint64_t allPieces[2]; // 0 = white 1 = black
         int      enpassantPos; // legal square a pawn can move to to take with enpassant

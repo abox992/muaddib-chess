@@ -57,7 +57,7 @@ Board generateBoardFromFen(string fen) {
                     }
 
                     // update pieces
-                    char pieceChars[] = {'P', 'N', 'B', 'R', 'Q', 'K', 'p', 'n', 'b', 'r', 'q', 'k'};
+                    char pieceChars[] = {'P', 'p', 'N', 'n', 'B', 'b', 'R', 'r', 'Q', 'q', 'K', 'k'};
                     for (int j = 0; j < 12; j++) {
                         if (currentChar == pieceChars[j]) {
                             board.setPieceSet(j, board.getPieceSet(j) | (uint64_t(1) << currentPos));

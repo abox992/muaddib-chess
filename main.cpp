@@ -21,7 +21,6 @@ int main() {
     generateMoves(board, moveList, white);
     cout << endl;
 
-    printBitboard(knightMasks[5]);
     // printBitboard(bishopLegalMoves[1][12415]);
 
     // cout << endl;
@@ -36,7 +35,7 @@ int main() {
 
     Board test = generateBoardFromFen("rnb1kbnr/pp1ppppp/2p5/q7/3PP3/3B1N2/PPP2PPP/RNBQK2R b KQkq - 0 1"); // 8/8/8/2pP4/8/4K3/8/7k w - c6 0 1 "" 8/q7/8/2pP4/8/4K3/8/7k w - c6 0 1
     cout << test << endl;
-    //printBitboard(generatePinMask(test, white));
+    printBitboard(attacksToKing(test, white));
     generateMoves(test, moveList, white);
 
     return 0;

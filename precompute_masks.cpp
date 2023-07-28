@@ -11,6 +11,7 @@ using namespace std;
 // 0 for white 1 for black
 uint64_t pawnMoveMasks[2][64];
 uint64_t pawnAttackMasks[2][64];
+
 uint64_t knightMasks[64];
 uint64_t kingMasks[64];
 uint64_t bishopMasks[64];
