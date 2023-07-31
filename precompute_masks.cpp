@@ -25,6 +25,13 @@ uint64_t queenLegalMoves[64][16384];
 
 uint64_t castleMasks[4];
 uint64_t castleSquares[4];
+uint64_t castleRookSquares[4];
+uint64_t originalRookSquares[4];
+
+uint64_t rowMasks[64];
+uint64_t colMasks[64];
+
+int promoPieces[4] = {2, 4, 6, 8};
 
 void initPawnMasks() {
     // white
@@ -89,8 +96,8 @@ void initPawnMasks() {
                 continue;
             }
 
-            int jumpY = (i + offset) / 8;
-            int jumpX = (i + offset) % 8;
+            int jumpY = (i - offset) / 8;
+            int jumpX = (i - offset) % 8;
 
             int maxDif = max(abs(currentX - jumpX), abs(currentY - jumpY));
 
@@ -111,8 +118,8 @@ void initPawnMasks() {
             continue;
         }
 
-        int jumpY = (i + offset) / 8;
-        int jumpX = (i + offset) % 8;
+        int jumpY = (i - offset) / 8;
+        int jumpX = (i - offset) % 8;
 
         int maxDif = max(abs(currentX - jumpX), abs(currentY - jumpY));
 
@@ -381,6 +388,29 @@ void initCastleMasks() {
     castleSquares[2] = uint64_t(1) << 5;
     castleSquares[3] = castleSquares[2] << 56;
 
+    // rooks
+    castleRookSquares[0] = uint64_t(1) << 2;
+    castleRookSquares[1] = uint64_t(1) << 58;
+    castleRookSquares[2] = uint64_t(1) << 4;
+    castleRookSquares[3] = uint64_t(1) << 60;
+
+    originalRookSquares[0] = uint64_t(1);
+    originalRookSquares[1] = uint64_t(1) << 56;
+    originalRookSquares[2] = uint64_t(1) << 7;
+    originalRookSquares[3] = uint64_t(1) << 63;
+
+}
+
+void initRowColMasks() {
+    uint64_t rowMask = 0xFF;
+    uint64_t colMask = 0x101010101010101;
+    for (int i = 0; i < 64; i++) {
+        int row = i / 8;
+        int col = i % 8;
+
+        rowMasks[i] = rowMask << (row * 8);
+        colMasks[i] = colMask << col;
+    }
 }
 
 void initMasks() {
@@ -397,6 +427,8 @@ void initMasks() {
     initRookMovesTable();
 
     initCastleMasks();
+
+    initRowColMasks();
 
     //initQueenMoveTable();
 }

@@ -6,6 +6,7 @@
 #include "board.h"
 
 uint64_t attacksOnSquare(Board& board, int color, int pos);
+uint64_t attacksOnSquareIgnoreKing(Board& board, int color, int pos);
 
 uint64_t attacksToKing(Board& board, int color);
 uint64_t attacksToKingXray(Board& board, int color);

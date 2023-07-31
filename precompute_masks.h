@@ -17,6 +17,13 @@ extern uint64_t queenLegalMoves[64][16384];
 
 extern uint64_t castleMasks[4]; // wk, bk, wq, bq 
 extern uint64_t castleSquares[4]; // wk, bk, wq, bq 
+extern uint64_t castleRookSquares[4]; // wk, bk, wq, bq 
+extern uint64_t originalRookSquares[4]; // wk, bk, wq, bq 
+
+extern int promoPieces[4]; // n,b,r,q pos in pieces array
+
+extern uint64_t rowMasks[64];
+extern uint64_t colMasks[64];
 
 void initPawnMasks();
 void initKnightMasks();
@@ -28,6 +35,11 @@ void initQueenMasks(); // bishop and rook masks must be init first
 void initBishopMovesTable();
 void initRookMovesTable();
 
+void initCastleMasks();
+
+void initRowColMasks();
+
 void initMasks();
+
 
 #endif

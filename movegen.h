@@ -5,6 +5,6 @@
 #include "board.h"
 #include "move.h"
 
-void generateMoves(Board& board, struct Move moveList[], int color);
+int generateMoves(Board& board, struct Move moveList[], int color);
 
 #endif

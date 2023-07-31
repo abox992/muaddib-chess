@@ -1,8 +1,10 @@
 #include "board.h"
 #include "move.h"
 #include "helpers.h"
+#include "precompute_masks.h"
 
 #include <immintrin.h>
+#include <cstring>
 
 using namespace std;
 
@@ -15,6 +17,15 @@ using namespace std;
 
 Board::Board() {
     setStartPos();
+}
+
+Board::Board(const Board& copy) { // deep copy contructor
+    std::memcpy(pieces, copy.pieces, sizeof(uint64_t) * (end(pieces)-begin(pieces)));
+    std::memcpy(allPieces, copy.allPieces, sizeof(uint64_t) * (end(allPieces)-begin(allPieces)));
+    std::memcpy(canCastle, copy.canCastle, sizeof(bool) * (end(canCastle)-begin(canCastle)));
+    enpassantPos = copy.enpassantPos;
+    empty = copy.empty;
+    blackToMove = copy.blackToMove;
 }
 
 uint64_t Board::getPieceSet(int i) {
@@ -35,11 +46,11 @@ void Board::setStartPos() {
     pieces[wpawns]   = 0x000000000000FF00;
     pieces[bpawns]   = 0x00FF000000000000;
 
-    pieces[wknights] = 0x0000000000000024;
-    pieces[bknights] = 0x2400000000000000;
+    pieces[wknights] = 0x0000000000000042;
+    pieces[bknights] = 0x4200000000000000;
 
-    pieces[wbishops] = 0x0000000000000042;
-    pieces[bbishops] = 0x4200000000000000;
+    pieces[wbishops] = 0x0000000000000024;
+    pieces[bbishops] = 0x2400000000000000;
 
     pieces[wrooks]   = 0x0000000000000081;
     pieces[brooks]   = 0x8100000000000000;
@@ -52,10 +63,10 @@ void Board::setStartPos() {
 
     updateAllPieces();
 
-    enpassantPos = -1;
+    enpassantPos = 0; // not possible for enpessant sqaure to be 0, so this fine
 
     for (int i = 0; i < 4; i++) {
-        castle[i] = true;
+        canCastle[i] = true;
     }
 
     blackToMove = false;
@@ -98,12 +109,69 @@ void Board::makeMove(struct Move move) {
 
     // update castle bitboards
     if (move.castle != 0) {
-        int pos = _tzcnt_u64(move.castle);
+        uint64_t tempMoveCastle = move.castle;
+        int pos = _tzcnt_u64(tempMoveCastle); // note castle is 0 after this is called
+        pieces[10 + move.color] = castleSquares[pos]; // update king pos
+        pieces[6 + move.color] |= castleRookSquares[pos]; // add new rook pos
+        pieces[6 + move.color] &= ~originalRookSquares[pos]; // remove old rook pos
+
+        canCastle[move.color] = false;
+        canCastle[move.color + 2] = false;
+    }
+
+    if (move.piece == 10) { // king move, can no longer castle
+        canCastle[move.color] = false;
+        canCastle[move.color + 2] = false;
+    }
+
+    if (move.piece == 6) { // rook move, can no longer castle on that side
+        if ((originalRookSquares[move.color] & pieces[6 + move.color]) == 0) { // if king side rook not on original square
+            canCastle[move.color] = false;
+        }
+
+        if ((originalRookSquares[move.color + 2] & pieces[6 + move.color]) == 0) { // if queen side...
+            canCastle[move.color + 2] = false;
+        }
+    }
+
+    // if we captured the enemies rook, they can no longer castle
+    if ((toMask & originalRookSquares[enemyColor]) != 0) {
+        canCastle[enemyColor] = false;
+    }
+    if ((toMask & originalRookSquares[enemyColor + 2]) != 0) {
+        canCastle[enemyColor + 2] = false;
     }
 
     // update enpassant bitboards
+    if (move.enpessant) { // enpassant move
+        // pawn was already moved above, just have to get rid of the piece it took
+        if (move.color) { // black
+            pieces[enemyColor] &= ~MaskForPos(enpassantPos + 8);
+        } else { // white
+            pieces[enemyColor] &= ~MaskForPos(enpassantPos - 8);
+        }
+    }
+    enpassantPos = 0;
+
+    if (move.piece == 0 && (abs(move.to - move.from) > 9)) { // pawn push move, need to set enpassant pos
+        if (move.color) { // black
+            enpassantPos = move.to + 8;
+        } else { // white
+            enpassantPos = move.to - 8;
+        }
+    }
+
+    // promotion
+    if (move.promotion != 0) {
+        uint64_t tempMovePromo = move.promotion;
+        int index = _tzcnt_u64(tempMovePromo);
+        pieces[promoPieces[index] + move.color] |= toMask; // add new piece
+        pieces[move.color] &= ~toMask; // remove old pawn
+
+    }
 
     // update black to move
+    blackToMove = enemyColor;
 
     // update all pieces
     updateAllPieces();
@@ -113,6 +181,7 @@ std::ostream& operator << (std::ostream& o, Board& board) {
 
     // white upper, black lower
     char printPiece[] = {'P', 'p', 'N', 'n', 'B', 'b', 'R', 'r', 'Q', 'q', 'K', 'k'};
+    //string printPiece[] = {"\u2659", "\u265F", "\u2658", "\u265E", "\u2657", "\u265D", "\u2656", "\u265C", "\u2655", "\u265B", "\u2654", "\u265A"};
 
     o << "    a   b   c   d   e   f   g   h  " << endl;
     o << "  +---+---+---+---+---+---+---+---+" << endl;
