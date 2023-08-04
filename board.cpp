@@ -26,6 +26,8 @@ Board::Board(const Board& copy) { // deep copy contructor
     enpassantPos = copy.enpassantPos;
     empty = copy.empty;
     blackToMove = copy.blackToMove;
+    halfMoves = copy.halfMoves;
+    fullMoves = copy.fullMoves;
 }
 
 uint64_t Board::getPieceSet(int i) {
@@ -70,6 +72,9 @@ void Board::setStartPos() {
     }
 
     blackToMove = false;
+
+    halfMoves = 0;
+    fullMoves = 1;
 }
 
 void Board::updateAllPieces() {
@@ -96,6 +101,18 @@ void Board::makeMove(struct Move move) {
     uint64_t toMask = uint64_t(1) << move.to;
     int enemyColor = move.color == 0 ? 1 : 0;
 
+    halfMoves++;
+
+    // if pawn move, reset halfmoves
+    if (move.piece == 0) {
+        halfMoves = 0;
+    }
+
+    // black move, increment full move clock
+    if (move.color) {
+        fullMoves++;
+    }
+
     // update my pieces
     pieces[move.piece + move.color] &= ~fromMask; // remove old position
     pieces[move.piece + move.color] |= toMask; // add new position
@@ -104,6 +121,7 @@ void Board::makeMove(struct Move move) {
     for (int i = enemyColor; i < 12; i+=2) {
         if ((pieces[i] & toMask) != 0) { // found enemy piece taken
             pieces[i] &= ~toMask;
+            halfMoves = 0; // capture, reset halfMoves
         }
     }
 
@@ -175,6 +193,34 @@ void Board::makeMove(struct Move move) {
 
     // update all pieces
     updateAllPieces();
+}
+
+bool Board::inCheck() {
+    int color = blackToMove ? 1 : 0;
+    int enemyColor = color == 0 ? 1 : 0;
+
+    int kingPos = getPiecePos(10 + color);
+
+    uint64_t opPawns, opKnights, opRQ, opBQ;
+    opPawns = pieces[0 + enemyColor];
+    opKnights = pieces[2 + enemyColor];
+    opRQ = opBQ = pieces[8 + enemyColor];
+    opRQ |= pieces[6 + enemyColor];
+    opBQ |= pieces[4 + enemyColor];
+
+    uint64_t blockers = (~empty) & rookMasks[kingPos];
+    uint64_t rookCompressedBlockers = _pext_u64(blockers, rookMasks[kingPos]);
+
+    blockers = (~empty) & bishopMasks[kingPos];
+    uint64_t bishopCompressedBlockers = _pext_u64(blockers, bishopMasks[kingPos]);
+
+    uint64_t kingAttackers = (pawnAttackMasks[color][kingPos] & opPawns)
+        | (knightMasks[kingPos] & opKnights)
+        | (bishopLegalMoves[kingPos][bishopCompressedBlockers] & opBQ)
+        | (rookLegalMoves[kingPos][rookCompressedBlockers] & opRQ)
+        ;
+
+    return (kingAttackers != 0);
 }
 
 std::ostream& operator << (std::ostream& o, Board& board) {

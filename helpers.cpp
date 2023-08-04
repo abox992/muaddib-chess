@@ -133,14 +133,18 @@ Board generateBoardFromFen(string fen) {
             } case 4: { // halfmove clock
 
                 for (int i = 0; i < int(tokens[field].length()); i++) {
-                    //char currentChar = tokens[field][i];
+                    char currentChar = tokens[field][i];
+
+                    board.halfMoves = int(currentChar - '0');
                 }
 
                 break;
             } case 5: { // full move number
 
                 for (int i = 0; i < int(tokens[field].length()); i++) {
-                    //char currentChar = tokens[field][i];
+                    char currentChar = tokens[field][i];
+
+                    board.fullMoves = int(currentChar - '0');
                 }
 
                 break;

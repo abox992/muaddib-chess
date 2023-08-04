@@ -19,7 +19,7 @@ using namespace std;
 // }
 
 // move list to add moves to, color to gen moves for (0 for white 1 for black), returns movecount
-int generateMoves(Board& board, struct Move moveList[], int color) {
+int generateMoves(uint64_t moveMask, Board& board, struct Move moveList[], int color) {
     int moveCount = 0;
     //int myColorOffset = color == 0 ? 0 : 6;
     int enemyColor = color == 0 ? 1 : 0;
@@ -107,6 +107,8 @@ int generateMoves(Board& board, struct Move moveList[], int color) {
 
                             }
 
+                            pLegalMoves &= moveMask;
+
                             Bitloop(pLegalMoves) {
                                 const int index = SquareOf(pLegalMoves);
 
@@ -161,6 +163,8 @@ int generateMoves(Board& board, struct Move moveList[], int color) {
                                 moveList[moveCount++] = Temp;
                                   
                             }
+
+                            pLegalAttacks &= moveMask;
 
                             Bitloop(pLegalAttacks) {
                                 const int index = SquareOf(pLegalAttacks);
@@ -224,6 +228,8 @@ int generateMoves(Board& board, struct Move moveList[], int color) {
                             //pLegalMoves &= checkMask & (pinHV | pinDiag);
                             pLegalMoves &= checkMask;
 
+                            pLegalMoves &= moveMask;
+
                             Bitloop(pLegalMoves) {
                                 const int index = SquareOf(pLegalMoves);
 
@@ -267,6 +273,8 @@ int generateMoves(Board& board, struct Move moveList[], int color) {
                             if ((currentSquareMask & pinHV) != 0) { // can not move if pinned vert
                                 continue;
                             }
+
+                            pLegalMoves &= moveMask;
 
                             Bitloop(pLegalMoves) {
                                 const int index = SquareOf(pLegalMoves);
@@ -312,6 +320,8 @@ int generateMoves(Board& board, struct Move moveList[], int color) {
                                 continue;
                             }
 
+                            pLegalMoves &= moveMask;
+
                             Bitloop(pLegalMoves) {
                                 const int index = SquareOf(pLegalMoves);
 
@@ -356,6 +366,8 @@ int generateMoves(Board& board, struct Move moveList[], int color) {
                             // printBitboard(pinDiag);
                             // printBitboard(pinHV);
                             pLegalMoves &= checkMask;
+
+                            pLegalMoves &= moveMask;
 
                             Bitloop(pLegalMoves) {
                                 const int index = SquareOf(pLegalMoves);
@@ -409,6 +421,8 @@ int generateMoves(Board& board, struct Move moveList[], int color) {
                                     }
                                 }
                             }
+
+                            pLegalMoves &= moveMask;
 
                             Bitloop(pLegalMoves) {
                                 const int index = SquareOf(pLegalMoves);

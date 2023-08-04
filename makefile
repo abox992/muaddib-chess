@@ -1,5 +1,5 @@
 CC := g++
-CFLAGS := -Wall -g -std=c++20 -march=native -O3 -finline-functions
+CFLAGS := -Wall -g -std=c++20 -march=native -O3 -finline-functions -mavx
 TARGET := chess
 OBJDIR := objects
 

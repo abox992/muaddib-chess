@@ -19,7 +19,7 @@ int moveGenTestRecurrsive(int startDepth, int depth, Board& board) {
     }
 
     struct Move moveList[256];
-    int count = generateMoves(board, moveList, board.blackToMove);
+    int count = generateMoves(ALL_MOVES, board, moveList, board.blackToMove);
     int totalNodes = 0;
     
     for (int i = 0; i < count; i++) {

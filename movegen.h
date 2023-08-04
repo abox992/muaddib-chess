@@ -5,6 +5,9 @@
 #include "board.h"
 #include "move.h"
 
-int generateMoves(Board& board, struct Move moveList[], int color);
+#define ALL_MOVES (~uint64_t(0))
+#define CAPTURES(X) uint64_t(X.allPieces[!X.blackToMove])
+
+int generateMoves(uint64_t moveMask, Board& board, struct Move moveList[], int color);
 
 #endif

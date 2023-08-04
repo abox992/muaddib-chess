@@ -36,6 +36,9 @@ class Board {
         bool     canCastle[4];    // wk, bk, wq, bq
         bool     blackToMove;  // 0 = white 1 = black
 
+        int      halfMoves;
+        int      fullMoves;
+
         Board();
 
         Board(const Board& copy);
@@ -51,6 +54,8 @@ class Board {
         void updateAllPieces();
 
         void makeMove(struct Move move);
+
+        bool inCheck();
 
         friend std::ostream& operator << (std::ostream& o, Board& board);
 };
