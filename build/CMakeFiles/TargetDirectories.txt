@@ -1,6 +1,0 @@
-/home/adam/Desktop/chess/build/CMakeFiles/guiLib.dir
-/home/adam/Desktop/chess/build/CMakeFiles/chess.dir
-/home/adam/Desktop/chess/build/CMakeFiles/edit_cache.dir
-/home/adam/Desktop/chess/build/CMakeFiles/rebuild_cache.dir
-/home/adam/Desktop/chess/build/gui/CMakeFiles/edit_cache.dir
-/home/adam/Desktop/chess/build/gui/CMakeFiles/rebuild_cache.dir
