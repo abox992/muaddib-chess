@@ -1,0 +1,164 @@
+#include <cstdint>
+#include <iostream>
+#include <string>
+#include <sstream>
+#include <vector>
+#include <ctype.h>
+#include <bit>
+#include "board.h"
+#include "zobrist.h"
+
+using namespace std;
+
+void printBitboard(uint64_t bitboard) {
+    for (int rank = 7; rank >= 0; rank--) {
+        for (int file = 0; file < 8; file++) {
+            int i = ((7 - file) + (8 * rank));
+            uint64_t mask = uint64_t(1) << i;
+            int bit = ((bitboard & mask) >> i);
+            cout << bit << " ";
+        }
+
+        cout << endl;
+    }
+}
+
+vector<string> split(const string &s, char delim) {
+    vector<string> elems;
+    stringstream ss(s);
+    string item;
+    while (getline(ss, item, delim)) {
+        elems.push_back(item);
+    }
+    return elems;
+}
+
+Board generateBoardFromFen(string fen) {
+    Board board = Board();
+
+    for(int i = 0; i < 12; i++) { // zero all bitboards
+        board.setPieceSet(i, 0);
+    }
+
+    vector<string> tokens = split(fen, ' ');
+    for (int field = 0; field < int(tokens.size()); field++) {
+        switch (field) {
+            case 0: { // piece positions
+                int currentPos = 63;
+                for (int i = 0; i < int(tokens[field].length()); i++) {
+                    char currentChar = tokens[field][i];
+
+                    if (currentChar == '/') {
+                        continue;
+                    }
+
+                    if (isdigit(currentChar)) {
+                        currentPos -= int(currentChar - '0');
+                        continue;
+                    }
+
+                    // update pieces
+                    char pieceChars[] = {'P', 'p', 'N', 'n', 'B', 'b', 'R', 'r', 'Q', 'q', 'K', 'k'};
+                    for (int j = 0; j < 12; j++) {
+                        if (currentChar == pieceChars[j]) {
+                            board.setPieceSet(j, board.state.pieces[j] | (uint64_t(1) << currentPos));
+                        }
+                    }
+
+                    currentPos--;
+
+                }
+
+                break;
+            } case 1: { // piece to move
+
+                for (int i = 0; i < int(tokens[field].length()); i++) {
+                    char currentChar = tokens[field][i];
+
+                    if (currentChar == 'w') {
+                        board.state.blackToMove = false;
+                    } else {
+                        board.state.blackToMove = true;
+                    }
+                }
+
+                break;
+            } case 2: { // castling
+
+                for (int i = 0; i < 4; i++) {
+                    board.state.canCastle[i] = false;
+                }
+
+                for (int i = 0; i < int(tokens[field].length()); i++) {
+                    char currentChar = tokens[field][i];
+
+                    if (currentChar == '-') {
+                        break;
+                    }
+
+                    if (currentChar == 'K') {
+                        board.state.canCastle[0] = true;
+                    } else if (currentChar == 'Q') {
+                        board.state.canCastle[2] = true;
+                    } else if (currentChar == 'k') {
+                        board.state.canCastle[1] = true;
+                    } else if (currentChar == 'q') {
+                        board.state.canCastle[3] = true;
+                    }
+
+                }
+
+                break;
+            } case 3: { // enpassant
+                int pos = 0;
+                for (int i = 0; i < int(tokens[field].length()); i++) {
+                    char currentChar = tokens[field][i];
+
+                    if (currentChar == '-') {
+                        board.state.enpassantPos = 0;
+                        break;
+                    }
+
+                    if (i == 0) {
+                        pos += 'h' - currentChar;
+                    }
+
+                    if (i == 1) {
+                        pos += 8 * ((currentChar - '0') - 1);
+                        board.state.enpassantPos = pos;
+                    }
+
+                }
+
+                break;
+            } case 4: { // halfmove clock
+
+                for (int i = 0; i < int(tokens[field].length()); i++) {
+                    char currentChar = tokens[field][i];
+
+                    board.state.halfMoves = int(currentChar - '0');
+                }
+
+                break;
+            } case 5: { // full move number
+
+                for (int i = 0; i < int(tokens[field].length()); i++) {
+                    char currentChar = tokens[field][i];
+
+                    board.state.fullMoves = int(currentChar - '0');
+                }
+
+                break;
+            }
+            
+        }
+    }
+
+board.updateAllPieces();
+
+board.highestRepeat = 1;
+board.seenPositions.push_back(zhash(board));
+
+return board;
+
+}
