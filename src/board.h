@@ -6,14 +6,6 @@
 #include "move.h"
 #include <vector>
 
-struct BoardFlags {
-    const bool wCastleL;
-
-    const bool blackToMove;
-
-    constexpr BoardFlags(bool a, bool b) : wCastleL(a), blackToMove(b) {}
-};
-
 struct BoardState {
     // 0 = pawns, 2 = knights, 4 = bishops, 6 = rooks, 8 = queens, 10 = kings
     uint64_t pieces[12];
@@ -34,6 +26,12 @@ struct BoardState {
 
     int      halfMoves;
     int      fullMoves;
+
+    BoardState* prevState;
+
+    BoardState() = default;
+
+    //void operator=(const BoardState&);
 };
 
 struct Board {

@@ -5,10 +5,22 @@
 #include "constants.h"
 #include "bit_manip.h"
 #include "zobrist.h"
+#include "check_pin_masks.h"
 
 #include <cstring>
 
 using namespace std;
+
+// void BoardState::operator=(const BoardState& other) {
+//     std::memcpy(this->pieces, other.pieces, sizeof(uint64_t) * (end(this->pieces)-begin(this->pieces)));
+//     std::memcpy(this->pieces, other.allPieces, sizeof(uint64_t) * (end(this->allPieces)-begin(this->allPieces)));
+//     std::memcpy(this->pieces, other.canCastle, sizeof(bool) * (end(this->canCastle)-begin(this->canCastle)));
+//     this->enpassantPos = other.enpassantPos;
+//     this->empty = other.empty;
+//     this->blackToMove = other.blackToMove;
+//     this->halfMoves = other.halfMoves;
+//     this->fullMoves = other.fullMoves;
+// }
 
 Board::Board() {
     setStartPos();
@@ -98,25 +110,34 @@ void Board::makeMove(const Move& move) {
     stateHistory.push_back(prevState);
 
     // make the move (update bitboards) - normal moves
-    uint64_t fromMask = uint64_t(1) << move.from;
-    uint64_t toMask = uint64_t(1) << move.to;
-    int enemyColor = move.color == 0 ? 1 : 0;
+    uint64_t fromMask = uint64_t(1) << move.from();
+    uint64_t toMask = uint64_t(1) << move.to();
+
+    const Color color = this->state.allPieces[Color::WHITE] & fromMask ? Color::WHITE : Color::BLACK;
+    const Color enemyColor = static_cast<Color>(!color);
+
+    Piece piece;
+    for (int i = 0; i < 12; i += 2) {
+        if (this->state.pieces[i + color] & fromMask) {
+            piece = static_cast<Piece>(i);
+        }
+    }
 
     this->state.halfMoves++;
 
     // if pawn move, reset halfmoves
-    if (move.piece == Piece::PAWNS) {
+    if (piece == Piece::PAWNS) {
         this->state.halfMoves = 0;
     }
 
     // black move, increment full move clock
-    if (move.color) {
+    if (color) {
         this->state.fullMoves++;
     }
 
     // update my pieces
-    this->state.pieces[move.piece + move.color] &= ~fromMask; // remove old position
-    this->state.pieces[move.piece + move.color] |= toMask; // add new position
+    this->state.pieces[piece + color] &= ~fromMask; // remove old position
+    this->state.pieces[piece + color] |= toMask; // add new position
 
     // update opponent pieces
     for (int i = enemyColor; i < 12; i+=2) {
@@ -131,29 +152,41 @@ void Board::makeMove(const Move& move) {
     }
 
     // update castle bitboards
-    if (move.castle != 0) {
-        uint64_t tempMoveCastle = move.castle;
-        int pos = squareOf(tempMoveCastle); // note castle is 0 after this is called
-        this->state.pieces[Piece::KINGS + move.color] = castleSquares[pos]; // update king pos
-        this->state.pieces[Piece::ROOKS + move.color] |= castleRookSquares[pos]; // add new rook pos
-        this->state.pieces[Piece::ROOKS + move.color] &= ~originalRookSquares[pos]; // remove old rook pos
+    if (move.moveType() == MoveType::CASTLE) {
+        //uint64_t tempMoveCastle = move.castle;
+        //int pos = squareOf(tempMoveCastle);
 
-        this->state.canCastle[move.color] = false;
-        this->state.canCastle[move.color + 2] = false;
-    }
-
-    if (move.piece == Piece::KINGS) { // king move, can no longer castle
-        this->state.canCastle[move.color] = false;
-        this->state.canCastle[move.color + 2] = false;
-    }
-
-    if (move.piece == Piece::ROOKS) { // rook move, can no longer castle on that side
-        if ((originalRookSquares[move.color] & this->state.pieces[Piece::ROOKS + move.color]) == 0) { // if king side rook not on original square
-            this->state.canCastle[move.color] = false;
+        uint64_t castleSide = toMask & this->state.pieces[Piece::ROOKS + color]; // bit mask for rook taken
+        assert(castleSide != 0);
+        int pos = std::countr_zero(castleSide);
+        if (pos == 56) {
+            pos = 1;
+        } else if (pos == 7) {
+            pos = 2;
+        } else if (pos == 63) {
+            pos = 3;
         }
 
-        if ((originalRookSquares[move.color + 2] & this->state.pieces[Piece::ROOKS + move.color]) == 0) { // if queen side...
-            this->state.canCastle[move.color + 2] = false;
+        this->state.pieces[Piece::KINGS + color] = castleSquares[pos]; // update king pos
+        this->state.pieces[Piece::ROOKS + color] |= castleRookSquares[pos]; // add new rook pos
+        this->state.pieces[Piece::ROOKS + color] &= ~originalRookSquares[pos]; // remove old rook pos
+
+        this->state.canCastle[color] = false;
+        this->state.canCastle[color + 2] = false;
+    }
+
+    if (piece == Piece::KINGS) { // king move, can no longer castle
+        this->state.canCastle[color] = false;
+        this->state.canCastle[color + 2] = false;
+    }
+
+    if (piece == Piece::ROOKS) { // rook move, can no longer castle on that side
+        if ((originalRookSquares[color] & this->state.pieces[Piece::ROOKS + color]) == 0) { // if king side rook not on original square
+            this->state.canCastle[color] = false;
+        }
+
+        if ((originalRookSquares[color + 2] & this->state.pieces[Piece::ROOKS + color]) == 0) { // if queen side...
+            this->state.canCastle[color + 2] = false;
         }
     }
 
@@ -166,9 +199,9 @@ void Board::makeMove(const Move& move) {
     }
 
     // update enpassant bitboards
-    if (move.enpessant != 0) { // enpassant move
+    if (move.moveType() == MoveType::EN_PASSANT) { // enpassant move
         // pawn was already moved above, just have to get rid of the piece it took
-        if (move.color == Color::BLACK) { // black
+        if (color == Color::BLACK) { // black
             this->state.pieces[enemyColor] &= ~maskForPos(this->state.enpassantPos + 8);
         } else { // white
             this->state.pieces[enemyColor] &= ~maskForPos(this->state.enpassantPos - 8);
@@ -176,20 +209,20 @@ void Board::makeMove(const Move& move) {
     }
     this->state.enpassantPos = 0;
 
-    if (move.piece == 0 && (abs(move.to - move.from) > 9)) { // pawn push move, need to set enpassant pos
-        if (move.color) { // black
-            this->state.enpassantPos = move.to + 8;
+    if (piece == 0 && (abs(move.to() - move.from()) > 9)) { // pawn push move, need to set enpassant pos
+        if (color) { // black
+            this->state.enpassantPos = move.to() + 8;
         } else { // white
-            this->state.enpassantPos = move.to - 8;
+            this->state.enpassantPos = move.to() - 8;
         }
     }
 
     // promotion
-    if (move.promotion != 0) {
-        uint64_t tempMovePromo = move.promotion;
-        int index = squareOf(tempMovePromo);
-        this->state.pieces[promoPieces[index] + move.color] |= toMask; // add new piece
-        this->state.pieces[move.color] &= ~toMask; // remove old pawn
+    if (move.moveType() == MoveType::PROMOTION) {
+        //uint64_t tempMovePromo = move.promotion;
+        int index = move.promotionPiece();
+        this->state.pieces[promoPieces[index] + color] |= toMask; // add new piece
+        this->state.pieces[color] &= ~toMask; // remove old pawn
 
     }
 
@@ -235,31 +268,33 @@ void Board::unmakeMove() {
 }
 
 bool Board::inCheck() const {
-    int color = this->state.blackToMove ? 1 : 0;
-    int enemyColor = color == 0 ? 1 : 0;
+    // int color = this->state.blackToMove ? 1 : 0;
+    // int enemyColor = color == 0 ? 1 : 0;
 
-    int kingPos = squareOf(this->state.pieces[Piece::KINGS + color]);//getPiecePos(10 + color);
+    // int kingPos = squareOf(this->state.pieces[Piece::KINGS + color]);//getPiecePos(10 + color);
 
-    uint64_t opPawns, opKnights, opRQ, opBQ;
-    opPawns = this->state.pieces[0 + enemyColor];
-    opKnights = this->state.pieces[2 + enemyColor];
-    opRQ = opBQ = this->state.pieces[8 + enemyColor];
-    opRQ |= this->state.pieces[6 + enemyColor];
-    opBQ |= this->state.pieces[4 + enemyColor];
+    // uint64_t opPawns, opKnights, opRQ, opBQ;
+    // opPawns = this->state.pieces[0 + enemyColor];
+    // opKnights = this->state.pieces[2 + enemyColor];
+    // opRQ = opBQ = this->state.pieces[8 + enemyColor];
+    // opRQ |= this->state.pieces[6 + enemyColor];
+    // opBQ |= this->state.pieces[4 + enemyColor];
 
-    uint64_t blockers = (~this->state.empty) & rookMasks[kingPos];
-    uint64_t rookCompressedBlockers = extract_bits(blockers, rookMasks[kingPos]);
+    // uint64_t blockers = (~this->state.empty) & rookMasks[kingPos];
+    // uint64_t rookCompressedBlockers = extract_bits(blockers, rookMasks[kingPos]);
 
-    blockers = (~this->state.empty) & bishopMasks[kingPos];
-    uint64_t bishopCompressedBlockers = extract_bits(blockers, bishopMasks[kingPos]);
+    // blockers = (~this->state.empty) & bishopMasks[kingPos];
+    // uint64_t bishopCompressedBlockers = extract_bits(blockers, bishopMasks[kingPos]);
 
-    uint64_t kingAttackers = (pawnAttackMasks[color][kingPos] & opPawns)
-        | (knightMasks[kingPos] & opKnights)
-        | (bishopLegalMoves[kingPos][bishopCompressedBlockers] & opBQ)
-        | (rookLegalMoves[kingPos][rookCompressedBlockers] & opRQ)
-        ;
+    // uint64_t kingAttackers = (pawnAttackMasks[color][kingPos] & opPawns)
+    //     | (knightMasks[kingPos] & opKnights)
+    //     | (bishopLegalMoves[kingPos][bishopCompressedBlockers] & opBQ)
+    //     | (rookLegalMoves[kingPos][rookCompressedBlockers] & opRQ)
+    //     ;
 
-    return (kingAttackers != 0);
+    // return (kingAttackers != 0);
+
+    return attacksToKing(*this, this->state.blackToMove);
 }
 
 std::ostream& operator<<(std::ostream& o, Board& board) {

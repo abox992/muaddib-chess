@@ -143,37 +143,30 @@ inline void generatePawnMoves(const Board& board, std::vector<Move>& moveList) {
             }
         }
 
-        // if (currentSquare == 36) {
-        //     printBitboard(pinMask);
-        // }
-
         // moves are now all legal, add them to the list
         Bitloop(pLegalMoves) { //for (int index = std::countr_zero(pLegalMoves); pLegalMoves; popRSB(pLegalMoves), index = std::countr_zero(pLegalMoves))
             const int index = squareOf(pLegalMoves);
-            Move temp;
-            temp.from = currentSquare;
-            temp.to = index;
-            temp.color = color;
-            temp.piece = Piece::PAWNS;
+
+            Move curMove = Move::make<MoveType::NORMAL>(currentSquare, index);
 
             if (board.state.enpassantPos > 0 && index == board.state.enpassantPos) {
-                temp.enpessant = true;
+                //temp.enpessant = true;
+
+                curMove = Move::make<MoveType::EN_PASSANT>(currentSquare, index);
             }
 
             // promotion
             if ((index / 8) == 0 || (index / 8) == 7) {
                 for (int i = 0; i < 4; i++) {
-                    Move promo;
-                    promo = temp;
-                    promo.promotion = maskForPos(i);
 
-                    moveList.push_back(promo);
+                    curMove = Move::make<MoveType::PROMOTION>(currentSquare, index, static_cast<PromoPiece>(i));
+                    moveList.push_back(curMove); 
                 }
 
                 continue;
             }
 
-            moveList.push_back(temp);    
+            moveList.push_back(curMove);    
         }
     } // bitloop
 
@@ -229,13 +222,8 @@ inline void generateKnightMoves(const Board& board, std::vector<Move>& moveList)
         Bitloop(pLegalMoves) {
             const int index = squareOf(pLegalMoves);
 
-            struct Move temp;
-            temp.from = currentSquare;
-            temp.to = index;
-            temp.color = color;
-            temp.piece = Piece::KNIGHTS;
-
-            moveList.push_back(temp);
+            Move curMove = Move::make<NORMAL>(currentSquare, index);
+            moveList.push_back(curMove);
         }
     } // bitloop
 }
@@ -294,13 +282,8 @@ inline void generateBishopMoves(const Board& board, std::vector<Move>& moveList)
         Bitloop(pLegalMoves) {
             const int index = squareOf(pLegalMoves);
 
-            struct Move temp;
-            temp.from = currentSquare;
-            temp.to = index;
-            temp.color = color;
-            temp.piece = Piece::BISHOPS;
-
-            moveList.push_back(temp);
+            Move curMove = Move::make<NORMAL>(currentSquare, index);
+            moveList.push_back(curMove);
                 
         }
     } // bitloop
@@ -360,13 +343,8 @@ inline void generateRookMoves(const Board& board, std::vector<Move>& moveList) {
         Bitloop(pLegalMoves) {
             const int index = squareOf(pLegalMoves);
 
-            struct Move temp;
-            temp.from = currentSquare;
-            temp.to = index;
-            temp.color = color;
-            temp.piece = Piece::ROOKS;
-
-            moveList.push_back(temp);     
+            Move curMove = Move::make<NORMAL>(currentSquare, index);
+            moveList.push_back(curMove);
         }
     } // bitloop
 }
@@ -429,18 +407,14 @@ inline void generateQueenMoves(const Board& board, std::vector<Move>& moveList) 
         Bitloop(pLegalMoves) {
             const int index = squareOf(pLegalMoves);
 
-            struct Move temp;
-            temp.from = currentSquare;
-            temp.to = index;
-            temp.color = color;
-            temp.piece = Piece::QUEENS;
-
-            moveList.push_back(temp);
+            Move curMove = Move::make<NORMAL>(currentSquare, index);
+            moveList.push_back(curMove);
                 
         }
     } // bitloop
 }
 
+// note: castles are encoded as capturing our own rook
 template<MoveFilter moveFilter, Color color>
 inline void generateKingMoves(const Board& board, std::vector<Move>& moveList) {
 
@@ -476,7 +450,7 @@ inline void generateKingMoves(const Board& board, std::vector<Move>& moveList) {
         if (board.state.canCastle[color]) { // king side
             if ((~board.state.empty & castleMasks[color]) == 0) {
                 if (attacksOnSquare<color>(board, currentSquare - 1) == 0) { // cannot pass through check
-                    pLegalMoves |= castleSquares[color];
+                    pLegalMoves |= originalRookSquares[color]; // we encode as taking rook on king side
                 }
             }
         }
@@ -484,7 +458,7 @@ inline void generateKingMoves(const Board& board, std::vector<Move>& moveList) {
         if (board.state.canCastle[color + 2]) { // queen side
             if ((~board.state.empty & castleMasks[color + 2]) == 0) {
                 if (attacksOnSquare<color>(board, currentSquare + 1) == 0) { // cannot pass through check
-                    pLegalMoves |= castleSquares[color + 2];
+                    pLegalMoves |= originalRookSquares[color + 2]; // we encode as taking rook on queen side
                 }
             }
         }
@@ -493,35 +467,32 @@ inline void generateKingMoves(const Board& board, std::vector<Move>& moveList) {
     pLegalMoves &= moveTypeMask;
 
     Bitloop(pLegalMoves) {
-        const int index = squareOf(pLegalMoves);
+        int index = squareOf(pLegalMoves);
+
+        Move curMove = Move::make<NORMAL>(currentSquare, index);
+
+        if (maskForPos(index) & board.state.pieces[Piece::ROOKS + color]) { // taking our own rook -> castle move
+            curMove = Move::make<CASTLE>(currentSquare, index);
+            //std::cout << "made castle move" << std::endl;
+
+            int pos = std::countr_zero(maskForPos(index) & board.state.pieces[Piece::ROOKS + color]);
+            if (pos == 56) {
+                pos = 1;
+            } else if (pos == 7) {
+                pos = 2;
+            } else if (pos == 63) {
+                pos = 3;
+            }
+
+            index = std::countr_zero(castleSquares[pos]);
+        }
 
         // filter out moves that leave the king in check
         if (attacksOnSquareIgnoreKing(board, color, index) != 0) {
             continue;
         }
 
-        struct Move temp;
-        temp.from = currentSquare;
-        temp.to = index;
-        temp.color = color;
-        temp.piece = Piece::KINGS;
-
-        int currentY = kingPos / 8;
-        int currentX = kingPos % 8;
-        int newY = index / 8;
-        int newX = index % 8;
-
-        int maxDif = std::max(std::abs(currentX - newX), std::abs(currentY - newY));
-
-        if (maxDif > 1) {
-            if ((maskForPos(index) & castleSquares[color]) != 0) {
-                temp.castle = maskForPos(color);
-            } else if ((maskForPos(index) & castleSquares[color + 2]) != 0) {
-                temp.castle = maskForPos(color + 2);
-            }
-        }
-
-        moveList.push_back(temp);
+        moveList.push_back(curMove);
             
     }
 }
