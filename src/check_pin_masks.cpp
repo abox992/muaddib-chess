@@ -4,8 +4,8 @@
 #include "bit_manip.h"
 #include "constants.h"
 #include <tuple>
-
-using namespace std;
+#include <cassert>
+#include <iostream>
 
 // U64 CBoard::attacksToKing(enumSquare squareOfKing, enumColor colorOfKing) {
 //    U64 opPawns, opKnights, opRQ, opBQ;
@@ -129,46 +129,21 @@ uint64_t generateCheckMask(const Board& board, int color) {
     return checkMask;
 }
 
-uint64_t generatePinMaskHV(const Board& board, int color) {
+uint64_t generateKingCheckMask(const Board& board, int color) {
 
     int kingPos = squareOf(board.state.pieces[Piece::KINGS + color]);//board.getPiecePos(10 + color);
 
-    uint64_t kingAttackers = attacksToKingXray(board, color);
-
-    // // mask should be all 1s if nothing is pinned
-    // if (kingAttackers == 0) {
-    //     return ~kingAttackers;
-    // }
+    uint64_t kingAttackers = attacksToKing(board, color);
 
     uint64_t blockersCompressed = extract_bits(kingAttackers, rookMasks[kingPos]);
-    uint64_t pinMaskHV = checkMasksHV[kingPos][blockersCompressed];
+    uint64_t checkMask = kingCheckMasksHV[kingPos][blockersCompressed];
 
-    // if (std::popcount((board.state.allPieces[color] & (~maskForPos(kingPos))) & pinMaskHV) > 1) {
-    //     pinMaskHV = 0;
-    // }
+    blockersCompressed = extract_bits(kingAttackers, bishopMasks[kingPos]);
+    checkMask |= kingCheckMasksDiag[kingPos][blockersCompressed];
 
-    return pinMaskHV;
-}
+    checkMask |= kingAttackers; // make sure we include knights
 
-uint64_t generatePinMaskDiag(const Board& board, int color) {
-
-    int kingPos = squareOf(board.state.pieces[Piece::KINGS + color]);//board.getPiecePos(10 + color);
-
-    uint64_t kingAttackers = attacksToKingXray(board, color);
-
-    // // mask should be all 1s if nothing is pinned
-    // if (kingAttackers == 0) {
-    //     return ~kingAttackers;
-    // }
-
-    uint64_t blockersCompressed = extract_bits(kingAttackers, bishopMasks[kingPos]);
-    uint64_t pinMaskDiag = checkMasksDiag[kingPos][blockersCompressed];
-
-    // if (std::popcount(board.state.allPieces[color] & ~maskForPos(kingPos) & pinMaskDiag) > 1) {
-    //     pinMaskDiag = 0;
-    // }
-
-    return pinMaskDiag;
+    return checkMask;
 }
 
 uint64_t generatePinMask(const Board& board, int color) {

@@ -8,7 +8,6 @@
 
 template <Color color>
 uint64_t attacksOnSquare(const Board& board, int pos) {
-    //int enemyOffset = color == 0 ? 0 : 6;
     constexpr Color enemyColor = static_cast<Color>(!color);
 
     uint64_t opPawns, opKnights, opRQ, opBQ, opKing;
@@ -40,10 +39,12 @@ uint64_t attacksOnSquareIgnoreKing(const Board& board, int color, int pos);
 uint64_t attacksToKing(const Board& board, int color);
 uint64_t attacksToKingXray(const Board& board, int color);
 
-// ex input white = 0 -> needs to check what black pieces attack white
+// path from all attacks to king, including the attacking piece (note knights do not have a path as they cannot be blocked)
 uint64_t generateCheckMask(const Board& board, int color);
-uint64_t generatePinMaskHV(const Board& board, int color);
-uint64_t generatePinMaskDiag(const Board& board, int color);
+
+uint64_t generateKingCheckMask(const Board& board, int color);
+
+// path from all attacks to king, including the attacking piece *AFTER REMOVING FRIENDLY PIECES - XRAY* (note knights do not have a path as they cannot be blocked)
 uint64_t generatePinMask(const Board& board, int color);
 
 #endif

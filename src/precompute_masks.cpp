@@ -21,6 +21,9 @@ uint64_t bishopLegalMoves[64][16384];
 uint64_t checkMasksHV[64][16384];
 uint64_t checkMasksDiag[64][16384];
 
+uint64_t kingCheckMasksHV[64][16384];
+uint64_t kingCheckMasksDiag[64][16384];
+
 uint64_t castleMasks[4];
 uint64_t castleSquares[4];
 uint64_t castleRookSquares[4];
@@ -29,7 +32,7 @@ uint64_t originalRookSquares[4];
 uint64_t rowMasks[64];
 uint64_t colMasks[64];
 
-// up, down, left, right, tl, tr, bl, br
+// up, down, left, right, tl, br, tr, bl
 uint64_t directionMasks[8][64];
 
 int promoPieces[4] = {2, 4, 6, 8};
@@ -406,6 +409,119 @@ void initCheckMaskTable() {
     }
 }
 
+void initKingCheckMaskTable() {
+    // for each square
+    for (int currentSquare = 0; currentSquare < 64; currentSquare++) {
+
+        // for each possible attack combination
+        for (int i = 0; i < 16384; i++) {
+            uint64_t blockMask = 0x0;
+
+            uint64_t tempRookMask = rookMasks[currentSquare];
+            int compressed = i;
+            int count = 0;
+            Bitloop(tempRookMask) {
+                const int index = squareOf(tempRookMask);
+
+                blockMask |= (uint64_t((compressed >> count) & 1) << index);
+                count++;
+                    
+            }
+
+            uint64_t checkMaskHV = rookMasks[currentSquare];
+            int directions[] = {8, 1, -1, -8};
+            for (int offset : directions) {
+
+                uint64_t directionMask = 0;
+                bool hitBlocker = false;
+                int index = currentSquare + offset;
+                int count = 0; // do it a max of 7 times so we dont wrap
+                while (index < 64 && index > -1 && count < 7) {
+                    // if weve already hit a blocker, set bit to 0
+                    if (hitBlocker) {
+                        checkMaskHV &= ~maskForPos(index);
+                    } else if ((blockMask & maskForPos(index)) != 0) { // if current square is a blocker, flag
+                        hitBlocker = true;
+                    }
+
+                    directionMask |= maskForPos(index);
+                    index += offset;
+                    count++;
+                }
+
+            }
+
+            for (int i = 0; i < 4; i += 2) {
+                uint64_t axis = directionMasks[i][currentSquare] | directionMasks[i + 1][currentSquare];
+                if ((axis & blockMask) == 0) {
+                    checkMaskHV &= ~axis;
+                }
+            }
+
+            kingCheckMasksHV[currentSquare][i] = checkMaskHV;
+
+        }
+
+    }
+
+    // for each square
+    for (int currentSquare = 0; currentSquare < 64; currentSquare++) {
+
+        // for each possible block combination
+        for (int i = 0; i < 16384; i++) {
+
+            // uncompress bits, create the blockers mask
+            uint64_t blockMask = 0x0;
+
+            uint64_t tempBishopMask = bishopMasks[currentSquare];
+            int compressed = i;
+            int count = 0;
+            Bitloop(tempBishopMask) {
+                const int index = squareOf(tempBishopMask);
+
+                blockMask |= (uint64_t((compressed >> count) & 1) << index);
+                count++;
+                    
+            }
+
+            //rookLegalMoves[currentSquare][i] = blockMask;
+            uint64_t checkMaskDiag = bishopMasks[currentSquare];
+            int directions[] = {9, 7, -7, -9};
+            for (int offset : directions) {
+
+                uint64_t directionMask = 0;
+                bool hitBlocker = false;
+                int index = currentSquare + offset;
+                int count = 0; // do it a max of 7 times so we dont wrap
+                while (index < 64 && index > -1 && count < 7) {
+                    // if weve already hit a blocker, set bit to 0
+                    if (hitBlocker) {
+                        checkMaskDiag &= ~maskForPos(index);
+                    } else if ((blockMask & maskForPos(index)) != 0) { // if current square is a blocker, flag
+                        hitBlocker = true;
+                    }
+
+                    directionMask |= maskForPos(index);
+                    index += offset;
+                    count++;
+                }
+
+            }
+
+            for (int i = 4; i < 8; i += 2) {
+                uint64_t axis = directionMasks[i][currentSquare] | directionMasks[i + 1][currentSquare];
+                if ((axis & blockMask) == 0) {
+                    checkMaskDiag &= ~axis;
+                }
+            }
+
+            kingCheckMasksDiag[currentSquare][i] = checkMaskDiag;
+
+        }
+
+    }
+}
+
 void initBishopMovesTable() {
     // for each square
     for (int currentSquare = 0; currentSquare < 64; currentSquare++) {
@@ -509,7 +625,7 @@ void initRowColMasks() {
     *  1  0 -1
     * -7 -8 -9
     */
-    int directions[] = {8, -8, 1, -1, 9, 7, -7, -9};
+    int directions[] = {8, -8, 1, -1, 9, -9, 7, -7};
     for (int i = 0; i < 64; i++) {
         for (int j = 0; j < 8; j++) {
             uint64_t mask = 0x0;
@@ -551,4 +667,5 @@ void initMasks() {
     initRowColMasks();
 
     initCheckMaskTable();
+    initKingCheckMaskTable();
 }

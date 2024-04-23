@@ -11,8 +11,6 @@
 
 #include <bit>
 
-int moveGenTest(int depth, Board& board);
-
 #define MAX_DEPTH 6
 
 int main() {
@@ -20,25 +18,21 @@ int main() {
     board.setStartPos();
     initMasks();
 
-    //board = generateBoardFromFen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
-    board = generateBoardFromFen("3r4/4p3/8/1PpP1P2/3K4/5k2/8/8 w - c6 0 1");
-    std::cout << board << std::endl;
-
-    uint64_t check = generateCheckMask(board, Color::WHITE);
-    printBitboard(check);
-    std::cout << std::endl;
-
-    //struct Move moveList[256];
     std::vector<Move> moveList;
     moveList.reserve(256);
 
-    if (board.state.blackToMove) {
-        generateMoves<MoveFilter::ALL, Color::BLACK>(board, moveList);
-    } else {
-        generateMoves<MoveFilter::ALL, Color::WHITE>(board, moveList);
-    }
+    // if (board.state.blackToMove) {
+    //     generateMoves<MoveFilter::ALL, Color::BLACK>(board, moveList);
+    // } else {
+    //     generateMoves<MoveFilter::ALL, Color::WHITE>(board, moveList);
+    // }
 
-    board = generateBoardFromFen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+
+    // 3r4/2p1p3/8/1P1P1P2/3K4/5k2/8/8 b - - 0 1
+    // c7c6: 3r4/4p3/2p5/1P1P1P2/3K4/5k2/8/8 w - - 0 1
+    // b5b6: 3r4/4p3/1Pp5/3P1P2/3K4/5k2/8/8 b - - 0 1
+    // f3g3: 3r4/4p3/1Pp5/3P1P2/3K4/6k1/8/8 w - - 0 1
+    board = generateBoardFromFen("3r4/4p3/1Pp5/3P1P2/3K4/6k1/8/8 w - - 0 1");
     int total = moveGenTest(1, board);
     std::cout << total << std::endl;
     runTests();

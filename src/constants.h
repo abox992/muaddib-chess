@@ -33,6 +33,6 @@ enum Color {
     WHITE, BLACK
 };
 
-enum Direction {UP, DOWN, LEFT, RIGHT, TOP_LEFT, TOP_RIGHT, BOTTOM_LEFT, BOTTOM_RIGHT};
+enum Direction {UP, DOWN, LEFT, RIGHT, TOP_LEFT, BOTTOM_RIGHT, TOP_RIGHT, BOTTOM_LEFT};
 
 #endif

@@ -11,7 +11,7 @@ set(EXEC chess)
 set(CMAKE_CXX_STANDARD 20)
 
 # flags
-set(CMAKE_CXX_FLAGS "-Wall -O3 -march=native")
+set(CMAKE_CXX_FLAGS "-Wall -O3 -march=native -g")
 
 # add gui files
 add_library(guiLib)

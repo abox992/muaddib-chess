@@ -1,5 +1,5 @@
-#ifndef MOVE
-#define MOVE
+#ifndef MOVE_H
+#define MOVE_H
 
 #include <iostream>
 #include "board.h"

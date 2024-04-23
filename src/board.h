@@ -55,7 +55,7 @@ struct Board {
 
         void updateAllPieces();
 
-        void makeMove(const Move& move);
+        void makeMove(const struct Move& move);
         void unmakeMove();
 
         bool inCheck() const;
