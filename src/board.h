@@ -6,7 +6,12 @@
 #include "move.h"
 #include <vector>
 
-struct BoardState {
+class BoardState {
+public:
+    BoardState() = default;
+    BoardState(const BoardState&);
+    BoardState& operator=(const BoardState&) = delete;
+
     // 0 = pawns, 2 = knights, 4 = bishops, 6 = rooks, 8 = queens, 10 = kings
     uint64_t pieces[12];
 
@@ -28,37 +33,31 @@ struct BoardState {
     int      fullMoves;
 
     BoardState* prevState;
-
-    BoardState() = default;
-
-    //void operator=(const BoardState&);
 };
 
-struct Board {
-    public:
-        BoardState state;
+class Board {
+public:
+    BoardState* curState;
+    
+    std::vector<uint64_t> seenPositions;
+    int highestRepeat = 0;
 
-        std::vector<BoardState> stateHistory;
+    Board();
 
-        std::vector<uint64_t> seenPositions;
-        int highestRepeat = 0;
+    Board(const Board& copy);
 
-        Board();
+    void setPieceSet(int i, uint64_t num);
 
-        Board(const Board& copy);
+    void setStartPos();
 
-        void setPieceSet(int i, uint64_t num);
+    void updateAllPieces();
 
-        void setStartPos();
+    void makeMove(const struct Move& move);
+    void unmakeMove();
 
-        void updateAllPieces();
+    bool inCheck() const;
 
-        void makeMove(const struct Move& move);
-        void unmakeMove();
-
-        bool inCheck() const;
-
-        friend std::ostream& operator<<(std::ostream& o, Board& board);
+    friend std::ostream& operator<<(std::ostream& o, Board& board);
 };
 
 #endif

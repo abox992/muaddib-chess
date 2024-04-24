@@ -11,13 +11,13 @@ int evaluation(Board& board) {
 
     int eval = whiteValue - blackValue;
 
-    return board.state.blackToMove ? -eval : eval;
+    return board.curState->blackToMove ? -eval : eval;
 }
 
 int materialValue(const Board& board, const int color) {
     int totalValue = 0;
     for (int i = 0; i < 5; i+=2) {
-        int count = std::popcount(board.state.pieces[i * 2 + color]);
+        int count = std::popcount(board.curState->pieces[i * 2 + color]);
         totalValue += count * pieceValue[i];
     }
 

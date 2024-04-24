@@ -25,13 +25,13 @@ int moveGenTestRecurrsive(int startDepth, int depth, Board& board) {
     std::vector<Move> moveList;
     moveList.reserve(256);
 
-    if (board.state.blackToMove) {
+    if (board.curState->blackToMove) {
         generateMoves<MoveFilter::ALL, Color::BLACK>(board, moveList);
     } else {
         generateMoves<MoveFilter::ALL, Color::WHITE>(board, moveList);
     }
 
-    //generateMoves<MoveType::ALL_MOVES>(board, moveList, static_cast<Color>(board.state.blackToMove));
+    //generateMoves<MoveType::ALL_MOVES>(board, moveList, static_cast<Color>(board.curState->blackToMove));
     int totalNodes = 0;
     
     for (size_t i = 0; i < moveList.size(); i++) {

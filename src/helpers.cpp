@@ -61,7 +61,7 @@ Board generateBoardFromFen(string fen) {
                     char pieceChars[] = {'P', 'p', 'N', 'n', 'B', 'b', 'R', 'r', 'Q', 'q', 'K', 'k'};
                     for (int j = 0; j < 12; j++) {
                         if (currentChar == pieceChars[j]) {
-                            board.setPieceSet(j, board.state.pieces[j] | (uint64_t(1) << currentPos));
+                            board.setPieceSet(j, board.curState->pieces[j] | (uint64_t(1) << currentPos));
                         }
                     }
 
@@ -76,9 +76,9 @@ Board generateBoardFromFen(string fen) {
                     char currentChar = tokens[field][i];
 
                     if (currentChar == 'w') {
-                        board.state.blackToMove = false;
+                        board.curState->blackToMove = false;
                     } else {
-                        board.state.blackToMove = true;
+                        board.curState->blackToMove = true;
                     }
                 }
 
@@ -86,7 +86,7 @@ Board generateBoardFromFen(string fen) {
             } case 2: { // castling
 
                 for (int i = 0; i < 4; i++) {
-                    board.state.canCastle[i] = false;
+                    board.curState->canCastle[i] = false;
                 }
 
                 for (int i = 0; i < int(tokens[field].length()); i++) {
@@ -97,13 +97,13 @@ Board generateBoardFromFen(string fen) {
                     }
 
                     if (currentChar == 'K') {
-                        board.state.canCastle[0] = true;
+                        board.curState->canCastle[0] = true;
                     } else if (currentChar == 'Q') {
-                        board.state.canCastle[2] = true;
+                        board.curState->canCastle[2] = true;
                     } else if (currentChar == 'k') {
-                        board.state.canCastle[1] = true;
+                        board.curState->canCastle[1] = true;
                     } else if (currentChar == 'q') {
-                        board.state.canCastle[3] = true;
+                        board.curState->canCastle[3] = true;
                     }
 
                 }
@@ -115,7 +115,7 @@ Board generateBoardFromFen(string fen) {
                     char currentChar = tokens[field][i];
 
                     if (currentChar == '-') {
-                        board.state.enpassantPos = 0;
+                        board.curState->enpassantPos = 0;
                         break;
                     }
 
@@ -125,7 +125,7 @@ Board generateBoardFromFen(string fen) {
 
                     if (i == 1) {
                         pos += 8 * ((currentChar - '0') - 1);
-                        board.state.enpassantPos = pos;
+                        board.curState->enpassantPos = pos;
                     }
 
                 }
@@ -136,7 +136,7 @@ Board generateBoardFromFen(string fen) {
                 for (int i = 0; i < int(tokens[field].length()); i++) {
                     char currentChar = tokens[field][i];
 
-                    board.state.halfMoves = int(currentChar - '0');
+                    board.curState->halfMoves = int(currentChar - '0');
                 }
 
                 break;
@@ -145,7 +145,7 @@ Board generateBoardFromFen(string fen) {
                 for (int i = 0; i < int(tokens[field].length()); i++) {
                     char currentChar = tokens[field][i];
 
-                    board.state.fullMoves = int(currentChar - '0');
+                    board.curState->fullMoves = int(currentChar - '0');
                 }
 
                 break;

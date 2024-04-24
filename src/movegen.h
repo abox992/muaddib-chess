@@ -47,7 +47,7 @@ inline void generatePawnMoves(const Board& board, std::vector<Move>& moveList) {
 
     const uint64_t checkMask = generateCheckMask(board, color);
     const uint64_t pinMask = generatePinMask(board, color);
-    const int kingPos = std::countr_zero(board.state.pieces[Piece::KINGS + color]);
+    const int kingPos = std::countr_zero(board.curState->pieces[Piece::KINGS + color]);
 
     constexpr Color enemyColor = static_cast<Color>(!color);
 
@@ -56,13 +56,13 @@ inline void generatePawnMoves(const Board& board, std::vector<Move>& moveList) {
         moveTypeMask = ~uint64_t(0);
     }
     else if constexpr (moveFilter == MoveFilter::CAPTURES) {
-        moveTypeMask = board.state.allPieces[enemyColor];
+        moveTypeMask = board.curState->allPieces[enemyColor];
     }
     else if constexpr (moveFilter == MoveFilter::QUIET) {
-        moveTypeMask = board.state.empty;
+        moveTypeMask = board.curState->empty;
     }
 
-    uint64_t bitboard = board.state.pieces[Piece::PAWNS + color];
+    uint64_t bitboard = board.curState->pieces[Piece::PAWNS + color];
     for (int currentSquare = std::countr_zero(bitboard); bitboard; popRSB(bitboard), currentSquare = std::countr_zero(bitboard)) { // bitloop
 
         const uint64_t currentSquareMask = maskForPos(currentSquare);
@@ -70,13 +70,13 @@ inline void generatePawnMoves(const Board& board, std::vector<Move>& moveList) {
         uint64_t initialMoveMask = pawnMoveMasks[color][currentSquare];
         uint64_t initialAttackMask = pawnAttackMasks[color][currentSquare];
 
-        uint64_t pLegalMoves = initialMoveMask & board.state.empty;
-        uint64_t pLegalAttacks = initialAttackMask & board.state.allPieces[enemyColor];
+        uint64_t pLegalMoves = initialMoveMask & board.curState->empty;
+        uint64_t pLegalAttacks = initialAttackMask & board.curState->allPieces[enemyColor];
 
         // make sure were not jumping over a piece on initial double move
         if (std::popcount(initialMoveMask) == 2) {
             constexpr int offset = color == Color::WHITE ? 8 : -8;
-            if ((maskForPos(currentSquare + offset) & ~board.state.empty) != 0) {
+            if ((maskForPos(currentSquare + offset) & ~board.curState->empty) != 0) {
                 pLegalMoves = 0;
             }
         }
@@ -89,25 +89,25 @@ inline void generatePawnMoves(const Board& board, std::vector<Move>& moveList) {
         pLegalMoves &= moveTypeMask;
 
         // en passant is special - have to play it out and check if we are still in check manually, does not get pruned away by masks
-        if (board.state.enpassantPos > 0) {
-            pLegalMoves |= (initialAttackMask & maskForPos(board.state.enpassantPos)); // a
+        if (board.curState->enpassantPos > 0) {
+            pLegalMoves |= (initialAttackMask & maskForPos(board.curState->enpassantPos)); // a
 
             constexpr int offset = color == Color::WHITE ? -8 : 8;
 
             /* Borrowed from attacksToSquare(), we are just augmenting the position initially */
-            uint64_t adjustedPieces = (~board.state.empty);
+            uint64_t adjustedPieces = (~board.curState->empty);
             adjustedPieces &= ~currentSquareMask;
-            adjustedPieces &= ~maskForPos(board.state.enpassantPos + offset);
-            adjustedPieces |= maskForPos(board.state.enpassantPos);
+            adjustedPieces &= ~maskForPos(board.curState->enpassantPos + offset);
+            adjustedPieces |= maskForPos(board.curState->enpassantPos);
 
             uint64_t opPawns, opKnights, opRQ, opBQ;
-            opPawns = board.state.pieces[0 + enemyColor];
-            opKnights = board.state.pieces[2 + enemyColor];
-            opRQ = opBQ = board.state.pieces[8 + enemyColor];
-            opRQ |= board.state.pieces[6 + enemyColor];
-            opBQ |= board.state.pieces[4 + enemyColor];
+            opPawns = board.curState->pieces[0 + enemyColor];
+            opKnights = board.curState->pieces[2 + enemyColor];
+            opRQ = opBQ = board.curState->pieces[8 + enemyColor];
+            opRQ |= board.curState->pieces[6 + enemyColor];
+            opBQ |= board.curState->pieces[4 + enemyColor];
 
-            opPawns &= ~maskForPos(board.state.enpassantPos + offset);
+            opPawns &= ~maskForPos(board.curState->enpassantPos + offset);
 
             uint64_t blockers = adjustedPieces & rookMasks[kingPos];
             uint64_t rookCompressedBlockers = extract_bits(blockers, rookMasks[kingPos]);
@@ -123,7 +123,7 @@ inline void generatePawnMoves(const Board& board, std::vector<Move>& moveList) {
 
             // remove if still in check
             if (kingAttackers != 0) {
-                pLegalMoves &= ~(initialAttackMask & maskForPos(board.state.enpassantPos)); // a
+                pLegalMoves &= ~(initialAttackMask & maskForPos(board.curState->enpassantPos)); // a
             }
 
         }
@@ -136,7 +136,7 @@ inline void generatePawnMoves(const Board& board, std::vector<Move>& moveList) {
                     continue; // not on this pin axis
                 }
 
-                if (std::popcount(axis & board.state.allPieces[color]) == 1) { // more than 1 piece means were not actually pinned
+                if (std::popcount(axis & board.curState->allPieces[color]) == 1) { // more than 1 piece means were not actually pinned
                     pLegalMoves &= axis;
                     break; // can only be pinned on a single axis, stop checking if we find one
                 }
@@ -149,7 +149,7 @@ inline void generatePawnMoves(const Board& board, std::vector<Move>& moveList) {
 
             Move curMove = Move::make<MoveType::NORMAL>(currentSquare, index);
 
-            if (board.state.enpassantPos > 0 && index == board.state.enpassantPos) {
+            if (board.curState->enpassantPos > 0 && index == board.curState->enpassantPos) {
                 //temp.enpessant = true;
 
                 curMove = Move::make<MoveType::EN_PASSANT>(currentSquare, index);
@@ -177,7 +177,7 @@ inline void generateKnightMoves(const Board& board, std::vector<Move>& moveList)
 
     const uint64_t checkMask = generateCheckMask(board, color);
     const uint64_t pinMask = generatePinMask(board, color);
-    const int kingPos = std::countr_zero(board.state.pieces[Piece::KINGS + color]);
+    const int kingPos = std::countr_zero(board.curState->pieces[Piece::KINGS + color]);
 
     constexpr Color enemyColor = static_cast<Color>(!color);
 
@@ -186,18 +186,18 @@ inline void generateKnightMoves(const Board& board, std::vector<Move>& moveList)
         moveTypeMask = ~uint64_t(0);
     }
     else if constexpr (moveFilter == MoveFilter::CAPTURES) {
-        moveTypeMask = board.state.allPieces[enemyColor];
+        moveTypeMask = board.curState->allPieces[enemyColor];
     }
     else if constexpr (moveFilter == MoveFilter::QUIET) {
-        moveTypeMask = board.state.empty;
+        moveTypeMask = board.curState->empty;
     }
 
-    uint64_t bitboard = board.state.pieces[Piece::KNIGHTS + color];
+    uint64_t bitboard = board.curState->pieces[Piece::KNIGHTS + color];
     for (int currentSquare = std::countr_zero(bitboard); bitboard; popRSB(bitboard), currentSquare = std::countr_zero(bitboard)) { // bitloop
 
         const uint64_t currentSquareMask = maskForPos(currentSquare);
 
-        uint64_t pLegalMoves = knightMasks[currentSquare] & (board.state.empty | board.state.allPieces[enemyColor]);
+        uint64_t pLegalMoves = knightMasks[currentSquare] & (board.curState->empty | board.curState->allPieces[enemyColor]);
 
         // adjust for checks
         pLegalMoves &= checkMask;
@@ -212,7 +212,7 @@ inline void generateKnightMoves(const Board& board, std::vector<Move>& moveList)
                     continue; // not on this pin axis
                 }
 
-                if (std::popcount(axis & board.state.allPieces[color]) == 1) { // more than 1 piece means were not actually pinned
+                if (std::popcount(axis & board.curState->allPieces[color]) == 1) { // more than 1 piece means were not actually pinned
                     pLegalMoves &= axis;
                     break; // can only be pinned on a single axis, stop checking if we find one
                 }
@@ -233,7 +233,7 @@ inline void generateBishopMoves(const Board& board, std::vector<Move>& moveList)
 
     const uint64_t checkMask = generateCheckMask(board, color);
     const uint64_t pinMask = generatePinMask(board, color);
-    const int kingPos = std::countr_zero(board.state.pieces[Piece::KINGS + color]);
+    const int kingPos = std::countr_zero(board.curState->pieces[Piece::KINGS + color]);
 
     constexpr Color enemyColor = static_cast<Color>(!color);
 
@@ -242,22 +242,22 @@ inline void generateBishopMoves(const Board& board, std::vector<Move>& moveList)
         moveTypeMask = ~uint64_t(0);
     }
     else if constexpr (moveFilter == MoveFilter::CAPTURES) {
-        moveTypeMask = board.state.allPieces[enemyColor];
+        moveTypeMask = board.curState->allPieces[enemyColor];
     }
     else if constexpr (moveFilter == MoveFilter::QUIET) {
-        moveTypeMask = board.state.empty;
+        moveTypeMask = board.curState->empty;
     }
 
-    uint64_t bitboard = board.state.pieces[Piece::BISHOPS + color];
+    uint64_t bitboard = board.curState->pieces[Piece::BISHOPS + color];
     for (int currentSquare = std::countr_zero(bitboard); bitboard; popRSB(bitboard), currentSquare = std::countr_zero(bitboard)) { // bitloop
 
         const uint64_t currentSquareMask = maskForPos(currentSquare);
 
-        uint64_t blockers = (~board.state.empty) & bishopMasks[currentSquare];
+        uint64_t blockers = (~board.curState->empty) & bishopMasks[currentSquare];
         uint64_t compressedBlockers = extract_bits(blockers, bishopMasks[currentSquare]);
 
         uint64_t pLegalMoves = bishopLegalMoves[currentSquare][compressedBlockers];
-        pLegalMoves &= ~board.state.allPieces[color]; // blockers above assumes we can take any piece, remove captures of our own pieces
+        pLegalMoves &= ~board.curState->allPieces[color]; // blockers above assumes we can take any piece, remove captures of our own pieces
 
         // adjust for checks
         pLegalMoves &= checkMask;
@@ -272,7 +272,7 @@ inline void generateBishopMoves(const Board& board, std::vector<Move>& moveList)
                     continue; // not on this pin axis
                 }
 
-                if (std::popcount(axis & board.state.allPieces[color]) == 1) { // more than 1 piece means were not actually pinned
+                if (std::popcount(axis & board.curState->allPieces[color]) == 1) { // more than 1 piece means were not actually pinned
                     pLegalMoves &= axis;
                     break; // can only be pinned on a single axis, stop checking if we find one
                 }
@@ -294,7 +294,7 @@ inline void generateRookMoves(const Board& board, std::vector<Move>& moveList) {
 
     const uint64_t checkMask = generateCheckMask(board, color);
     const uint64_t pinMask = generatePinMask(board, color);
-    const int kingPos = std::countr_zero(board.state.pieces[Piece::KINGS + color]);
+    const int kingPos = std::countr_zero(board.curState->pieces[Piece::KINGS + color]);
 
     constexpr Color enemyColor = static_cast<Color>(!color);
 
@@ -303,22 +303,22 @@ inline void generateRookMoves(const Board& board, std::vector<Move>& moveList) {
         moveTypeMask = ~uint64_t(0);
     }
     else if constexpr (moveFilter == MoveFilter::CAPTURES) {
-        moveTypeMask = board.state.allPieces[enemyColor];
+        moveTypeMask = board.curState->allPieces[enemyColor];
     }
     else if constexpr (moveFilter == MoveFilter::QUIET) {
-        moveTypeMask = board.state.empty;
+        moveTypeMask = board.curState->empty;
     }
 
-    uint64_t bitboard = board.state.pieces[Piece::ROOKS + color];
+    uint64_t bitboard = board.curState->pieces[Piece::ROOKS + color];
     for (int currentSquare = std::countr_zero(bitboard); bitboard; popRSB(bitboard), currentSquare = std::countr_zero(bitboard)) { // bitloop
 
         const uint64_t currentSquareMask = maskForPos(currentSquare);
 
-        uint64_t blockers = (~board.state.empty) & rookMasks[currentSquare];
+        uint64_t blockers = (~board.curState->empty) & rookMasks[currentSquare];
         uint64_t compressedBlockers = extract_bits(blockers, rookMasks[currentSquare]);
 
         uint64_t pLegalMoves = rookLegalMoves[currentSquare][compressedBlockers];
-        pLegalMoves &= ~board.state.allPieces[color]; // blockers above assumes we can take any piece, remove captures of our own pieces
+        pLegalMoves &= ~board.curState->allPieces[color]; // blockers above assumes we can take any piece, remove captures of our own pieces
 
         // adjust for checks
         pLegalMoves &= checkMask;
@@ -333,7 +333,7 @@ inline void generateRookMoves(const Board& board, std::vector<Move>& moveList) {
                     continue; // not on this pin axis
                 }
 
-                if (std::popcount(axis & board.state.allPieces[color]) == 1) { // more than 1 piece means were not actually pinned
+                if (std::popcount(axis & board.curState->allPieces[color]) == 1) { // more than 1 piece means were not actually pinned
                     pLegalMoves &= axis;
                     break; // can only be pinned on a single axis, stop checking if we find one
                 }
@@ -354,7 +354,7 @@ inline void generateQueenMoves(const Board& board, std::vector<Move>& moveList) 
 
     const uint64_t checkMask = generateCheckMask(board, color);
     const uint64_t pinMask = generatePinMask(board, color);
-    const int kingPos = std::countr_zero(board.state.pieces[Piece::KINGS + color]);
+    const int kingPos = std::countr_zero(board.curState->pieces[Piece::KINGS + color]);
 
     constexpr Color enemyColor = static_cast<Color>(!color);
 
@@ -363,27 +363,27 @@ inline void generateQueenMoves(const Board& board, std::vector<Move>& moveList) 
         moveTypeMask = ~uint64_t(0);
     }
     else if constexpr (moveFilter == MoveFilter::CAPTURES) {
-        moveTypeMask = board.state.allPieces[enemyColor];
+        moveTypeMask = board.curState->allPieces[enemyColor];
     }
     else if constexpr (moveFilter == MoveFilter::QUIET) {
-        moveTypeMask = board.state.empty;
+        moveTypeMask = board.curState->empty;
     }
 
-    uint64_t bitboard = board.state.pieces[Piece::QUEENS + color];
+    uint64_t bitboard = board.curState->pieces[Piece::QUEENS + color];
     for (int currentSquare = std::countr_zero(bitboard); bitboard; popRSB(bitboard), currentSquare = std::countr_zero(bitboard)) { // bitloop
 
         const uint64_t currentSquareMask = maskForPos(currentSquare);
 
-        uint64_t blockers = (~board.state.empty) & rookMasks[currentSquare];
+        uint64_t blockers = (~board.curState->empty) & rookMasks[currentSquare];
         uint64_t rookCompressedBlockers = extract_bits(blockers, rookMasks[currentSquare]);
 
-        blockers = (~board.state.empty) & bishopMasks[currentSquare];
+        blockers = (~board.curState->empty) & bishopMasks[currentSquare];
         uint64_t bishopCompressedBlockers = extract_bits(blockers, bishopMasks[currentSquare]);
 
         uint64_t pLegalMovesHV = rookLegalMoves[currentSquare][rookCompressedBlockers];
         uint64_t pLegalMovesDiag = bishopLegalMoves[currentSquare][bishopCompressedBlockers];
         uint64_t pLegalMoves = pLegalMovesHV | pLegalMovesDiag;
-        pLegalMoves &= ~board.state.allPieces[color]; // blockers above assumes we can take any piece, remove captures of our own pieces
+        pLegalMoves &= ~board.curState->allPieces[color]; // blockers above assumes we can take any piece, remove captures of our own pieces
 
         // adjust from pins pins
         if ((pinMask & currentSquareMask) != 0) { // might be pinned
@@ -393,7 +393,7 @@ inline void generateQueenMoves(const Board& board, std::vector<Move>& moveList) 
                     continue; // not on this pin axis
                 }
 
-                if (std::popcount(axis & board.state.allPieces[color]) == 1) { // more than 1 piece means were not actually pinned
+                if (std::popcount(axis & board.curState->allPieces[color]) == 1) { // more than 1 piece means were not actually pinned
                     pLegalMoves &= axis;
                     break; // can only be pinned on a single axis, stop checking if we find one
                 }
@@ -419,7 +419,7 @@ template<MoveFilter moveFilter, Color color>
 inline void generateKingMoves(const Board& board, std::vector<Move>& moveList) {
 
     const uint64_t checkMask = generateCheckMask(board, color);
-    const int kingPos = std::countr_zero(board.state.pieces[Piece::KINGS + color]);
+    const int kingPos = std::countr_zero(board.curState->pieces[Piece::KINGS + color]);
 
     constexpr Color enemyColor = static_cast<Color>(!color);
 
@@ -428,10 +428,10 @@ inline void generateKingMoves(const Board& board, std::vector<Move>& moveList) {
         moveTypeMask = ~uint64_t(0);
     }
     else if constexpr (moveFilter == MoveFilter::CAPTURES) {
-        moveTypeMask = board.state.allPieces[enemyColor];
+        moveTypeMask = board.curState->allPieces[enemyColor];
     }
     else if constexpr (moveFilter == MoveFilter::QUIET) {
-        moveTypeMask = board.state.empty;
+        moveTypeMask = board.curState->empty;
     }
 
     // note that since we only have 1 king, no need for a bitloop, just need kingPos
@@ -441,22 +441,22 @@ inline void generateKingMoves(const Board& board, std::vector<Move>& moveList) {
     if (kingPos == 64) {
         return;
     }
-    //assert("King bitboard is empty" && board.state.pieces[Piece::KINGS + color] != 0);
+    //assert("King bitboard is empty" && board.curState->pieces[Piece::KINGS + color] != 0);
 
-    uint64_t pLegalMoves = kingMasks[currentSquare] & (board.state.empty | board.state.allPieces[enemyColor]);
+    uint64_t pLegalMoves = kingMasks[currentSquare] & (board.curState->empty | board.curState->allPieces[enemyColor]);
 
     // castles
     if (~checkMask == 0) { // can only castle if not in check
-        if (board.state.canCastle[color]) { // king side
-            if ((~board.state.empty & castleMasks[color]) == 0) {
+        if (board.curState->canCastle[color]) { // king side
+            if ((~board.curState->empty & castleMasks[color]) == 0) {
                 if (attacksOnSquare<color>(board, currentSquare - 1) == 0) { // cannot pass through check
                     pLegalMoves |= originalRookSquares[color]; // we encode as taking rook on king side
                 }
             }
         }
 
-        if (board.state.canCastle[color + 2]) { // queen side
-            if ((~board.state.empty & castleMasks[color + 2]) == 0) {
+        if (board.curState->canCastle[color + 2]) { // queen side
+            if ((~board.curState->empty & castleMasks[color + 2]) == 0) {
                 if (attacksOnSquare<color>(board, currentSquare + 1) == 0) { // cannot pass through check
                     pLegalMoves |= originalRookSquares[color + 2]; // we encode as taking rook on queen side
                 }
@@ -471,11 +471,11 @@ inline void generateKingMoves(const Board& board, std::vector<Move>& moveList) {
 
         Move curMove = Move::make<NORMAL>(currentSquare, index);
 
-        if (maskForPos(index) & board.state.pieces[Piece::ROOKS + color]) { // taking our own rook -> castle move
+        if (maskForPos(index) & board.curState->pieces[Piece::ROOKS + color]) { // taking our own rook -> castle move
             curMove = Move::make<CASTLE>(currentSquare, index);
             //std::cout << "made castle move" << std::endl;
 
-            int pos = std::countr_zero(maskForPos(index) & board.state.pieces[Piece::ROOKS + color]);
+            int pos = std::countr_zero(maskForPos(index) & board.curState->pieces[Piece::ROOKS + color]);
             if (pos == 56) {
                 pos = 1;
             } else if (pos == 7) {

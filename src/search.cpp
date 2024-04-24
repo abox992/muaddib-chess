@@ -37,7 +37,7 @@ int search(Board& board, int startDepth, int depth, int alpha, int beta, bool ca
 
     }
 
-    if (board.state.halfMoves >= 100) {
+    if (board.curState->halfMoves >= 100) {
         return 0; // 50 move rule, stalemate
     }
 
@@ -49,13 +49,13 @@ int search(Board& board, int startDepth, int depth, int alpha, int beta, bool ca
     std::vector<Move> moveList;
     moveList.reserve(256);
 
-    if (board.state.blackToMove) {
+    if (board.curState->blackToMove) {
         generateMoves<MoveFilter::CAPTURES, Color::BLACK>(board, moveList);
     } else {
         generateMoves<MoveFilter::CAPTURES, Color::WHITE>(board, moveList);
     }
 
-    //generateMoves<MoveType::CAPTURES>(board, moveList, static_cast<Color>(board.state.blackToMove));
+    //generateMoves<MoveType::CAPTURES>(board, moveList, static_cast<Color>(board.curState->blackToMove));
     int captureMoveCount = moveList.size();
 
     for (int i = 0; i < captureMoveCount; i++) {
@@ -81,13 +81,13 @@ int search(Board& board, int startDepth, int depth, int alpha, int beta, bool ca
 
     }
 
-    if (board.state.blackToMove) {
+    if (board.curState->blackToMove) {
         generateMoves<MoveFilter::QUIET, Color::BLACK>(board, moveList);
     } else {
         generateMoves<MoveFilter::QUIET, Color::WHITE>(board, moveList);
     }
 
-    //generateMoves<MoveType::QUIET>(board, moveList, static_cast<Color>(board.state.blackToMove));
+    //generateMoves<MoveType::QUIET>(board, moveList, static_cast<Color>(board.curState->blackToMove));
     int quietMoveCount = moveList.size() - captureMoveCount;
     for (int i = 0; i < quietMoveCount; i++) {
 
@@ -139,13 +139,13 @@ int quiesce(Board& board, int alpha, int beta) {
     std::vector<Move> moveList;
     moveList.reserve(256);
 
-    if (board.state.blackToMove) {
+    if (board.curState->blackToMove) {
         generateMoves<MoveFilter::CAPTURES, Color::BLACK>(board, moveList);
     } else {
         generateMoves<MoveFilter::CAPTURES, Color::WHITE>(board, moveList);
     }
 
-    //generateMoves<MoveType::CAPTURES>(board, moveList, board.state.blackToMove);
+    //generateMoves<MoveType::CAPTURES>(board, moveList, board.curState->blackToMove);
 
     for (size_t i = 0; i < moveList.size(); i++) {
 
