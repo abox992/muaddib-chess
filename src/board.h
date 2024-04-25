@@ -5,6 +5,7 @@
 #include <cstdint>
 #include "move.h"
 #include <vector>
+#include <unordered_map>
 
 class BoardState {
 public:
@@ -32,15 +33,18 @@ public:
     int      halfMoves;
     int      fullMoves;
 
+    // helpful for making/unmaking moves
     BoardState* prevState;
+    uint64_t hash;
+    int highestRepeat;
 };
 
 class Board {
 public:
     BoardState* curState;
-    
-    std::vector<uint64_t> seenPositions;
-    int highestRepeat = 0;
+
+    //std::unordered_map<uint64_t, int> seenPositions;
+    //int highestRepeat;
 
     Board();
 

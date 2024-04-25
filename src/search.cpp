@@ -7,15 +7,16 @@
 #include <cstdint>
 #include <climits>
 
-using namespace std;
+#define DEBUG 0
 
 #define INFINITY (INT_MAX)
 #define NEGATIVE_INFINITY (-(INT_MAX))
 
-struct Move bestMove;
+Move bestMove;
 int bestEval = NEGATIVE_INFINITY;
 
 Move getBestMove(Board& board, int depth) {
+    bestMove = Move(0);
     search(board, depth, depth, NEGATIVE_INFINITY, INFINITY, false);
 
     return bestMove;
@@ -41,11 +42,10 @@ int search(Board& board, int startDepth, int depth, int alpha, int beta, bool ca
         return 0; // 50 move rule, stalemate
     }
 
-    if (board.highestRepeat == 3) {
-        return NEGATIVE_INFINITY;
+    if (board.curState->highestRepeat == 3) {
+        return 0;
     }
 
-    //Move moveList[256];
     std::vector<Move> moveList;
     moveList.reserve(256);
 
@@ -55,7 +55,6 @@ int search(Board& board, int startDepth, int depth, int alpha, int beta, bool ca
         generateMoves<MoveFilter::CAPTURES, Color::WHITE>(board, moveList);
     }
 
-    //generateMoves<MoveType::CAPTURES>(board, moveList, static_cast<Color>(board.curState->blackToMove));
     int captureMoveCount = moveList.size();
 
     for (int i = 0; i < captureMoveCount; i++) {
@@ -64,9 +63,11 @@ int search(Board& board, int startDepth, int depth, int alpha, int beta, bool ca
         int eval = -search(board, startDepth, depth - 1, -beta, -alpha, false);
         board.unmakeMove();
 
-        // if (depth == startDepth) {
-        //     cout << i << " " << moveList[i] << " " << eval << endl;
-        // }
+        if (DEBUG) {
+            if (depth == startDepth) {
+                std::cout << i << " " << moveList[i] << " " << eval << std::endl;
+            }
+        }
 
         if (eval >= beta) {
             return beta;
@@ -87,7 +88,6 @@ int search(Board& board, int startDepth, int depth, int alpha, int beta, bool ca
         generateMoves<MoveFilter::QUIET, Color::WHITE>(board, moveList);
     }
 
-    //generateMoves<MoveType::QUIET>(board, moveList, static_cast<Color>(board.curState->blackToMove));
     int quietMoveCount = moveList.size() - captureMoveCount;
     for (int i = 0; i < quietMoveCount; i++) {
 
@@ -95,9 +95,11 @@ int search(Board& board, int startDepth, int depth, int alpha, int beta, bool ca
         int eval = -search(board, startDepth, depth - 1, -beta, -alpha, true);
         board.unmakeMove();
 
-        // if (depth == startDepth) {
-        //     cout << i << " " << moveList[i] << " " << eval << endl;
-        // }
+        if (DEBUG) {
+            if (depth == startDepth) {
+                std::cout << i << " " << moveList[i] << " " << eval << std::endl;
+            }
+        }
 
         if (eval >= beta) {
             return beta;

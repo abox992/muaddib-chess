@@ -156,8 +156,8 @@ Board generateBoardFromFen(string fen) {
 
 board.updateAllPieces();
 
-board.highestRepeat = 1;
-board.seenPositions.push_back(zhash(board));
+board.curState->highestRepeat = 1;
+board.curState->hash = zhash(*board.curState);
 
 return board;
 

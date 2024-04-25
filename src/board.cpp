@@ -22,6 +22,8 @@ BoardState::BoardState(const BoardState& copy) {
     this->fullMoves = copy.fullMoves;
 
     this->prevState = copy.prevState;
+    this->hash = copy.hash;
+    this->highestRepeat = copy.highestRepeat;
 }
 
 Board::Board() {
@@ -34,7 +36,7 @@ Board::Board(const Board& copy) { // deep copy contructor
     // this->curState = &newCopy;
     this->curState = new BoardState(*copy.curState);
 
-    this->seenPositions = copy.seenPositions;
+    //this->seenPositions = copy.seenPositions;
 }
 
 void Board::setPieceSet(int i, uint64_t num) {
@@ -44,6 +46,7 @@ void Board::setPieceSet(int i, uint64_t num) {
 void Board::setStartPos() {
     //BoardState state;
     this->curState = new BoardState();
+    this->curState->prevState = nullptr;
 
     this->curState->pieces[ColorPiece::WPAWNS]   = 0x000000000000FF00;
     this->curState->pieces[ColorPiece::BPAWNS]   = 0x00FF000000000000;
@@ -76,8 +79,8 @@ void Board::setStartPos() {
     this->curState->halfMoves = 0;
     this->curState->fullMoves = 1;
 
-    highestRepeat = 1;
-    seenPositions.push_back(zhash(*this));
+    this->curState->highestRepeat = 1;
+    this->curState->hash = zhash(*this->curState);
 }
 
 void Board::updateAllPieces() {
@@ -228,18 +231,23 @@ void Board::makeMove(const Move& move) {
     // update all pieces
     updateAllPieces();
 
-    uint64_t currentHash = zhash(*this);
-    seenPositions.push_back(currentHash);
+    // finally, set the hash
+    this->curState->hash = zhash(*this->curState);
 
-    int count = 0;
-    for (auto pos : seenPositions) {
-        if (pos == currentHash) {
+    int count = 1;
+    BoardState* temp = this->curState->prevState;
+    while(temp != nullptr) {
+        if (temp->hash == this->curState->hash) {
             count++;
         }
+
+        temp = temp->prevState;
     }
 
-    if (count > highestRepeat) {
-        highestRepeat = count;
+    delete temp;
+
+    if (this->curState->highestRepeat < count) {
+        this->curState->highestRepeat = count;
     }
 }
 
@@ -250,9 +258,6 @@ void Board::unmakeMove() {
     this->curState = this->curState->prevState;
 
     delete temp; // make sure we free the old state from memory
-
-    seenPositions.pop_back();
-    highestRepeat--; // this is dubious i dont trust this
 
 }
 

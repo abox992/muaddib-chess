@@ -5,6 +5,6 @@
 #include <cstdint>
 
 void initZobrist();
-uint64_t zhash(Board& board);
+uint64_t zhash(const BoardState&);
 
 #endif

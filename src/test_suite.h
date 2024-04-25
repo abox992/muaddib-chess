@@ -6,7 +6,7 @@
 #include <tuple>
 #include <vector>
 
-int moveGenTest(int startDepth, Board& board);
+uint64_t moveGenTest(int startDepth, Board& board);
 
 void runTests();
 

@@ -28,16 +28,16 @@ void initZobrist() {
 
 }
 
-uint64_t zhash(Board& board) {
+uint64_t zhash(const BoardState& state) {
     uint64_t hash = 0;
 
-    if (board.curState->blackToMove) {
+    if (state.blackToMove) {
         hash ^= randomBlackToMove;
     }
 
     for (int i = 0; i < 12; i++) {
         
-        uint64_t curBB = board.curState->pieces[i];
+        uint64_t curBB = state.pieces[i];
         Bitloop(curBB) {
              const int sq = squareOf(curBB);
              hash ^= randomTable[sq][i];

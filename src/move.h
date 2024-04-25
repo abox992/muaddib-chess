@@ -55,6 +55,10 @@ public:
         return MoveType((data >> 14) & 3); 
     }
 
+    constexpr bool isNull() const {
+        return data == 0;
+    }
+
     constexpr bool operator==(const Move& m) const { return data == m.data; }
     constexpr bool operator!=(const Move& m) const { return data != m.data; }
 

@@ -10,13 +10,13 @@
 
 using namespace std;
 
-int moveGenTestRecurrsive(int startDepth, int depth, Board& board);
+uint64_t moveGenTestRecurrsive(int startDepth, int depth, Board& board);
 
-int moveGenTest(int startDepth, Board& board) {
+uint64_t moveGenTest(int startDepth, Board& board) {
     return moveGenTestRecurrsive(startDepth, startDepth, board);
 }
 
-int moveGenTestRecurrsive(int startDepth, int depth, Board& board) {
+uint64_t moveGenTestRecurrsive(int startDepth, int depth, Board& board) {
     if (depth == 0) {
         return 1;
     }
@@ -32,12 +32,12 @@ int moveGenTestRecurrsive(int startDepth, int depth, Board& board) {
     }
 
     //generateMoves<MoveType::ALL_MOVES>(board, moveList, static_cast<Color>(board.curState->blackToMove));
-    int totalNodes = 0;
+    uint64_t totalNodes = 0;
     
     for (size_t i = 0; i < moveList.size(); i++) {
         board.makeMove(moveList[i]);
 
-        int subCount = 0;
+        uint64_t subCount = 0;
 
         subCount = moveGenTestRecurrsive(startDepth, depth - 1, board);
 
@@ -58,7 +58,7 @@ int moveGenTestRecurrsive(int startDepth, int depth, Board& board) {
 
 void runTests() {
 
-    std::vector<std::tuple<int, int, std::string>> tests = {
+    std::vector<std::tuple<int, uint64_t, std::string>> tests = {
         std::make_tuple(5, 4865609, "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"),
         std::make_tuple(6, 11030083, "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1"), 
         std::make_tuple(5, 15587335, "r3k2r/pp3pp1/PN1pr1p1/4p1P1/4P3/3P4/P1P2PP1/R3K2R w KQkq - 4 4"),
@@ -100,11 +100,11 @@ void runTests() {
 
     for (const auto &t : tests) {
         int depth = get<0>(t);
-        int expected = get<1>(t);
+        uint64_t expected = get<1>(t);
         string fen = get<2>(t);
 
         Board board = generateBoardFromFen(fen);
-        int output = moveGenTest(depth, board);
+        uint64_t output = moveGenTest(depth, board);
 
         if (output == expected) {
 
