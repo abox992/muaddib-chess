@@ -143,9 +143,6 @@ void Board::makeMove(const Move& move) {
         if ((this->curState->pieces[i] & toMask) != 0) { // found enemy piece taken
             this->curState->pieces[i] &= ~toMask;
             this->curState->halfMoves = 0; // capture, reset halfMoves
-
-            // why is this here? changed to const, doesnt make sense that im editting the Move
-            //move.capturedPiece = i; // save captured piece
             break;
         }
     }
@@ -153,11 +150,11 @@ void Board::makeMove(const Move& move) {
     // update castle bitboards
     if (move.moveType() == MoveType::CASTLE) {
         //uint64_t tempMoveCastle = move.castle;
-        //int pos = squareOf(tempMoveCastle);
+        //int pos = tz_count(tempMoveCastle);
 
         uint64_t castleSide = toMask & this->curState->pieces[Piece::ROOKS + color]; // bit mask for rook taken
         assert(castleSide != 0);
-        int pos = std::countr_zero(castleSide);
+        int pos = move.to(); //tz_count(castleSide);
         if (pos == 56) {
             pos = 1;
         } else if (pos == 7) {
@@ -253,6 +250,10 @@ void Board::makeMove(const Move& move) {
 
 void Board::unmakeMove() {
 
+    if (this->curState == nullptr || this->curState->prevState == nullptr) {
+        return;
+    }
+
     // stateHistory.pop_back();
     BoardState* temp = this->curState;
     this->curState = this->curState->prevState;
@@ -262,7 +263,11 @@ void Board::unmakeMove() {
 }
 
 bool Board::inCheck() const {
-    return attacksToKing(*this, this->curState->blackToMove);
+    if (this->curState->blackToMove) {
+        return attacksToKing<Color::BLACK, false>(*this);
+    }
+
+    return attacksToKing<Color::WHITE, false>(*this);
 }
 
 std::ostream& operator<<(std::ostream& o, Board& board) {

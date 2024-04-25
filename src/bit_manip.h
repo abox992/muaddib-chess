@@ -17,16 +17,15 @@
             return (uint64_t(1) << (x));
         }
 
-        inline int squareOf(uint64_t x) {
+        inline int tz_count(const uint64_t& x) {
             return _tzcnt_u64(x);
+            //return tz_count(x);
         }
 
-        #define Bitloop(X) for(;X; popRSB(X))
-        // Bitloop(bishops) {
-        //      const Square sq = SquareOf(bishops);
-        //      ...
-        // }
-        #define popRSB(X) (X = _blsr_u64(X))
+        inline void pop_lsb(uint64_t& x) {
+            //x = _blsr_u64(x);
+            x &= (x - 1);
+        }
 
     #else
         #include <bit>
@@ -48,8 +47,8 @@
             return (uint64_t(1) << (x));
         }
 
-        inline int squareOf(uint64_t x) {
-            return std::countr_zero(x);
+        inline int tz_count(uint64_t x) {
+            return tz_count(x);
         }
 
         #define Bitloop(X) for(;X; popRSB(X))

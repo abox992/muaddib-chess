@@ -38,8 +38,9 @@ uint64_t zhash(const BoardState& state) {
     for (int i = 0; i < 12; i++) {
         
         uint64_t curBB = state.pieces[i];
-        Bitloop(curBB) {
-             const int sq = squareOf(curBB);
+        while (curBB) {
+             const int sq = tz_count(curBB);
+             pop_lsb(curBB);
              hash ^= randomTable[sq][i];
         }
     }

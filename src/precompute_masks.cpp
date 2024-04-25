@@ -35,6 +35,8 @@ uint64_t colMasks[64];
 // up, down, left, right, tl, br, tr, bl
 uint64_t directionMasks[8][64];
 
+bool promoSquare[64];
+
 int promoPieces[4] = {2, 4, 6, 8};
 
 void initPawnMasks() {
@@ -259,8 +261,9 @@ void initRookMovesTable() {
             uint64_t tempRookMask = rookMasks[currentSquare];
             int compressed = i;
             int count = 0;
-            Bitloop(tempRookMask) {
-                const int index = squareOf(tempRookMask);
+            while (tempRookMask) {
+                const int index = tz_count(tempRookMask);
+                pop_lsb(tempRookMask);
 
                 blockMask |= (uint64_t((compressed >> count) & 1) << index);
                 count++;
@@ -310,8 +313,9 @@ void initCheckMaskTable() {
             uint64_t tempRookMask = rookMasks[currentSquare];
             int compressed = i;
             int count = 0;
-            Bitloop(tempRookMask) {
-                const int index = squareOf(tempRookMask);
+            while (tempRookMask) {
+                const int index = tz_count(tempRookMask);
+                pop_lsb(tempRookMask);
 
                 blockMask |= (uint64_t((compressed >> count) & 1) << index);
                 count++;
@@ -365,8 +369,9 @@ void initCheckMaskTable() {
             uint64_t tempBishopMask = bishopMasks[currentSquare];
             int compressed = i;
             int count = 0;
-            Bitloop(tempBishopMask) {
-                const int index = squareOf(tempBishopMask);
+            while (tempBishopMask) {
+                const int index = tz_count(tempBishopMask);
+                pop_lsb(tempBishopMask);
 
                 blockMask |= (uint64_t((compressed >> count) & 1) << index);
                 count++;
@@ -420,8 +425,9 @@ void initKingCheckMaskTable() {
             uint64_t tempRookMask = rookMasks[currentSquare];
             int compressed = i;
             int count = 0;
-            Bitloop(tempRookMask) {
-                const int index = squareOf(tempRookMask);
+            while (tempRookMask) {
+                const int index = tz_count(tempRookMask);
+                pop_lsb(tempRookMask);
 
                 blockMask |= (uint64_t((compressed >> count) & 1) << index);
                 count++;
@@ -476,8 +482,9 @@ void initKingCheckMaskTable() {
             uint64_t tempBishopMask = bishopMasks[currentSquare];
             int compressed = i;
             int count = 0;
-            Bitloop(tempBishopMask) {
-                const int index = squareOf(tempBishopMask);
+            while (tempBishopMask) {
+                const int index = tz_count(tempBishopMask);
+                pop_lsb(tempBishopMask);
 
                 blockMask |= (uint64_t((compressed >> count) & 1) << index);
                 count++;
@@ -533,8 +540,9 @@ void initBishopMovesTable() {
             uint64_t tempBishopMask = bishopMasks[currentSquare];
             int compressed = i;
             int count = 0;
-            Bitloop(tempBishopMask) {
-                const int index = squareOf(tempBishopMask);
+            while (tempBishopMask) {
+                const int index = tz_count(tempBishopMask);
+                pop_lsb(tempBishopMask);
 
                 blockMask |= (uint64_t((compressed >> count) & 1) << index);
                 count++;
@@ -652,6 +660,16 @@ void initRowColMasks() {
     }
 }
 
+void initPromoSquareTable() {
+    for (int i = 0; i < 64; i++) {
+        if ((i / 8) == 0 || (i / 8) == 7) {
+            promoSquare[i] = true;
+        } else {
+            promoSquare[i] = false;
+        }
+    }
+}
+
 void initMasks() {
     initPawnMasks();
     initKnightMasks();
@@ -668,4 +686,6 @@ void initMasks() {
 
     initCheckMaskTable();
     initKingCheckMaskTable();
+
+    initPromoSquareTable();
 }

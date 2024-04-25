@@ -38,10 +38,10 @@ int main() {
         generateMoves<MoveFilter::ALL, Color::WHITE>(board, moveList);
     }
 
-    benchmarkMoveGen();
-    benchmarkMakeMove();
+    //benchmarkMoveGen();
+    //benchmarkMakeMove();
 
-    //runTests();
+    runTests();
 
     //asciiGameLoop();
 

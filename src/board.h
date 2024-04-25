@@ -43,9 +43,6 @@ class Board {
 public:
     BoardState* curState;
 
-    //std::unordered_map<uint64_t, int> seenPositions;
-    //int highestRepeat;
-
     Board();
 
     Board(const Board& copy);

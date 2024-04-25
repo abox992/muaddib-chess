@@ -31,6 +31,8 @@ extern uint64_t colMasks[64];
 
 extern uint64_t directionMasks[8][64];
 
+extern bool promoSquare[64];
+
 void initPawnMasks();
 void initKnightMasks();
 void initKingMasks();
