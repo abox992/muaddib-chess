@@ -17,7 +17,7 @@ std::ostream& operator<<(std::ostream& o, const Move& move) {
         assert(toFile == 7 || toFile == 0);
 
         if (toFile == 7) { // kingside
-            toFile = 5;
+            toFile = 6;
         } else { // queenside
             toFile = 2;
         }
