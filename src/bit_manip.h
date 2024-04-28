@@ -19,12 +19,11 @@
 
         inline int tz_count(const uint64_t& x) {
             return _tzcnt_u64(x);
-            //return tz_count(x);
         }
 
         inline void pop_lsb(uint64_t& x) {
-            //x = _blsr_u64(x);
-            x &= (x - 1);
+            x = _blsr_u64(x);
+            //x &= (x - 1);
         }
 
     #else
@@ -48,14 +47,14 @@
         }
 
         inline int tz_count(uint64_t x) {
-            return tz_count(x);
+            return std::countr_zero(x);
         }
-
-        #define Bitloop(X) for(;X; popRSB(X))
 
         // disable rightmost set bit
         // https://stackoverflow.com/questions/64605039/how-does-the-formula-x-x-1-works
-        #define popRSB(X) (X &= (X - 1))
+        inline void pop_lsb(uint64_t& x) {
+            x &= (x - 1);
+        }
 
     #endif
 

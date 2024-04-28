@@ -1,5 +1,5 @@
-#ifndef CONSTANTS_H
-#define CONSTANTS_H
+#ifndef TYPES_H
+#define TYPES_H
 
 enum ColorPiece {
     WPAWNS,
@@ -33,6 +33,8 @@ enum Color {
     WHITE, BLACK
 };
 
-enum Direction {UP, DOWN, LEFT, RIGHT, TOP_LEFT, BOTTOM_RIGHT, TOP_RIGHT, BOTTOM_LEFT};
+enum Direction {
+    UP, DOWN, LEFT, RIGHT, TOP_LEFT, BOTTOM_RIGHT, TOP_RIGHT, BOTTOM_LEFT
+};
 
 #endif

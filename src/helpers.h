@@ -11,7 +11,4 @@ void printBitboard(uint64_t bitboard);
 
 std::vector<std::string> split(const std::string &s, char delim);
 
-// https://en.wikipedia.org/wiki/Forsyth%E2%80%93Edwards_Notation
-Board generateBoardFromFen(std::string fen);
-
 #endif

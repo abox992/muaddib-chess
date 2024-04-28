@@ -6,8 +6,6 @@
 #include "helpers.h"
 #include "bit_manip.h"
 
-using namespace std;
-
 uint64_t randomTable[64][12];
 uint64_t randomBlackToMove;
 

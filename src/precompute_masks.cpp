@@ -3,8 +3,6 @@
 #include <cstdint>
 #include "bit_manip.h"
 
-using namespace std;
-
 // 0 for white 1 for black
 uint64_t pawnMoveMasks[2][64];
 uint64_t pawnAttackMasks[2][64];
@@ -21,9 +19,6 @@ uint64_t bishopLegalMoves[64][16384];
 uint64_t checkMasksHV[64][16384];
 uint64_t checkMasksDiag[64][16384];
 
-uint64_t kingCheckMasksHV[64][16384];
-uint64_t kingCheckMasksDiag[64][16384];
-
 uint64_t castleMasks[4];
 uint64_t castleSquares[4];
 uint64_t castleRookSquares[4];
@@ -36,8 +31,6 @@ uint64_t colMasks[64];
 uint64_t directionMasks[8][64];
 
 bool promoSquare[64];
-
-int promoPieces[4] = {2, 4, 6, 8};
 
 void initPawnMasks() {
     // white
@@ -55,7 +48,7 @@ void initPawnMasks() {
             int jumpY = (i + offset) / 8;
             int jumpX = (i + offset) % 8;
 
-            int maxDif = max(abs(currentX - jumpX), abs(currentY - jumpY));
+            int maxDif = std::max(std::abs(currentX - jumpX), std::abs(currentY - jumpY));
 
             if (maxDif == 1) {
                 mask |= (uint64_t(1) << (i + offset));
@@ -77,7 +70,7 @@ void initPawnMasks() {
         int jumpY = (i + offset) / 8;
         int jumpX = (i + offset) % 8;
 
-        int maxDif = max(abs(currentX - jumpX), abs(currentY - jumpY));
+        int maxDif = std::max(std::abs(currentX - jumpX), std::abs(currentY - jumpY));
 
         if (maxDif == 1) {
             mask |= (uint64_t(1) << (i + offset));
@@ -105,7 +98,7 @@ void initPawnMasks() {
             int jumpY = (i - offset) / 8;
             int jumpX = (i - offset) % 8;
 
-            int maxDif = max(abs(currentX - jumpX), abs(currentY - jumpY));
+            int maxDif = std::max(std::abs(currentX - jumpX), std::abs(currentY - jumpY));
 
             if (maxDif == 1) {
                 mask |= (uint64_t(1) << (i - offset));
@@ -127,7 +120,7 @@ void initPawnMasks() {
         int jumpY = (i - offset) / 8;
         int jumpX = (i - offset) % 8;
 
-        int maxDif = max(abs(currentX - jumpX), abs(currentY - jumpY));
+        int maxDif = std::max(std::abs(currentX - jumpX), std::abs(currentY - jumpY));
 
         if (maxDif == 1) {
             mask |= (uint64_t(1) << (i - offset));
@@ -157,7 +150,7 @@ void initKnightMasks() {
             int jumpY = (i + offset) / 8;
             int jumpX = (i + offset) % 8;
 
-            int maxDif = max(abs(currentX - jumpX), abs(currentY - jumpY));
+            int maxDif = std::max(std::abs(currentX - jumpX), std::abs(currentY - jumpY));
 
             if (maxDif == 2) {
                 mask |= (uint64_t(1) << (i + offset));
@@ -183,7 +176,7 @@ void initKingMasks() {
             int jumpY = (i + offset) / 8;
             int jumpX = (i + offset) % 8;
 
-            int maxDif = max(abs(currentX - jumpX), abs(currentY - jumpY));
+            int maxDif = std::max(std::abs(currentX - jumpX), std::abs(currentY - jumpY));
 
             if (maxDif == 1) {
                 mask |= (uint64_t(1) << (i + offset));
@@ -207,7 +200,7 @@ void initBishopMasks() {
                 int prevY = (i + temp - offset) / 8;
                 int prevX = (i + temp - offset) % 8;
 
-                int maxDif = max(abs(currentX - prevX), abs(currentY - prevY));
+                int maxDif = std::max(std::abs(currentX - prevX), std::abs(currentY - prevY));
 
                 if (maxDif != 1) {
                     break;
@@ -235,7 +228,7 @@ void initRookMasks() {
                 int prevY = (i + temp - offset) / 8;
                 int prevX = (i + temp - offset) % 8;
 
-                int maxDif = max(abs(currentX - prevX), abs(currentY - prevY));
+                int maxDif = std::max(std::abs(currentX - prevX), std::abs(currentY - prevY));
 
                 if (maxDif != 1) {
                     break;
@@ -414,120 +407,120 @@ void initCheckMaskTable() {
     }
 }
 
-void initKingCheckMaskTable() {
-    // for each square
-    for (int currentSquare = 0; currentSquare < 64; currentSquare++) {
+// void initKingCheckMaskTable() {
+//     // for each square
+//     for (int currentSquare = 0; currentSquare < 64; currentSquare++) {
 
-        // for each possible attack combination
-        for (int i = 0; i < 16384; i++) {
-            uint64_t blockMask = 0x0;
+//         // for each possible attack combination
+//         for (int i = 0; i < 16384; i++) {
+//             uint64_t blockMask = 0x0;
 
-            uint64_t tempRookMask = rookMasks[currentSquare];
-            int compressed = i;
-            int count = 0;
-            while (tempRookMask) {
-                const int index = tz_count(tempRookMask);
-                pop_lsb(tempRookMask);
+//             uint64_t tempRookMask = rookMasks[currentSquare];
+//             int compressed = i;
+//             int count = 0;
+//             while (tempRookMask) {
+//                 const int index = tz_count(tempRookMask);
+//                 pop_lsb(tempRookMask);
 
-                blockMask |= (uint64_t((compressed >> count) & 1) << index);
-                count++;
+//                 blockMask |= (uint64_t((compressed >> count) & 1) << index);
+//                 count++;
                     
-            }
+//             }
 
-            uint64_t checkMaskHV = rookMasks[currentSquare];
-            int directions[] = {8, 1, -1, -8};
-            for (int offset : directions) {
+//             uint64_t checkMaskHV = rookMasks[currentSquare];
+//             int directions[] = {8, 1, -1, -8};
+//             for (int offset : directions) {
 
-                uint64_t directionMask = 0;
-                bool hitBlocker = false;
-                int index = currentSquare + offset;
-                int count = 0; // do it a max of 7 times so we dont wrap
-                while (index < 64 && index > -1 && count < 7) {
-                    // if weve already hit a blocker, set bit to 0
-                    if (hitBlocker) {
-                        checkMaskHV &= ~maskForPos(index);
-                    } else if ((blockMask & maskForPos(index)) != 0) { // if current square is a blocker, flag
-                        hitBlocker = true;
-                    }
+//                 uint64_t directionMask = 0;
+//                 bool hitBlocker = false;
+//                 int index = currentSquare + offset;
+//                 int count = 0; // do it a max of 7 times so we dont wrap
+//                 while (index < 64 && index > -1 && count < 7) {
+//                     // if weve already hit a blocker, set bit to 0
+//                     if (hitBlocker) {
+//                         checkMaskHV &= ~maskForPos(index);
+//                     } else if ((blockMask & maskForPos(index)) != 0) { // if current square is a blocker, flag
+//                         hitBlocker = true;
+//                     }
 
-                    directionMask |= maskForPos(index);
-                    index += offset;
-                    count++;
-                }
+//                     directionMask |= maskForPos(index);
+//                     index += offset;
+//                     count++;
+//                 }
 
-            }
+//             }
 
-            for (int i = 0; i < 4; i += 2) {
-                uint64_t axis = directionMasks[i][currentSquare] | directionMasks[i + 1][currentSquare];
-                if ((axis & blockMask) == 0) {
-                    checkMaskHV &= ~axis;
-                }
-            }
+//             for (int i = 0; i < 4; i += 2) {
+//                 uint64_t axis = directionMasks[i][currentSquare] | directionMasks[i + 1][currentSquare];
+//                 if ((axis & blockMask) == 0) {
+//                     checkMaskHV &= ~axis;
+//                 }
+//             }
 
-            kingCheckMasksHV[currentSquare][i] = checkMaskHV;
+//             kingCheckMasksHV[currentSquare][i] = checkMaskHV;
 
-        }
+//         }
 
-    }
+//     }
 
-    // for each square
-    for (int currentSquare = 0; currentSquare < 64; currentSquare++) {
+//     // for each square
+//     for (int currentSquare = 0; currentSquare < 64; currentSquare++) {
 
-        // for each possible block combination
-        for (int i = 0; i < 16384; i++) {
+//         // for each possible block combination
+//         for (int i = 0; i < 16384; i++) {
 
-            // uncompress bits, create the blockers mask
-            uint64_t blockMask = 0x0;
+//             // uncompress bits, create the blockers mask
+//             uint64_t blockMask = 0x0;
 
-            uint64_t tempBishopMask = bishopMasks[currentSquare];
-            int compressed = i;
-            int count = 0;
-            while (tempBishopMask) {
-                const int index = tz_count(tempBishopMask);
-                pop_lsb(tempBishopMask);
+//             uint64_t tempBishopMask = bishopMasks[currentSquare];
+//             int compressed = i;
+//             int count = 0;
+//             while (tempBishopMask) {
+//                 const int index = tz_count(tempBishopMask);
+//                 pop_lsb(tempBishopMask);
 
-                blockMask |= (uint64_t((compressed >> count) & 1) << index);
-                count++;
+//                 blockMask |= (uint64_t((compressed >> count) & 1) << index);
+//                 count++;
                     
-            }
+//             }
 
-            //rookLegalMoves[currentSquare][i] = blockMask;
-            uint64_t checkMaskDiag = bishopMasks[currentSquare];
-            int directions[] = {9, 7, -7, -9};
-            for (int offset : directions) {
+//             //rookLegalMoves[currentSquare][i] = blockMask;
+//             uint64_t checkMaskDiag = bishopMasks[currentSquare];
+//             int directions[] = {9, 7, -7, -9};
+//             for (int offset : directions) {
 
-                uint64_t directionMask = 0;
-                bool hitBlocker = false;
-                int index = currentSquare + offset;
-                int count = 0; // do it a max of 7 times so we dont wrap
-                while (index < 64 && index > -1 && count < 7) {
-                    // if weve already hit a blocker, set bit to 0
-                    if (hitBlocker) {
-                        checkMaskDiag &= ~maskForPos(index);
-                    } else if ((blockMask & maskForPos(index)) != 0) { // if current square is a blocker, flag
-                        hitBlocker = true;
-                    }
+//                 uint64_t directionMask = 0;
+//                 bool hitBlocker = false;
+//                 int index = currentSquare + offset;
+//                 int count = 0; // do it a max of 7 times so we dont wrap
+//                 while (index < 64 && index > -1 && count < 7) {
+//                     // if weve already hit a blocker, set bit to 0
+//                     if (hitBlocker) {
+//                         checkMaskDiag &= ~maskForPos(index);
+//                     } else if ((blockMask & maskForPos(index)) != 0) { // if current square is a blocker, flag
+//                         hitBlocker = true;
+//                     }
 
-                    directionMask |= maskForPos(index);
-                    index += offset;
-                    count++;
-                }
+//                     directionMask |= maskForPos(index);
+//                     index += offset;
+//                     count++;
+//                 }
 
-            }
+//             }
 
-            for (int i = 4; i < 8; i += 2) {
-                uint64_t axis = directionMasks[i][currentSquare] | directionMasks[i + 1][currentSquare];
-                if ((axis & blockMask) == 0) {
-                    checkMaskDiag &= ~axis;
-                }
-            }
+//             for (int i = 4; i < 8; i += 2) {
+//                 uint64_t axis = directionMasks[i][currentSquare] | directionMasks[i + 1][currentSquare];
+//                 if ((axis & blockMask) == 0) {
+//                     checkMaskDiag &= ~axis;
+//                 }
+//             }
 
-            kingCheckMasksDiag[currentSquare][i] = checkMaskDiag;
+//             kingCheckMasksDiag[currentSquare][i] = checkMaskDiag;
 
-        }
+//         }
 
-    }
-}
+//     }
+// }
 
 void initBishopMovesTable() {
     // for each square
@@ -645,7 +638,7 @@ void initRowColMasks() {
                 int prevY = (i + temp - directions[j]) / 8;
                 int prevX = (i + temp - directions[j]) % 8;
 
-                int maxDif = max(abs(currentX - prevX), abs(currentY - prevY));
+                int maxDif = std::max(std::abs(currentX - prevX), std::abs(currentY - prevY));
 
                 if (maxDif != 1) {
                     break;
@@ -685,7 +678,7 @@ void initMasks() {
     initRowColMasks();
 
     initCheckMaskTable();
-    initKingCheckMaskTable();
+    //initKingCheckMaskTable();
 
     initPromoSquareTable();
 }

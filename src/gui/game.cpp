@@ -1,6 +1,6 @@
 #include "game.h"
 #include "piece_sprite.h"
-#include "../constants.h"
+#include "../types.h"
 #include <iostream>
 #include <sstream>
 

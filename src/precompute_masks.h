@@ -16,15 +16,10 @@ extern uint64_t bishopLegalMoves[64][16384];
 extern uint64_t checkMasksHV[64][16384];
 extern uint64_t checkMasksDiag[64][16384];
 
-extern uint64_t kingCheckMasksHV[64][16384];
-extern uint64_t kingCheckMasksDiag[64][16384];
-
 extern uint64_t castleMasks[4]; // wk, bk, wq, bq 
 extern uint64_t castleSquares[4]; // wk, bk, wq, bq 
 extern uint64_t castleRookSquares[4]; // wk, bk, wq, bq 
 extern uint64_t originalRookSquares[4]; // wk, bk, wq, bq 
-
-extern int promoPieces[4]; // n,b,r,q pos in pieces array
 
 extern uint64_t rowMasks[64];
 extern uint64_t colMasks[64];

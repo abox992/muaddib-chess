@@ -14,17 +14,17 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_FLAGS "-Wall -O3 -march=native -g")
 
 # add gui files
-add_library(guiLib)
-add_subdirectory(gui)
+#add_library(guiLib)
+#add_subdirectory(gui)
 
 # add files in src dir
 file(GLOB SOURCES "*.cpp")
 
 # compiles the files defined by SOURCES to generante the executable defined by EXEC
-add_executable(${EXEC} ${SOURCES} ${GUI_SOURCES})
+add_executable(${EXEC} ${SOURCES} )#${GUI_SOURCES})
 
 # lib dependencies for SFML
-target_link_libraries(${EXEC} -lsfml-graphics -lsfml-window -lsfml-system -lsfml-audio)
+#target_link_libraries(${EXEC} -lsfml-graphics -lsfml-window -lsfml-system -lsfml-audio)
 
 # link gui library
-target_link_libraries(${EXEC} guiLib)
+#target_link_libraries(${EXEC} guiLib)

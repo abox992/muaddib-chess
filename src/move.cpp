@@ -1,5 +1,5 @@
 #include "move.h"
-#include "constants.h"
+#include "types.h"
 #include "precompute_masks.h"
 #include <cstdint>
 

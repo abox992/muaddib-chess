@@ -9,7 +9,7 @@
 #include "helpers.h"
 #include "check_pin_masks.h"
 #include "bit_manip.h"
-#include "constants.h"
+#include "types.h"
 
 enum MoveFilter {
     ALL,
@@ -32,7 +32,6 @@ void generateMoves(const Board& board, std::vector<Move>& moveList) {
 
     // if king is in double-check, only need to enumerate king moves
     if (attackersCount < 2) {
-
         generatePawnMoves<moveFilter, color>(board, moveList, checkMask, pinMask, kingPos);
         generateKnightMoves<moveFilter, color>(board, moveList, checkMask, pinMask, kingPos);
         generateBishopMoves<moveFilter, color>(board, moveList, checkMask, pinMask, kingPos);
@@ -48,10 +47,6 @@ void generateMoves(const Board& board, std::vector<Move>& moveList) {
 
 template<MoveFilter moveFilter, Color color>
 inline void generatePawnMoves(const Board& board, std::vector<Move>& moveList, const uint64_t& checkMask, const uint64_t& pinMask, const int& kingPos) {
-
-    // const uint64_t checkMask = generateCheckMask<color>(board);
-    // const uint64_t pinMask = generatePinMask<color>(board);
-    // const int kingPos = tz_count(board.curState->pieces[Piece::KINGS + color]);
 
     constexpr Color enemyColor = static_cast<Color>(!color);
 
@@ -94,9 +89,10 @@ inline void generatePawnMoves(const Board& board, std::vector<Move>& moveList, c
         // adjust for move type
         pLegalMoves &= moveTypeMask;
 
+        uint64_t enpassantSquareMask = maskForPos(board.curState->enpassantPos);
         // en passant is special - have to play it out and check if we are still in check manually, does not get pruned away by masks
-        if (board.curState->enpassantPos > 0) {
-            pLegalMoves |= (initialAttackMask & maskForPos(board.curState->enpassantPos)); // a
+        if ((initialAttackMask & enpassantSquareMask) && board.curState->enpassantPos > 0) {
+            pLegalMoves |= (initialAttackMask & enpassantSquareMask); // a
 
             constexpr int offset = color == Color::WHITE ? -8 : 8;
 
@@ -104,7 +100,7 @@ inline void generatePawnMoves(const Board& board, std::vector<Move>& moveList, c
             uint64_t adjustedPieces = (~board.curState->empty);
             adjustedPieces &= ~currentSquareMask;
             adjustedPieces &= ~maskForPos(board.curState->enpassantPos + offset);
-            adjustedPieces |= maskForPos(board.curState->enpassantPos);
+            adjustedPieces |= enpassantSquareMask;
 
             uint64_t opPawns, opKnights, opRQ, opBQ;
             opPawns = board.curState->pieces[0 + enemyColor];
@@ -129,7 +125,7 @@ inline void generatePawnMoves(const Board& board, std::vector<Move>& moveList, c
 
             // remove if still in check
             if (kingAttackers != 0) {
-                pLegalMoves &= ~(initialAttackMask & maskForPos(board.curState->enpassantPos));
+                pLegalMoves &= ~(initialAttackMask & enpassantSquareMask);
             }
 
         }
@@ -185,10 +181,6 @@ inline void generatePawnMoves(const Board& board, std::vector<Move>& moveList, c
 template<MoveFilter moveFilter, Color color>
 inline void generateKnightMoves(const Board& board, std::vector<Move>& moveList, const uint64_t& checkMask, const uint64_t& pinMask, const int& kingPos) {
 
-    // const uint64_t checkMask = generateCheckMask<color>(board);
-    // const uint64_t pinMask = generatePinMask<color>(board);
-    // const int kingPos = tz_count(board.curState->pieces[Piece::KINGS + color]);
-
     constexpr Color enemyColor = static_cast<Color>(!color);
 
     uint64_t moveTypeMask; // we generate all moves, then filter by this mask
@@ -242,10 +234,6 @@ inline void generateKnightMoves(const Board& board, std::vector<Move>& moveList,
 
 template<MoveFilter moveFilter, Color color>
 inline void generateBishopMoves(const Board& board, std::vector<Move>& moveList, const uint64_t& checkMask, const uint64_t& pinMask, const int& kingPos) {
-
-    // const uint64_t checkMask = generateCheckMask<color>(board);
-    // const uint64_t pinMask = generatePinMask<color>(board);
-    // const int kingPos = tz_count(board.curState->pieces[Piece::KINGS + color]);
 
     constexpr Color enemyColor = static_cast<Color>(!color);
 
@@ -307,10 +295,6 @@ inline void generateBishopMoves(const Board& board, std::vector<Move>& moveList,
 template<MoveFilter moveFilter, Color color>
 inline void generateRookMoves(const Board& board, std::vector<Move>& moveList, const uint64_t& checkMask, const uint64_t& pinMask, const int& kingPos) {
 
-    // const uint64_t checkMask = generateCheckMask<color>(board);
-    // const uint64_t pinMask = generatePinMask<color>(board);
-    // const int kingPos = tz_count(board.curState->pieces[Piece::KINGS + color]);
-
     constexpr Color enemyColor = static_cast<Color>(!color);
 
     uint64_t moveTypeMask; // we generate all moves, then filter by this mask
@@ -369,10 +353,6 @@ inline void generateRookMoves(const Board& board, std::vector<Move>& moveList, c
 
 template<MoveFilter moveFilter, Color color>
 inline void generateQueenMoves(const Board& board, std::vector<Move>& moveList, const uint64_t& checkMask, const uint64_t& pinMask, const int& kingPos) {
-
-    // const uint64_t checkMask = generateCheckMask<color>(board);
-    // const uint64_t pinMask = generatePinMask<color>(board);
-    // const int kingPos = tz_count(board.curState->pieces[Piece::KINGS + color]);
 
     constexpr Color enemyColor = static_cast<Color>(!color);
 
@@ -441,6 +421,7 @@ inline void generateKingMoves(const Board& board, std::vector<Move>& moveList, c
 
     //const uint64_t checkMask = generateCheckMask<color>(board);
     //const int kingPos = tz_count(board.curState->pieces[Piece::KINGS + color]);
+    
     
     // not an assert so we can continue to enumerate even if its wrong (for debug)
     //assert(kingPos != 64);

@@ -4,7 +4,7 @@
 #include <cstdint>
 #include <tuple>
 #include "board.h"
-#include "constants.h"
+#include "types.h"
 
 template <Color color, bool ignoreKing>
 uint64_t attacksOnSquare(const Board& board, int pos) {
@@ -103,23 +103,6 @@ uint64_t generateCheckMask(const Board& board) {
 
     blockersCompressed = extract_bits(kingAttackers, bishopMasks[kingPos]);
     checkMask |= checkMasksDiag[kingPos][blockersCompressed];
-
-    checkMask |= kingAttackers; // make sure we include knights
-
-    return checkMask;
-}
-
-template<Color color>
-uint64_t generateKingCheckMask(const Board& board) {
-    int kingPos = tz_count(board.curState->pieces[Piece::KINGS + color]);//board.getPiecePos(10 + color);
-
-    uint64_t kingAttackers = attacksToKing<color, false>(board);
-
-    uint64_t blockersCompressed = extract_bits(kingAttackers, rookMasks[kingPos]);
-    uint64_t checkMask = kingCheckMasksHV[kingPos][blockersCompressed];
-
-    blockersCompressed = extract_bits(kingAttackers, bishopMasks[kingPos]);
-    checkMask |= kingCheckMasksDiag[kingPos][blockersCompressed];
 
     checkMask |= kingAttackers; // make sure we include knights
 

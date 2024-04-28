@@ -1,6 +1,6 @@
 #include "evaluate.h"
 #include "board.h"
-#include "constants.h"
+#include "types.h"
 #include <bit>
 
 const int pieceValue[] = {100, 300, 320, 500, 900}; // pawn, knight, bishop, rook, queen

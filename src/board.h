@@ -44,8 +44,12 @@ public:
     BoardState* curState;
 
     Board();
+    explicit Board(std::string fen);
+    Board(const Board&) = delete;
+    Board& operator=(const Board&) = delete;
 
-    Board(const Board& copy);
+    // https://en.wikipedia.org/wiki/Forsyth%E2%80%93Edwards_Notation
+    void set(const std::string fen);
 
     void setPieceSet(int i, uint64_t num);
 
@@ -53,12 +57,12 @@ public:
 
     void updateAllPieces();
 
-    void makeMove(const struct Move& move);
+    void makeMove(const class Move& move);
     void unmakeMove();
 
     bool inCheck() const;
-
-    friend std::ostream& operator<<(std::ostream& o, Board& board);
 };
+
+std::ostream& operator<<(std::ostream& o, Board& board);
 
 #endif

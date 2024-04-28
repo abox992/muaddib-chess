@@ -61,8 +61,8 @@ public:
 
     constexpr bool operator==(const Move& m) const { return data == m.data; }
     constexpr bool operator!=(const Move& m) const { return data != m.data; }
-
-    friend std::ostream& operator<<(std::ostream& o, const Move& move);
 };
+
+std::ostream& operator<<(std::ostream& o, const Move& move);
 
 #endif

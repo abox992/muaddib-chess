@@ -8,13 +8,11 @@
 #include "search.h"
 #include "evaluate.h"
 
-#include "gui/game.h"
+//#include "gui/game.h"
 
 #include <bit>
 #include <sstream>
 #include <chrono>
-
-#define MAX_DEPTH 6
 
 void asciiGameLoop();
 void benchmarkMoveGen();
@@ -40,8 +38,12 @@ int main() {
 
     //benchmarkMoveGen();
     //benchmarkMakeMove();
+    //benchmarkPerft();
 
     runTests();
+
+    // board = generateBoardFromFen("rnb1kbn1/ppp5/4p3/8/7q/1PP1P3/P2K3p/RNBQ1B1R b q - 0 14");
+    // getBestMove(board, 7);
 
     //asciiGameLoop();
 
@@ -52,8 +54,7 @@ int main() {
 }
 
 void benchmarkMoveGen() {
-    Board board;
-    board = generateBoardFromFen("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -");
+    Board board("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -");
     std::vector<Move> moveList;
     moveList.reserve(256);
 
@@ -70,8 +71,7 @@ void benchmarkMoveGen() {
 }
 
 void benchmarkMakeMove() {
-    Board board;
-    board = generateBoardFromFen("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -");
+    Board board("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -");
     std::vector<Move> moveList;
     moveList.reserve(256);
     generateMoves<MoveFilter::ALL, Color::WHITE>(board, moveList);
@@ -110,11 +110,11 @@ void asciiGameLoop() {
     Board board;
     board.setStartPos();
 
-    board = generateBoardFromFen("r1bqk2r/1pp2ppp/p1np1n2/2b1p3/B3P3/2NP1N2/PPP2PPP/R1BQK2R w KQkq - 0 7");
+    //board = generateBoardFromFen("r1bqk2r/1pp2ppp/p1np1n2/2b1p3/B3P3/2NP1N2/PPP2PPP/R1BQK2R w KQkq - 0 7");
 
     // ascii console game loop
     std::stringstream pgn;
-    int moveNum = 7;
+    int moveNum = 1;
     while (board.curState->halfMoves < 100 && board.curState->highestRepeat < 3) {
         Move bestMove = getBestMove(board, 7);
 

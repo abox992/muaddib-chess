@@ -5,7 +5,7 @@
 #include <SFML/Audio.hpp>
 
 #include "piece_sprite.h"
-#include "../constants.h"
+#include "../types.h"
 
 #define BOARD_SQUARE_SIZE 100
 #define PIECE_IMG_SIZE 128

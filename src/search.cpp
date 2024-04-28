@@ -9,9 +9,6 @@
 
 #define DEBUG 0
 
-#define INFINITY (INT_MAX)
-#define NEGATIVE_INFINITY (-(INT_MAX))
-
 Move bestMove;
 int bestEval = NEGATIVE_INFINITY;
 
@@ -60,7 +57,7 @@ int search(Board& board, int startDepth, int depth, int alpha, int beta, bool ca
     for (int i = 0; i < captureMoveCount; i++) {
 
         board.makeMove(moveList[i]);
-        int eval = -search(board, startDepth, depth - 1, -beta, -alpha, false);
+        int eval = -search(board, startDepth, depth - 1, -beta, -alpha, true);
         board.unmakeMove();
 
         if (DEBUG) {
@@ -92,7 +89,7 @@ int search(Board& board, int startDepth, int depth, int alpha, int beta, bool ca
     for (int i = 0; i < quietMoveCount; i++) {
 
         board.makeMove(moveList[i]);
-        int eval = -search(board, startDepth, depth - 1, -beta, -alpha, true);
+        int eval = -search(board, startDepth, depth - 1, -beta, -alpha, false);
         board.unmakeMove();
 
         if (DEBUG) {

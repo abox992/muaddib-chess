@@ -2,19 +2,15 @@
 #include "move.h"
 #include "helpers.h"
 #include "precompute_masks.h"
-#include "constants.h"
+#include "types.h"
 #include "bit_manip.h"
 #include "zobrist.h"
 #include "check_pin_masks.h"
 
-#include <cstring>
-
-using namespace std;
-
 BoardState::BoardState(const BoardState& copy) {
-    std::memcpy(this->pieces, copy.pieces, sizeof(uint64_t) * (end(copy.pieces) - begin(copy.pieces)));
-    std::memcpy(this->allPieces, copy.allPieces, sizeof(uint64_t) * (end(copy.allPieces) - begin(copy.allPieces)));
-    std::memcpy(this->canCastle, copy.canCastle, sizeof(bool) * (end(copy.canCastle) - begin(copy.canCastle)));
+    std::memcpy(this->pieces, copy.pieces, sizeof(uint64_t) * (std::end(copy.pieces) - std::begin(copy.pieces)));
+    std::memcpy(this->allPieces, copy.allPieces, sizeof(uint64_t) * (std::end(copy.allPieces) - std::begin(copy.allPieces)));
+    std::memcpy(this->canCastle, copy.canCastle, sizeof(bool) * (std::end(copy.canCastle) - std::begin(copy.canCastle)));
     this->enpassantPos = copy.enpassantPos;
     this->empty = copy.empty;
     this->blackToMove = copy.blackToMove;
@@ -31,12 +27,138 @@ Board::Board() {
     setStartPos();
 }
 
-Board::Board(const Board& copy) { // deep copy contructor
-    // BoardState newCopy = *(copy.curState);
-    // this->curState = &newCopy;
-    this->curState = new BoardState(*copy.curState);
+Board::Board(const std::string fen) {
+    curState = nullptr;
+    setStartPos();
 
-    //this->seenPositions = copy.seenPositions;
+    this->set(fen);
+}
+
+void Board::set(const std::string fen) {
+    this->setStartPos(); // reset the board
+
+    for(int i = 0; i < 12; i++) { // zero all bitboards
+        this->setPieceSet(i, 0);
+    }
+
+    std::vector<std::string> tokens = split(fen, ' ');
+    for (int field = 0; field < int(tokens.size()); field++) {
+        switch (field) {
+            case 0: { // piece positions
+                int currentPos = 63;
+                for (int i = 0; i < int(tokens[field].length()); i++) {
+                    char currentChar = tokens[field][i];
+
+                    if (currentChar == '/') {
+                        continue;
+                    }
+
+                    if (isdigit(currentChar)) {
+                        currentPos -= int(currentChar - '0');
+                        continue;
+                    }
+
+                    // update pieces
+                    char pieceChars[] = {'P', 'p', 'N', 'n', 'B', 'b', 'R', 'r', 'Q', 'q', 'K', 'k'};
+                    for (int j = 0; j < 12; j++) {
+                        if (currentChar == pieceChars[j]) {
+                            this->setPieceSet(j, this->curState->pieces[j] | (uint64_t(1) << currentPos));
+                        }
+                    }
+
+                    currentPos--;
+
+                }
+
+                break;
+            } case 1: { // piece to move
+
+                for (int i = 0; i < int(tokens[field].length()); i++) {
+                    char currentChar = tokens[field][i];
+
+                    if (currentChar == 'w') {
+                        this->curState->blackToMove = false;
+                    } else {
+                        this->curState->blackToMove = true;
+                    }
+                }
+
+                break;
+            } case 2: { // castling
+
+                for (int i = 0; i < 4; i++) {
+                    this->curState->canCastle[i] = false;
+                }
+
+                for (int i = 0; i < int(tokens[field].length()); i++) {
+                    char currentChar = tokens[field][i];
+
+                    if (currentChar == '-') {
+                        break;
+                    }
+
+                    if (currentChar == 'K') {
+                        this->curState->canCastle[0] = true;
+                    } else if (currentChar == 'Q') {
+                        this->curState->canCastle[2] = true;
+                    } else if (currentChar == 'k') {
+                        this->curState->canCastle[1] = true;
+                    } else if (currentChar == 'q') {
+                        this->curState->canCastle[3] = true;
+                    }
+
+                }
+
+                break;
+            } case 3: { // enpassant
+                int pos = 0;
+                for (int i = 0; i < int(tokens[field].length()); i++) {
+                    char currentChar = tokens[field][i];
+
+                    if (currentChar == '-') {
+                        this->curState->enpassantPos = 0;
+                        break;
+                    }
+
+                    if (i == 0) {
+                        pos += 'h' - currentChar;
+                    }
+
+                    if (i == 1) {
+                        pos += 8 * ((currentChar - '0') - 1);
+                        this->curState->enpassantPos = pos;
+                    }
+
+                }
+
+                break;
+            } case 4: { // halfmove clock
+
+                for (int i = 0; i < int(tokens[field].length()); i++) {
+                    char currentChar = tokens[field][i];
+
+                    this->curState->halfMoves = int(currentChar - '0');
+                }
+
+                break;
+            } case 5: { // full move number
+
+                for (int i = 0; i < int(tokens[field].length()); i++) {
+                    char currentChar = tokens[field][i];
+
+                    this->curState->fullMoves = int(currentChar - '0');
+                }
+
+                break;
+            }
+            
+        }
+    }
+
+    this->updateAllPieces();
+
+    this->curState->highestRepeat = 1;
+    this->curState->hash = zhash(*this->curState);
 }
 
 void Board::setPieceSet(int i, uint64_t num) {
@@ -215,6 +337,7 @@ void Board::makeMove(const Move& move) {
 
     // promotion
     if (move.moveType() == MoveType::PROMOTION) {
+        int promoPieces[4] = {2, 4, 6, 8};
         //uint64_t tempMovePromo = move.promotion;
         int index = move.promotionPiece();
         this->curState->pieces[promoPieces[index] + color] |= toMask; // add new piece
@@ -276,8 +399,8 @@ std::ostream& operator<<(std::ostream& o, Board& board) {
     char printPiece[] = {'P', 'p', 'N', 'n', 'B', 'b', 'R', 'r', 'Q', 'q', 'K', 'k'};
     //string printPiece[] = {"\u2659", "\u265F", "\u2658", "\u265E", "\u2657", "\u265D", "\u2656", "\u265C", "\u2655", "\u265B", "\u2654", "\u265A"};
 
-    o << "    a   b   c   d   e   f   g   h  " << endl;
-    o << "  +---+---+---+---+---+---+---+---+" << endl;
+    o << "    a   b   c   d   e   f   g   h  " << std::endl;
+    o << "  +---+---+---+---+---+---+---+---+" << std::endl;
 
     for (int rank = 7; rank >= 0; rank--) {
 
@@ -309,8 +432,8 @@ std::ostream& operator<<(std::ostream& o, Board& board) {
 
         }
 
-        o << "| " << (rank + 1) << endl;
-        o << "  +---+---+---+---+---+---+---+---+" << endl;
+        o << "| " << (rank + 1) << std::endl;
+        o << "  +---+---+---+---+---+---+---+---+" << std::endl;
     }
 
     o << "    a   b   c   d   e   f   g   h  ";
