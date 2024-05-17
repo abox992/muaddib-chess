@@ -7,6 +7,9 @@
 #include "zobrist.h"
 #include "check_pin_masks.h"
 
+#include <cstring>
+
+// NOTE: THIS DOES NOT COPY PREVSTATE
 BoardState::BoardState(const BoardState& copy) {
     std::memcpy(this->pieces, copy.pieces, sizeof(uint64_t) * (std::end(copy.pieces) - std::begin(copy.pieces)));
     std::memcpy(this->allPieces, copy.allPieces, sizeof(uint64_t) * (std::end(copy.allPieces) - std::begin(copy.allPieces)));
@@ -17,7 +20,7 @@ BoardState::BoardState(const BoardState& copy) {
     this->halfMoves = copy.halfMoves;
     this->fullMoves = copy.fullMoves;
 
-    this->prevState = copy.prevState;
+    //this->prevState = copy.prevState;
     this->hash = copy.hash;
     this->highestRepeat = copy.highestRepeat;
 }
@@ -167,7 +170,7 @@ void Board::setPieceSet(int i, uint64_t num) {
 
 void Board::setStartPos() {
     //BoardState state;
-    this->curState = new BoardState();
+    this->curState = std::make_unique<BoardState>();//new BoardState();
     this->curState->prevState = nullptr;
 
     this->curState->pieces[ColorPiece::WPAWNS]   = 0x000000000000FF00;
@@ -225,10 +228,10 @@ void Board::updateAllPieces() {
 
 void Board::makeMove(const Move& move) {
 
-    // create a copy of the current state
-    BoardState* oldState = this->curState;
-    this->curState = new BoardState(*oldState);
-    this->curState->prevState = oldState;
+    // create a copy of the current state (add to head of list)
+    std::unique_ptr<BoardState> newState = std::make_unique<BoardState>(*this->curState);
+    newState->prevState = std::move(this->curState);
+    this->curState = std::move(newState);
 
     // make the move (update bitboards) - normal moves
     uint64_t fromMask = uint64_t(1) << move.from();
@@ -355,16 +358,12 @@ void Board::makeMove(const Move& move) {
     this->curState->hash = zhash(*this->curState);
 
     int count = 1;
-    BoardState* temp = this->curState->prevState;
-    while(temp != nullptr) {
+
+    for (BoardState* temp = this->curState->prevState.get(); temp != nullptr; temp = temp->prevState.get()) {
         if (temp->hash == this->curState->hash) {
             count++;
         }
-
-        temp = temp->prevState;
     }
-
-    delete temp;
 
     if (this->curState->highestRepeat < count) {
         this->curState->highestRepeat = count;
@@ -377,11 +376,10 @@ void Board::unmakeMove() {
         return;
     }
 
-    // stateHistory.pop_back();
-    BoardState* temp = this->curState;
-    this->curState = this->curState->prevState;
+    //BoardState* temp = this->curState;
+    this->curState = std::move(this->curState->prevState);
 
-    delete temp; // make sure we free the old state from memory
+    //delete temp; // make sure we free the old state from memory
 
 }
 

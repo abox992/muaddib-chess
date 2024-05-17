@@ -5,7 +5,7 @@
 #include <cstdint>
 #include "move.h"
 #include <vector>
-#include <unordered_map>
+#include <memory>
 
 class BoardState {
 public:
@@ -34,14 +34,14 @@ public:
     int      fullMoves;
 
     // helpful for making/unmaking moves
-    BoardState* prevState;
+    std::unique_ptr<BoardState> prevState;
     uint64_t hash;
     int highestRepeat;
 };
 
 class Board {
 public:
-    BoardState* curState;
+    std::unique_ptr<BoardState> curState;
 
     Board();
     explicit Board(std::string fen);
