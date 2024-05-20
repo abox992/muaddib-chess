@@ -3,7 +3,7 @@
 
 #include "board.h"
 
-int evaluation(Board& board);
+int evaluation(const Board& board);
 int materialValue(const Board& board, const int color);
 
 #endif

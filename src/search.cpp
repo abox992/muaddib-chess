@@ -5,161 +5,111 @@
 #include "check_pin_masks.h"
 #include "zobrist.h"
 #include <cstdint>
-#include <climits>
 
 #define DEBUG 0
 
-Move bestMove;
-int bestEval = NEGATIVE_INFINITY;
+#define INF (20000)
+#define NEG_INF (-20000)
+#define WIN_WHITE (10000)
+#define WIN_BLACK (10000)
 
 Move getBestMove(Board& board, int depth) {
-    bestMove = Move(0);
-    search(board, depth, depth, NEGATIVE_INFINITY, INFINITY, false);
-
-    return bestMove;
-}
-
-bool flag = false;
-
-// (* Initial call *)
-// alphabeta(origin, depth, −∞, +∞, TRUE)
-int search(Board& board, int startDepth, int depth, int alpha, int beta, bool capture) {
-
-    if (depth == 0) {
-
-        if (capture) {
-            return quiesce(board, alpha, beta);
-        } else {
-            return evaluation(board);
-        }
-
+    SearchInfo result;
+    if (board.curState->blackToMove) {
+        result = alphaBeta(board, depth, NEG_INF, INF, false);
+    } else {
+        result = alphaBeta(board, depth, NEG_INF, INF, true);
     }
 
-    if (board.curState->halfMoves >= 100) {
-        return 0; // 50 move rule, stalemate
+    return result.bestMove;
+
+}
+
+SearchInfo alphaBeta(Board& board, int depth, int alpha, int beta, bool maximizing) {
+
+    SearchInfo info;
+    info.bestMove = Move(0);
+
+    std::vector<Move> moveList;
+    moveList.reserve(256);
+
+    if (board.curState->blackToMove) {
+        generateMoves<ALL, Color::BLACK>(board, moveList);
+    } else {
+        generateMoves<ALL, Color::WHITE>(board, moveList);
+    }
+
+    if (moveList.size() == 0) {
+        if (board.inCheck()) {
+            info.bestEval = board.curState->blackToMove ? WIN_WHITE + depth : WIN_BLACK - depth;
+            return info;
+        }
+        info.bestEval = 0;
+        return info;
     }
 
     if (board.curState->highestRepeat == 3) {
-        return 0;
+        info.bestEval = 0;
+        return info;
     }
 
-    std::vector<Move> moveList;
-    moveList.reserve(256);
+    if (depth == 0) {
+        info.bestEval = evaluation(board);
+        return info;
+    }
 
-    if (board.curState->blackToMove) {
-        generateMoves<MoveFilter::CAPTURES, Color::BLACK>(board, moveList);
+    if (maximizing) {
+        //generateMoves<ALL, Color::WHITE>(board, moveList);
+        int maxEval = NEG_INF;
+
+        for (auto& move : moveList) {
+            board.makeMove(move);
+            int eval = alphaBeta(board, depth - 1, alpha, beta, false).bestEval;
+            board.unmakeMove();
+
+            if constexpr (DEBUG) {
+                if (depth == 5) {
+                    std::cout << move << " " << eval << " " << alpha << " " << beta << '\n';
+                }
+            }
+
+            if (eval > maxEval) {
+                maxEval = eval;
+                info.bestMove = move;
+            }
+
+            alpha = std::max(alpha, eval);
+            if (beta <= alpha) break;
+        }
+        info.bestEval = maxEval;
+        return info;
+
     } else {
-        generateMoves<MoveFilter::CAPTURES, Color::WHITE>(board, moveList);
-    }
+        //generateMoves<ALL, Color::BLACK>(board, moveList);
 
-    int captureMoveCount = moveList.size();
+        int minEval = INF;
 
-    for (int i = 0; i < captureMoveCount; i++) {
+        for (auto& move : moveList) {
+            board.makeMove(move);
+            int eval = alphaBeta(board, depth - 1, alpha, beta, true).bestEval;
+            board.unmakeMove();
 
-        board.makeMove(moveList[i]);
-        int eval = -search(board, startDepth, depth - 1, -beta, -alpha, true);
-        board.unmakeMove();
-
-        if (DEBUG) {
-            if (depth == startDepth) {
-                std::cout << i << " " << moveList[i] << " " << eval << std::endl;
+            if constexpr (DEBUG) {
+                if (depth == 5) {
+                    std::cout << move << " " << eval << " " << alpha << " " << beta << '\n';
+                }
             }
-        }
 
-        if (eval >= beta) {
-            return beta;
-        }
-
-        if (eval > alpha) {
-            alpha = eval;
-            if (depth == startDepth) {
-                bestMove = moveList[i];
+            if (eval < minEval) {
+                minEval = eval;
+                info.bestMove = move;
             }
+
+            beta = std::min(beta, eval);
+            if (beta <= alpha) break;
         }
-
+        info.bestEval = minEval;
+        return info;
     }
 
-    if (board.curState->blackToMove) {
-        generateMoves<MoveFilter::QUIET, Color::BLACK>(board, moveList);
-    } else {
-        generateMoves<MoveFilter::QUIET, Color::WHITE>(board, moveList);
-    }
-
-    int quietMoveCount = moveList.size() - captureMoveCount;
-    for (int i = 0; i < quietMoveCount; i++) {
-
-        board.makeMove(moveList[i]);
-        int eval = -search(board, startDepth, depth - 1, -beta, -alpha, false);
-        board.unmakeMove();
-
-        if (DEBUG) {
-            if (depth == startDepth) {
-                std::cout << i << " " << moveList[i] << " " << eval << std::endl;
-            }
-        }
-
-        if (eval >= beta) {
-            return beta;
-        }
-
-        if (eval > alpha) {
-            alpha = eval;
-            if (depth == startDepth) {
-                bestMove = moveList[i];
-            }
-        }
-
-    }
-
-    int moveCount = quietMoveCount + captureMoveCount;
-    if (moveCount == 0) {
-        if (board.inCheck()) {
-            return NEGATIVE_INFINITY + (startDepth - depth); // loss, + (startDepth - depth) makes faster mates worse
-        } else {
-            return 0; // stalemate
-        }
-    }
-
-    return alpha;
-
-}
-
-int quiesce(Board& board, int alpha, int beta) {
-    int eval = evaluation(board);
-
-    if (eval >= beta) {
-        return beta;
-    }
-    if (alpha < eval) {
-        alpha = eval;
-    }
-
-    // struct Move moveList[256];
-    std::vector<Move> moveList;
-    moveList.reserve(256);
-
-    if (board.curState->blackToMove) {
-        generateMoves<MoveFilter::CAPTURES, Color::BLACK>(board, moveList);
-    } else {
-        generateMoves<MoveFilter::CAPTURES, Color::WHITE>(board, moveList);
-    }
-
-    //generateMoves<MoveType::CAPTURES>(board, moveList, board.curState->blackToMove);
-
-    for (size_t i = 0; i < moveList.size(); i++) {
-
-        board.makeMove(moveList[i]);
-        int eval = -quiesce(board, -beta, -alpha);
-        board.unmakeMove();
-
-        if (eval >= beta) {
-            return beta;
-        }
-        if (alpha < eval) {
-            alpha = eval;
-        }
-
-    }
-
-    return alpha;
 }

@@ -40,12 +40,12 @@ int main() {
     //benchmarkMakeMove();
     //benchmarkPerft();
 
-    runTests();
+    //runTests();
 
     // board = generateBoardFromFen("rnb1kbn1/ppp5/4p3/8/7q/1PP1P3/P2K3p/RNBQ1B1R b q - 0 14");
     // getBestMove(board, 7);
 
-    //asciiGameLoop();
+    asciiGameLoop();
 
     //Game game;
     //game.runGameLoop();
@@ -116,13 +116,27 @@ void asciiGameLoop() {
     std::stringstream pgn;
     int moveNum = 1;
     while (board.curState->halfMoves < 100 && board.curState->highestRepeat < 3) {
-        Move bestMove = getBestMove(board, 7);
+        Move bestMove = getBestMove(board, 5);
 
         if (bestMove.isNull()) { // no moves available
             break;
         }
 
         std::cout << moveNum << ". " << bestMove << std::endl;
+        std::cout << evaluation(board) << '\n';
+
+        std::vector<Move> moveList;
+        moveList.reserve(256);
+
+        if (board.curState->blackToMove) {
+            generateMoves<ALL, Color::BLACK>(board, moveList);
+        } else {
+            generateMoves<ALL, Color::WHITE>(board, moveList);
+        }
+
+        // for (auto& move : moveList) {
+        //     std::cout << move << '\n';
+        // }
 
         // update pgn
         if (!board.curState->blackToMove) {
@@ -178,6 +192,9 @@ void asciiGameLoop() {
         //std::this_thread::sleep_for(std::chrono::milliseconds(1000));
         // std::string x;
         // std::cin >> x;
+
+        // std::cout << board.curState->halfMoves << '\n';
+        // std::cout << board.curState->highestRepeat << '\n';
 
         if (board.inCheck()) {
             pgn << "+";
