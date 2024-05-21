@@ -1,7 +1,9 @@
 #include "move.h"
 #include "types.h"
+#include "board.h"
 #include "precompute_masks.h"
 #include <cstdint>
+#include <sstream>
 
 std::ostream& operator<<(std::ostream& o, const Move& move) {
     const char file[] = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'};

@@ -45,7 +45,10 @@ int main() {
     // board = generateBoardFromFen("rnb1kbn1/ppp5/4p3/8/7q/1PP1P3/P2K3p/RNBQ1B1R b q - 0 14");
     // getBestMove(board, 7);
 
-    asciiGameLoop();
+    //asciiGameLoop();
+    board.set("rn3bnr/p2q4/4k3/2pb1p2/P1N4P/1Q2PB2/5N2/R1B1K2R b KQ - 3 23");
+    Move move = getBestMove(board, 5);
+    std::cout << move << '\n';
 
     //Game game;
     //game.runGameLoop();
@@ -143,43 +146,45 @@ void asciiGameLoop() {
             pgn << " " << moveNum << ". ";
         }
 
-        uint64_t fromMask = maskForPos(bestMove.from());
-        uint64_t toMask = maskForPos(bestMove.from());
-        const Color color = static_cast<Color>(board.curState->blackToMove);
-        const Color opColor = static_cast<Color>(!color);
+        pgn << movePretty(board, bestMove);
 
-        // figure out piece
-        int pieceNum = 0;
-        for (int i = 0; i < 12; i += 2) {
-            if (board.curState->pieces[i + color] & fromMask) {
-                pieceNum = i;
-            }
-        }
-        pieceNum /= 2;
+        // uint64_t fromMask = maskForPos(bestMove.from());
+        // uint64_t toMask = maskForPos(bestMove.from());
+        // const Color color = static_cast<Color>(board.curState->blackToMove);
+        // const Color opColor = static_cast<Color>(!color);
 
-        const std::string capture = toMask & board.curState->allPieces[opColor] ? "x" : "";
+        // // figure out piece
+        // int pieceNum = 0;
+        // for (int i = 0; i < 12; i += 2) {
+        //     if (board.curState->pieces[i + color] & fromMask) {
+        //         pieceNum = i;
+        //     }
+        // }
+        // pieceNum /= 2;
 
-        const char file[] = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'};
+        // const std::string capture = toMask & board.curState->allPieces[opColor] ? "x" : "";
 
-        int fromFile = 7 - unsigned(bestMove.from()) % 8;
+        // const char file[] = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'};
 
-        int toRank = unsigned(bestMove.to()) / 8;
-        int toFile = 7 - unsigned(bestMove.to()) % 8;
+        // int fromFile = 7 - unsigned(bestMove.from()) % 8;
 
-        const std::string pieceChars[] = {"", "N", "B", "R", "Q", "K"};
-        if (bestMove.moveType() != MoveType::CASTLE) {
-            pgn << " " << pieceChars[pieceNum] << file[fromFile] << capture << file[toFile] << toRank + 1;
-        } else {
-            pgn << " " << "O-O";
+        // int toRank = unsigned(bestMove.to()) / 8;
+        // int toFile = 7 - unsigned(bestMove.to()) % 8;
 
-            if (toFile == 0) { // queen side
-                pgn << "-O";
-            }
-        }
+        // const std::string pieceChars[] = {"", "N", "B", "R", "Q", "K"};
+        // if (bestMove.moveType() != MoveType::CASTLE) {
+        //     pgn << " " << pieceChars[pieceNum] << file[fromFile] << capture << file[toFile] << toRank + 1;
+        // } else {
+        //     pgn << " " << "O-O";
 
-        if ((bestMove.moveType() == MoveType::PROMOTION)) {
-            pgn << "=" << pieceChars[bestMove.promotionPiece() + 1];
-        }
+        //     if (toFile == 0) { // queen side
+        //         pgn << "-O";
+        //     }
+        // }
+
+        // if ((bestMove.moveType() == MoveType::PROMOTION)) {
+        //     pgn << "=" << pieceChars[bestMove.promotionPiece() + 1];
+        // }
 
         if (board.curState->blackToMove) {
             moveNum++;

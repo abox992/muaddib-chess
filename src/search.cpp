@@ -5,8 +5,9 @@
 #include "check_pin_masks.h"
 #include "zobrist.h"
 #include <cstdint>
+#include <unordered_map>
 
-#define DEBUG 0
+#define DEBUG 1
 
 #define INF (20000)
 #define NEG_INF (-20000)
@@ -16,16 +17,18 @@
 Move getBestMove(Board& board, int depth) {
     SearchInfo result;
     if (board.curState->blackToMove) {
-        result = alphaBeta(board, depth, NEG_INF, INF, false);
+        result = alphaBeta(board, depth, depth, NEG_INF, INF, false);
     } else {
-        result = alphaBeta(board, depth, NEG_INF, INF, true);
+        result = alphaBeta(board, depth, depth, NEG_INF, INF, true);
     }
 
     return result.bestMove;
 
 }
 
-SearchInfo alphaBeta(Board& board, int depth, int alpha, int beta, bool maximizing) {
+//std::unordered_map<uint64_t, int> transpositionTable;
+
+SearchInfo alphaBeta(Board& board, int depth, const int startDepth, int alpha, int beta, bool maximizing) {
 
     SearchInfo info;
     info.bestMove = Move(0);
@@ -64,11 +67,16 @@ SearchInfo alphaBeta(Board& board, int depth, int alpha, int beta, bool maximizi
 
         for (auto& move : moveList) {
             board.makeMove(move);
-            int eval = alphaBeta(board, depth - 1, alpha, beta, false).bestEval;
+            int eval;
+            if (std::popcount(board.curState->prevState->empty) == std::popcount(board.curState->empty) && depth == 0) {
+                eval = alphaBeta(board, depth, startDepth, alpha, beta, false).bestEval;
+            } else {
+                eval = alphaBeta(board, depth - 1, startDepth, alpha, beta, false).bestEval;
+            }
             board.unmakeMove();
 
             if constexpr (DEBUG) {
-                if (depth == 5) {
+                if (depth == startDepth) {
                     std::cout << move << " " << eval << " " << alpha << " " << beta << '\n';
                 }
             }
@@ -76,26 +84,31 @@ SearchInfo alphaBeta(Board& board, int depth, int alpha, int beta, bool maximizi
             if (eval > maxEval) {
                 maxEval = eval;
                 info.bestMove = move;
+                info.bestEval = maxEval;
             }
 
             alpha = std::max(alpha, eval);
             if (beta <= alpha) break;
         }
-        info.bestEval = maxEval;
+
         return info;
 
     } else {
-        //generateMoves<ALL, Color::BLACK>(board, moveList);
 
         int minEval = INF;
 
         for (auto& move : moveList) {
             board.makeMove(move);
-            int eval = alphaBeta(board, depth - 1, alpha, beta, true).bestEval;
+            int eval;
+            if (std::popcount(board.curState->prevState->empty) == std::popcount(board.curState->empty) && depth == 0) {
+                eval = alphaBeta(board, depth, startDepth, alpha, beta, true).bestEval;
+            } else {
+                eval = alphaBeta(board, depth - 1, startDepth, alpha, beta, true).bestEval;
+            }
             board.unmakeMove();
 
             if constexpr (DEBUG) {
-                if (depth == 5) {
+                if (depth == startDepth) {
                     std::cout << move << " " << eval << " " << alpha << " " << beta << '\n';
                 }
             }
@@ -103,12 +116,13 @@ SearchInfo alphaBeta(Board& board, int depth, int alpha, int beta, bool maximizi
             if (eval < minEval) {
                 minEval = eval;
                 info.bestMove = move;
+                info.bestEval = minEval;
             }
 
             beta = std::min(beta, eval);
             if (beta <= alpha) break;
         }
-        info.bestEval = minEval;
+
         return info;
     }
 

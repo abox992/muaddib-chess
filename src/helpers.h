@@ -11,4 +11,6 @@ void printBitboard(uint64_t bitboard);
 
 std::vector<std::string> split(const std::string &s, char delim);
 
+std::string movePretty(const Board& board, const Move& move);
+
 #endif

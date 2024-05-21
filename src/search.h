@@ -9,6 +9,6 @@ struct SearchInfo {
 };
 
 Move getBestMove(Board& board, int depth);
-SearchInfo alphaBeta(Board& board, int depth, int alpha, int beta, bool);
+SearchInfo alphaBeta(Board& board, int depth, const int, int alpha, int beta, bool);
 
 #endif
