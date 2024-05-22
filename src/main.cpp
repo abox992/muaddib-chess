@@ -45,10 +45,10 @@ int main() {
     // board = generateBoardFromFen("rnb1kbn1/ppp5/4p3/8/7q/1PP1P3/P2K3p/RNBQ1B1R b q - 0 14");
     // getBestMove(board, 7);
 
-    //asciiGameLoop();
-    board.set("rn3bnr/p2q4/4k3/2pb1p2/P1N4P/1Q2PB2/5N2/R1B1K2R b KQ - 3 23");
-    Move move = getBestMove(board, 5);
-    std::cout << move << '\n';
+    asciiGameLoop();
+    // board.set("rn3bnr/p2q4/4k3/2pb1p2/P1N4P/1Q2PB2/5N2/R1B1K2R b KQ - 3 23");
+    // Move move = getBestMove(board, 5);
+    // std::cout << move << '\n';
 
     //Game game;
     //game.runGameLoop();
@@ -113,13 +113,13 @@ void asciiGameLoop() {
     Board board;
     board.setStartPos();
 
-    //board = generateBoardFromFen("r1bqk2r/1pp2ppp/p1np1n2/2b1p3/B3P3/2NP1N2/PPP2PPP/R1BQK2R w KQkq - 0 7");
+    //board.set("r1bqk2r/p2nppbp/2pp1np1/1p6/3PP3/2N1BP2/PPPQN1PP/R3KB1R w KQkq - 2 8");
 
     // ascii console game loop
     std::stringstream pgn;
     int moveNum = 1;
     while (board.curState->halfMoves < 100 && board.curState->highestRepeat < 3) {
-        Move bestMove = getBestMove(board, 5);
+        Move bestMove = getBestMove(board, 7);
 
         if (bestMove.isNull()) { // no moves available
             break;
