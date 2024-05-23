@@ -1,6 +1,7 @@
 #include "evaluate.h"
 #include "board.h"
 #include "types.h"
+#include "move_list.h"
 #include <bit>
 
 int evaluation(const Board& board) {
@@ -9,6 +10,8 @@ int evaluation(const Board& board) {
     int blackValue = materialValue(board, Color::BLACK);
 
     int eval = whiteValue - blackValue;
+
+    //eval += pieceScope(board);
 
     return eval;
     //return board.curState->blackToMove ? -eval : eval;
@@ -23,4 +26,11 @@ int materialValue(const Board& board, const int color) {
     }
 
     return totalValue;
+}
+
+int pieceScope(const Board& board) {
+    MoveList<MoveFilter::ALL> moveListWhite(board, Color::WHITE);
+    MoveList<MoveFilter::ALL> moveListBlack(board, Color::BLACK);
+
+    return (moveListWhite.size() - moveListBlack.size()) / 2;
 }

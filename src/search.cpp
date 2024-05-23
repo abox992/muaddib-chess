@@ -6,7 +6,7 @@
 #include "zobrist.h"
 #include "move_list.h"
 #include <cstdint>
-#include <unordered_map>
+#include "transpose_table.h"
 
 #define DEBUG 0
 
@@ -16,43 +16,27 @@
 #define WIN_BLACK (10000)
 
 Move getBestMove(Board& board, int depth) {
-    SearchInfo result;
-    if (board.curState->blackToMove) {
-        result = alphaBeta(board, depth, depth, NEG_INF, INF, -1);
-    } else {
-        result = alphaBeta(board, depth, depth, NEG_INF, INF, 1);
-    }
-
+    SearchInfo result = alphaBeta(board, depth, depth, NEG_INF, INF);
     return result.bestMove;
-
 }
 
-//std::unordered_map<uint64_t, int> transpositionTable;
+struct Line {
+    int count; // line length
+    Move moves[256];
+};
 
-SearchInfo alphaBeta(Board& board, int depth, const int startDepth, int alpha, int beta, int p) {
+SearchInfo alphaBeta(Board& board, int depth, const int startDepth, int alpha, int beta) {
 
     SearchInfo info;
     info.bestMove = Move(0);
-
-    // std::vector<Move> moveList;
-    // moveList.reserve(256);
-
-    // if (board.curState->blackToMove) {
-    //     generateMoves<ALL, Color::BLACK>(board, moveList);
-    //     //generateMoves<CAPTURES, Color::BLACK>(board, moveList);
-    //     //generateMoves<QUIET, Color::BLACK>(board, moveList);
-    // } else {
-    //     generateMoves<ALL, Color::WHITE>(board, moveList);
-    //     //generateMoves<CAPTURES, Color::WHITE>(board, moveList);
-    //     //generateMoves<QUIET, Color::WHITE>(board, moveList);
-    // }
 
     MoveList<MoveFilter::ALL> moveList(board);
 
     if (moveList.size() == 0) {
         if (board.inCheck()) {
+            const int perspective = board.curState->blackToMove ? -1 : 1;
             info.bestEval = board.curState->blackToMove ? WIN_WHITE + depth : WIN_BLACK - depth;
-            info.bestEval *= p;
+            info.bestEval *= perspective;
             return info;
         }
         info.bestEval = 0;
@@ -65,20 +49,26 @@ SearchInfo alphaBeta(Board& board, int depth, const int startDepth, int alpha, i
     }
 
     if (depth == 0) {
-        info.bestEval = evaluation(board) * p;
+        const int perspective = board.curState->blackToMove ? -1 : 1;
+        info.bestEval = evaluation(board) * perspective;
         return info;
     }
 
     int maxEval = NEG_INF;
 
     for (auto& move : moveList) {
-        board.makeMove(move);
-        int eval;
-        if (std::popcount(board.curState->prevState->empty) == std::popcount(board.curState->empty) && depth == 0) {
-            eval = -alphaBeta(board, depth, startDepth, -beta, -alpha, -p).bestEval;
-        } else {
-            eval = -alphaBeta(board, depth - 1, startDepth, -beta, -alpha, -p).bestEval;
+        int extension = 0;
+        if (maskForPos(move.to()) & !board.curState->empty) { // if the node is a capture, extend search
+            extension++;
         }
+
+        board.makeMove(move);
+
+        if (board.inCheck()) { // if the move puts the king in check, extend search
+            extension++;
+        }
+
+        int eval = -alphaBeta(board, depth - 1 + extension, startDepth, -beta, -alpha).bestEval;
         board.unmakeMove();
 
         if constexpr (DEBUG) {

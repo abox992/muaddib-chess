@@ -1,3 +1,6 @@
+#ifndef MOVE_LIST_H
+#define MOVE_LIST_H
+
 #include "move.h"
 #include "types.h"
 #include "movegen.h"
@@ -24,6 +27,15 @@ public:
 
     }
 
+    MoveList(const Board& board, const Color color) {
+
+        if (color == Color::BLACK) {
+            count = generateMoves<filter, Color::BLACK>(board, moveList.data());
+        } else {
+            count = generateMoves<filter, Color::WHITE>(board, moveList.data());
+        }
+    }
+
     MoveList(const MoveList&) = delete;
     MoveList& operator=(const MoveList&) = delete;
 
@@ -39,3 +51,5 @@ public:
     Move* end() { return &moveList[count]; }
     const Move* end() const { return &moveList[count]; }
 };
+
+#endif
