@@ -1,6 +1,7 @@
 #include "test_suite.h"
 #include "helpers.h"
 #include "movegen.h"
+#include "move_list.h"
 #include <iostream>
 #include <iomanip>
 #include <string>
@@ -20,20 +21,22 @@ uint64_t moveGenTestRecurrsive(int startDepth, int depth, Board& board) {
     }
 
     // struct Move moveList[256];
-    std::vector<Move> moveList;
-    moveList.reserve(256);
+    // std::vector<Move> moveList;
+    // moveList.reserve(256);
 
-    if (board.curState->blackToMove) {
-        generateMoves<MoveFilter::ALL, Color::BLACK>(board, moveList);
-    } else {
-        generateMoves<MoveFilter::ALL, Color::WHITE>(board, moveList);
-    }
+    // if (board.curState->blackToMove) {
+    //     generateMoves<MoveFilter::ALL, Color::BLACK>(board, moveList);
+    // } else {
+    //     generateMoves<MoveFilter::ALL, Color::WHITE>(board, moveList);
+    // }
+
+    MoveList<MoveFilter::ALL> moveList(board);
 
     //generateMoves<MoveType::ALL_MOVES>(board, moveList, static_cast<Color>(board.curState->blackToMove));
     uint64_t totalNodes = 0;
     
     for (size_t i = 0; i < moveList.size(); i++) {
-        board.makeMove(moveList[i]);
+        board.makeMove(moveList.get(i));
 
         uint64_t subCount = 0;
 
@@ -41,7 +44,7 @@ uint64_t moveGenTestRecurrsive(int startDepth, int depth, Board& board) {
 
         if constexpr (DEBUG) {
             if (depth == startDepth) {
-                std::cout << moveList[i] << " " << subCount << std::endl;
+                std::cout << moveList.get(i) << " " << subCount << std::endl;
             }
         }
         //cout << moveList[i] << " " << subCount << endl;

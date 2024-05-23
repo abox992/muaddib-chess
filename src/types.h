@@ -37,4 +37,10 @@ enum Direction {
     UP, DOWN, LEFT, RIGHT, TOP_LEFT, BOTTOM_RIGHT, TOP_RIGHT, BOTTOM_LEFT
 };
 
+enum MoveFilter {
+    ALL,
+    CAPTURES,
+    QUIET
+};
+
 #endif

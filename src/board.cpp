@@ -357,8 +357,8 @@ void Board::makeMove(const Move& move) {
     // finally, set the hash
     this->curState->hash = zhash(*this->curState);
 
+    // check position repeats
     int count = 1;
-
     for (BoardState* temp = this->curState->prevState.get(); temp != nullptr; temp = temp->prevState.get()) {
         if (temp->hash == this->curState->hash) {
             count++;

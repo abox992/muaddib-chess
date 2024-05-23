@@ -4,6 +4,7 @@
 #include "movegen.h"
 #include "check_pin_masks.h"
 #include "zobrist.h"
+#include "move_list.h"
 #include <cstdint>
 #include <unordered_map>
 
@@ -33,14 +34,20 @@ SearchInfo alphaBeta(Board& board, int depth, const int startDepth, int alpha, i
     SearchInfo info;
     info.bestMove = Move(0);
 
-    std::vector<Move> moveList;
-    moveList.reserve(256);
+    // std::vector<Move> moveList;
+    // moveList.reserve(256);
 
-    if (board.curState->blackToMove) {
-        generateMoves<ALL, Color::BLACK>(board, moveList);
-    } else {
-        generateMoves<ALL, Color::WHITE>(board, moveList);
-    }
+    // if (board.curState->blackToMove) {
+    //     generateMoves<ALL, Color::BLACK>(board, moveList);
+    //     //generateMoves<CAPTURES, Color::BLACK>(board, moveList);
+    //     //generateMoves<QUIET, Color::BLACK>(board, moveList);
+    // } else {
+    //     generateMoves<ALL, Color::WHITE>(board, moveList);
+    //     //generateMoves<CAPTURES, Color::WHITE>(board, moveList);
+    //     //generateMoves<QUIET, Color::WHITE>(board, moveList);
+    // }
+
+    MoveList<MoveFilter::ALL> moveList(board);
 
     if (moveList.size() == 0) {
         if (board.inCheck()) {

@@ -11,18 +11,12 @@
 #include "bit_manip.h"
 #include "types.h"
 
-enum MoveFilter {
-    ALL,
-    CAPTURES,
-    QUIET
-};
-
 // move list to add moves to, color to gen moves for (0 for white 1 for black), returns movecount
 template<MoveFilter moveFilter, Color color>
-void generateMoves(const Board& board, std::vector<Move>& moveList) {
+int generateMoves(const Board& board, Move* moveList) {
 
     // make sure movelist is not resizing
-    assert(moveList.capacity() == 256);
+    // assert(moveList.capacity() == 256);
 
     int attackersCount = std::popcount(attacksToKing<color, false>(board));
 
@@ -30,23 +24,27 @@ void generateMoves(const Board& board, std::vector<Move>& moveList) {
     const uint64_t pinMask = generatePinMask<color>(board);
     const int kingPos = tz_count(board.curState->pieces[Piece::KINGS + color]);
 
+    int count = 0;
+
     // if king is in double-check, only need to enumerate king moves
     if (attackersCount < 2) {
-        generatePawnMoves<moveFilter, color>(board, moveList, checkMask, pinMask, kingPos);
-        generateKnightMoves<moveFilter, color>(board, moveList, checkMask, pinMask, kingPos);
-        generateBishopMoves<moveFilter, color>(board, moveList, checkMask, pinMask, kingPos);
-        generateRookMoves<moveFilter, color>(board, moveList, checkMask, pinMask, kingPos);
-        generateQueenMoves<moveFilter, color>(board, moveList, checkMask, pinMask, kingPos);
+        count += generatePawnMoves<moveFilter, color>(board, moveList + count, checkMask, pinMask, kingPos);
+        count += generateKnightMoves<moveFilter, color>(board, moveList + count, checkMask, pinMask, kingPos);
+        count += generateBishopMoves<moveFilter, color>(board, moveList + count, checkMask, pinMask, kingPos);
+        count += generateRookMoves<moveFilter, color>(board, moveList + count, checkMask, pinMask, kingPos);
+        count += generateQueenMoves<moveFilter, color>(board, moveList + count, checkMask, pinMask, kingPos);
     }
-    generateKingMoves<moveFilter, color>(board, moveList, checkMask, kingPos);
+    count += generateKingMoves<moveFilter, color>(board, moveList + count, checkMask, kingPos);
 
     // make sure movelist is not resizing
-    assert(moveList.capacity() == 256 && moveList.size() < 256);
-
+    // assert(moveList.capacity() == 256 && moveList.size() < 256);
+    return count;
 }
 
 template<MoveFilter moveFilter, Color color>
-inline void generatePawnMoves(const Board& board, std::vector<Move>& moveList, const uint64_t& checkMask, const uint64_t& pinMask, const int& kingPos) {
+inline int generatePawnMoves(const Board& board, Move* moveList, const uint64_t& checkMask, const uint64_t& pinMask, const int& kingPos) {
+
+    int count = 0;
 
     constexpr Color enemyColor = static_cast<Color>(!color);
 
@@ -145,6 +143,9 @@ inline void generatePawnMoves(const Board& board, std::vector<Move>& moveList, c
             }
         }
 
+        // save the number of moves
+        count += std::popcount(pLegalMoves);
+
         // moves are now all legal, add them to the list
         while(pLegalMoves) { //for (int index = tz_count(pLegalMoves); pLegalMoves; pop_lsb(pLegalMoves), index = tz_count(pLegalMoves))
             const int index = tz_count(pLegalMoves);
@@ -152,34 +153,32 @@ inline void generatePawnMoves(const Board& board, std::vector<Move>& moveList, c
 
             Move curMove = Move::make<MoveType::NORMAL>(currentSquare, index);
 
-            if (board.curState->enpassantPos > 0 && index == board.curState->enpassantPos) {
-                //temp.enpessant = true;
-
+            if (board.curState->enpassantPos > 0 && index == board.curState->enpassantPos) { // enpassant
                 curMove = Move::make<MoveType::EN_PASSANT>(currentSquare, index);
-                moveList.push_back(curMove);
-                continue;
-            }
+            } else if (promoSquare[index]) { // promotion
+                count += 3; // adjust count for promotions accordingly
 
-            // promotion
-            if (promoSquare[index]) {
-                for (int i = 0; i < 4; i++) {
-
+                for (int i = 0; i < 4; i++) { // add all 4 promotion options
                     curMove = Move::make<MoveType::PROMOTION>(currentSquare, index, static_cast<PromoPiece>(i));
-                    moveList.push_back(curMove); 
+                    *moveList++ = curMove;
                 }
 
                 continue;
             }
 
-            moveList.push_back(curMove);
+            *moveList++ = curMove; //moveList.push_back(curMove);
         }
 
     } // bitloop
 
+    return count;
+
 }
 
 template<MoveFilter moveFilter, Color color>
-inline void generateKnightMoves(const Board& board, std::vector<Move>& moveList, const uint64_t& checkMask, const uint64_t& pinMask, const int& kingPos) {
+inline int generateKnightMoves(const Board& board, Move* moveList, const uint64_t& checkMask, const uint64_t& pinMask, const int& kingPos) {
+
+    int count = 0;
 
     constexpr Color enemyColor = static_cast<Color>(!color);
 
@@ -222,18 +221,25 @@ inline void generateKnightMoves(const Board& board, std::vector<Move>& moveList,
             }
         }
 
+        // save the number of moves
+        count += std::popcount(pLegalMoves);
+
         while (pLegalMoves) {
             const int index = tz_count(pLegalMoves);
             pop_lsb(pLegalMoves);
 
             Move curMove = Move::make<NORMAL>(currentSquare, index);
-            moveList.push_back(curMove);
+            *moveList++ = curMove; //moveList.push_back(curMove);
         }
     } // bitloop
+
+    return count;
 }
 
 template<MoveFilter moveFilter, Color color>
-inline void generateBishopMoves(const Board& board, std::vector<Move>& moveList, const uint64_t& checkMask, const uint64_t& pinMask, const int& kingPos) {
+inline int generateBishopMoves(const Board& board, Move* moveList, const uint64_t& checkMask, const uint64_t& pinMask, const int& kingPos) {
+
+    int count = 0;
 
     constexpr Color enemyColor = static_cast<Color>(!color);
 
@@ -281,19 +287,26 @@ inline void generateBishopMoves(const Board& board, std::vector<Move>& moveList,
             }
         }
 
+        // save the number of moves
+        count += std::popcount(pLegalMoves);
+
         while (pLegalMoves) {
             const int index = tz_count(pLegalMoves);
             pop_lsb(pLegalMoves);
 
             Move curMove = Move::make<NORMAL>(currentSquare, index);
-            moveList.push_back(curMove);
-                
+            *moveList++ = curMove; //moveList.push_back(curMove);
         }
+
     } // bitloop
+
+    return count;
 }
 
 template<MoveFilter moveFilter, Color color>
-inline void generateRookMoves(const Board& board, std::vector<Move>& moveList, const uint64_t& checkMask, const uint64_t& pinMask, const int& kingPos) {
+inline int generateRookMoves(const Board& board, Move* moveList, const uint64_t& checkMask, const uint64_t& pinMask, const int& kingPos) {
+
+    int count = 0;
 
     constexpr Color enemyColor = static_cast<Color>(!color);
 
@@ -341,18 +354,26 @@ inline void generateRookMoves(const Board& board, std::vector<Move>& moveList, c
             }
         }
 
+        // save the number of moves
+        count += std::popcount(pLegalMoves);
+
         while (pLegalMoves) {
             const int index = tz_count(pLegalMoves);
             pop_lsb(pLegalMoves);
 
             Move curMove = Move::make<NORMAL>(currentSquare, index);
-            moveList.push_back(curMove);
+            *moveList++ = curMove; //moveList.push_back(curMove);
         }
+
     } // bitloop
+
+    return count;
 }
 
 template<MoveFilter moveFilter, Color color>
-inline void generateQueenMoves(const Board& board, std::vector<Move>& moveList, const uint64_t& checkMask, const uint64_t& pinMask, const int& kingPos) {
+inline int generateQueenMoves(const Board& board, Move* moveList, const uint64_t& checkMask, const uint64_t& pinMask, const int& kingPos) {
+
+    int count = 0;
 
     constexpr Color enemyColor = static_cast<Color>(!color);
 
@@ -404,29 +425,33 @@ inline void generateQueenMoves(const Board& board, std::vector<Move>& moveList, 
         pLegalMoves &= checkMask;
         pLegalMoves &= moveTypeMask;
 
+
+        // save the number of moves
+        count += std::popcount(pLegalMoves);
+
         while (pLegalMoves) {
             const int index = tz_count(pLegalMoves);
             pop_lsb(pLegalMoves);
 
             Move curMove = Move::make<NORMAL>(currentSquare, index);
-            moveList.push_back(curMove);
+            *moveList++ = curMove; //moveList.push_back(curMove);
                 
         }
     } // bitloop
+
+    return count;
 }
 
 // note: castles are encoded as capturing our own rook
 template<MoveFilter moveFilter, Color color>
-inline void generateKingMoves(const Board& board, std::vector<Move>& moveList, const uint64_t& checkMask, const int& kingPos) {
+inline int generateKingMoves(const Board& board, Move* moveList, const uint64_t& checkMask, const int& kingPos) {
 
-    //const uint64_t checkMask = generateCheckMask<color>(board);
-    //const int kingPos = tz_count(board.curState->pieces[Piece::KINGS + color]);
-    
+    int count = 0;
     
     // not an assert so we can continue to enumerate even if its wrong (for debug)
     //assert(kingPos != 64);
     if (kingPos == 64) {
-        return;
+        return count;
     }
 
     constexpr Color enemyColor = static_cast<Color>(!color);
@@ -467,6 +492,9 @@ inline void generateKingMoves(const Board& board, std::vector<Move>& moveList, c
 
     pLegalMoves &= moveTypeMask;
 
+    // save the number of moves
+    count += std::popcount(pLegalMoves);
+
     while (pLegalMoves) {
         int index = tz_count(pLegalMoves);
         pop_lsb(pLegalMoves);
@@ -492,12 +520,15 @@ inline void generateKingMoves(const Board& board, std::vector<Move>& moveList, c
 
         // filter out moves that leave the king in check
         if (attacksOnSquare<color, true>(board, index) != 0) {
+            count--;
             continue;
         }
 
-        moveList.push_back(curMove);
+        *moveList++ = curMove; // moveList.push_back(curMove);
             
     }
+
+    return count;
 }
 
 #endif
