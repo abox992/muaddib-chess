@@ -3,12 +3,10 @@
 
 #include "bit_manip.h"
 #include "move.h"
-#include <vector>
-#include <memory>
 #include "types.h"
 #include <cstdint>
 #include <iostream>
-// #include <vector>
+#include <memory>
 
 class BoardState {
 public:
@@ -33,18 +31,18 @@ public:
   // 0 = white 1 = black
   bool blackToMove;
 
-    // helpful for making/unmaking moves
-    std::unique_ptr<BoardState> prevState;
-    uint64_t hash;
-    int highestRepeat;
   int halfMoves;
   int fullMoves;
 
+  // helpful for making/unmaking moves
+  std::unique_ptr<BoardState> prevState;
+  uint64_t hash;
+  int highestRepeat;
 };
 
 class Board {
 private:
-    std::unique_ptr<BoardState> curState;
+  std::unique_ptr<BoardState> curState;
 
 public:
   Board();

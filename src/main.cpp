@@ -37,12 +37,12 @@ int main() {
     //benchmarkMakeMove();
     //benchmarkPerft();
 
-    //runTests();
+    runTests();
 
     // board = generateBoardFromFen("rnb1kbn1/ppp5/4p3/8/7q/1PP1P3/P2K3p/RNBQ1B1R b q - 0 14");
     // getBestMove(board, 7);
 
-    asciiGameLoop();
+    //asciiGameLoop();
     //board.set("rn3bnr/p2q4/4k3/2pb1p2/P1N4P/1Q2PB2/5N2/R1B1K2R b KQ - 3 23");
     // Move move = getBestMove(board, 5);
     // std::cout << move << '\n';

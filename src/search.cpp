@@ -1,12 +1,7 @@
 #include "search.h"
 #include "board.h"
 #include "evaluate.h"
-#include "movegen.h"
-#include "check_pin_masks.h"
-#include "zobrist.h"
 #include "move_list.h"
-#include <cstdint>
-#include "transpose_table.h"
 
 #define DEBUG 0
 
@@ -34,8 +29,8 @@ SearchInfo alphaBeta(Board& board, int depth, const int startDepth, int alpha, i
 
     if (moveList.size() == 0) {
         if (board.inCheck()) {
-            const int perspective = board.curState->blackToMove ? -1 : 1;
-            info.bestEval = board.curState->blackToMove ? WIN_WHITE + depth : WIN_BLACK - depth;
+            const int perspective = board.blackToMove() ? -1 : 1;
+            info.bestEval = board.blackToMove() ? WIN_WHITE + depth : WIN_BLACK - depth;
             info.bestEval *= perspective;
             return info;
         }
@@ -43,13 +38,13 @@ SearchInfo alphaBeta(Board& board, int depth, const int startDepth, int alpha, i
         return info;
     }
 
-    if (board.curState->highestRepeat == 3) {
+    if (board.getHighestRepeat() == 3) {
         info.bestEval = 0;
         return info;
     }
 
     if (depth == 0) {
-        const int perspective = board.curState->blackToMove ? -1 : 1;
+        const int perspective = board.blackToMove() ? -1 : 1;
         info.bestEval = evaluation(board) * perspective;
         return info;
     }
@@ -58,7 +53,7 @@ SearchInfo alphaBeta(Board& board, int depth, const int startDepth, int alpha, i
 
     for (auto& move : moveList) {
         int extension = 0;
-        if (maskForPos(move.to()) & !board.curState->empty) { // if the node is a capture, extend search
+        if (maskForPos(move.to()) & !board.getEmpty()) { // if the node is a capture, extend search
             extension++;
         }
 

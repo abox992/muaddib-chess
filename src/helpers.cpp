@@ -3,11 +3,8 @@
 #include <string>
 #include <sstream>
 #include <vector>
-#include <ctype.h>
-#include <bit>
 #include "board.h"
 #include "move.h"
-#include "zobrist.h"
 #include "types.h"
 
 void printBitboard(uint64_t bitboard) {
@@ -38,19 +35,19 @@ std::string movePretty(const Board& board, const Move& move) {
 
     uint64_t fromMask = maskForPos(move.from());
     uint64_t toMask = maskForPos(move.from());
-    const Color color = static_cast<Color>(board.curState->blackToMove);
+    const Color color = static_cast<Color>(board.blackToMove());
     const Color opColor = static_cast<Color>(!color);
 
     // figure out piece
     int pieceNum = 0;
     for (int i = 0; i < 12; i += 2) {
-        if (board.curState->pieces[i + color] & fromMask) {
+        if (board.getBB(i + color) & fromMask) {
             pieceNum = i;
         }
     }
     pieceNum /= 2;
 
-    const std::string capture = toMask & board.curState->allPieces[opColor] ? "x" : "";
+    const std::string capture = toMask & board.getAll(opColor) ? "x" : "";
 
     const char file[] = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'};
 

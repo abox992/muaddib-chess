@@ -3,9 +3,9 @@
 
 #include "move.h"
 #include "types.h"
-#include "movegen.h"
 #include "board.h"
-#include <vector>
+#include "movegen.h"
+#include <array>
 
 #define MAX_MOVES 256
 
@@ -19,7 +19,7 @@ private:
 public:
     MoveList(const Board& board) {
 
-        if (board.curState->blackToMove) {
+        if (board.blackToMove()) {
             count = generateMoves<filter, Color::BLACK>(board, moveList.data());
         } else {
             count = generateMoves<filter, Color::WHITE>(board, moveList.data());

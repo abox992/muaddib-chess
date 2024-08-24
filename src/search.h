@@ -2,6 +2,7 @@
 #define SEARCH_H
 
 #include "move.h"
+#include "board.h"
 
 struct SearchInfo {
     Move bestMove;
