@@ -13,9 +13,12 @@ set(CMAKE_CXX_STANDARD 20)
 # flags
 set(CMAKE_CXX_FLAGS "-Wall -O3 -march=native -g")
 
+# export compiler_commands.json
+set(CMAKE_EXPORT_COMPILE_COMMANDS true)
+
 # add gui files
-#add_library(guiLib)
-#add_subdirectory(gui)
+# add_library(guiLib)
+# add_subdirectory(gui)
 
 # add files in src dir
 file(GLOB SOURCES "*.cpp")

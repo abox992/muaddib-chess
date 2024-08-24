@@ -11,9 +11,9 @@
 
 // NOTE: THIS DOES NOT COPY PREVSTATE
 BoardState::BoardState(const BoardState& copy) {
-    std::memcpy(this->pieces, copy.pieces, sizeof(uint64_t) * (std::end(copy.pieces) - std::begin(copy.pieces)));
-    std::memcpy(this->allPieces, copy.allPieces, sizeof(uint64_t) * (std::end(copy.allPieces) - std::begin(copy.allPieces)));
-    std::memcpy(this->canCastle, copy.canCastle, sizeof(bool) * (std::end(copy.canCastle) - std::begin(copy.canCastle)));
+    memcpy(this->pieces, copy.pieces, sizeof(uint64_t) * (std::end(copy.pieces) - std::begin(copy.pieces)));
+    memcpy(this->allPieces, copy.allPieces, sizeof(uint64_t) * (std::end(copy.allPieces) - std::begin(copy.allPieces)));
+    memcpy(this->canCastle, copy.canCastle, sizeof(bool) * (std::end(copy.canCastle) - std::begin(copy.canCastle)));
     this->enpassantPos = copy.enpassantPos;
     this->empty = copy.empty;
     this->blackToMove = copy.blackToMove;
@@ -242,7 +242,7 @@ void Board::makeMove(const Move& move) {
 
     Piece piece;
     for (int i = 0; i < 12; i += 2) {
-        if (this->curState->pieces[i + color] & fromMask) {
+        if (this->curState->pieces[i + static_cast<int>(color)] & fromMask) {
             piece = static_cast<Piece>(i);
         }
     }
@@ -260,8 +260,8 @@ void Board::makeMove(const Move& move) {
     }
 
     // update my pieces
-    this->curState->pieces[piece + color] &= ~fromMask; // remove old position
-    this->curState->pieces[piece + color] |= toMask; // add new position
+    this->curState->pieces[piece + static_cast<int>(color)] &= ~fromMask; // remove old position
+    this->curState->pieces[piece + static_cast<int>(color)] |= toMask; // add new position
 
     // update opponent pieces
     for (int i = enemyColor; i < 12; i+=2) {
@@ -277,7 +277,7 @@ void Board::makeMove(const Move& move) {
         //uint64_t tempMoveCastle = move.castle;
         //int pos = tz_count(tempMoveCastle);
 
-        uint64_t castleSide = toMask & this->curState->pieces[Piece::ROOKS + color]; // bit mask for rook taken
+        uint64_t castleSide = toMask & this->curState->pieces[Piece::ROOKS + static_cast<int>(color)]; // bit mask for rook taken
         assert(castleSide != 0);
         int pos = move.to(); //tz_count(castleSide);
         if (pos == 56) {
@@ -288,9 +288,9 @@ void Board::makeMove(const Move& move) {
             pos = 3;
         }
 
-        this->curState->pieces[Piece::KINGS + color] = castleSquares[pos]; // update king pos
-        this->curState->pieces[Piece::ROOKS + color] |= castleRookSquares[pos]; // add new rook pos
-        this->curState->pieces[Piece::ROOKS + color] &= ~originalRookSquares[pos]; // remove old rook pos
+        this->curState->pieces[Piece::KINGS + static_cast<int>(color)] = castleSquares[pos]; // update king pos
+        this->curState->pieces[Piece::ROOKS + static_cast<int>(color)] |= castleRookSquares[pos]; // add new rook pos
+        this->curState->pieces[Piece::ROOKS + static_cast<int>(color)] &= ~originalRookSquares[pos]; // remove old rook pos
 
         this->curState->canCastle[color] = false;
         this->curState->canCastle[color + 2] = false;
@@ -302,11 +302,11 @@ void Board::makeMove(const Move& move) {
     }
 
     if (piece == Piece::ROOKS) { // rook move, can no longer castle on that side
-        if ((originalRookSquares[color] & this->curState->pieces[Piece::ROOKS + color]) == 0) { // if king side rook not on original square
+        if ((originalRookSquares[color] & this->curState->pieces[Piece::ROOKS + static_cast<int>(color)]) == 0) { // if king side rook not on original square
             this->curState->canCastle[color] = false;
         }
 
-        if ((originalRookSquares[color + 2] & this->curState->pieces[Piece::ROOKS + color]) == 0) { // if queen side...
+        if ((originalRookSquares[color + 2] & this->curState->pieces[Piece::ROOKS + static_cast<int>(color)]) == 0) { // if queen side...
             this->curState->canCastle[color + 2] = false;
         }
     }
@@ -343,7 +343,7 @@ void Board::makeMove(const Move& move) {
         int promoPieces[4] = {2, 4, 6, 8};
         //uint64_t tempMovePromo = move.promotion;
         int index = move.promotionPiece();
-        this->curState->pieces[promoPieces[index] + color] |= toMask; // add new piece
+        this->curState->pieces[promoPieces[index] + static_cast<int>(color)] |= toMask; // add new piece
         this->curState->pieces[color] &= ~toMask; // remove old pawn
 
     }

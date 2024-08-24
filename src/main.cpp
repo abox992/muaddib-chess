@@ -1,6 +1,5 @@
 #include <iostream>
 #include "board.h"
-#include "helpers.h"
 #include "precompute_masks.h"
 #include "movegen.h"
 #include "test_suite.h"
@@ -8,10 +7,10 @@
 #include "search.h"
 #include "evaluate.h"
 #include "move_list.h"
+#include "helpers.h"
 
 //#include "gui/game.h"
 
-#include <bit>
 #include <sstream>
 #include <chrono>
 
@@ -112,8 +111,8 @@ void asciiGameLoop() {
     // ascii console game loop
     std::stringstream pgn;
     int moveNum = 1;
-    while (board.curState->halfMoves < 100 && board.curState->highestRepeat < 3) {
-        Move bestMove = getBestMove(board, 5);
+    while (board.getHalfMoves() < 100 && board.getHighestRepeat() < 3) {
+        Move bestMove = getBestMove(board, 7);
 
         if (bestMove.isNull()) { // no moves available
             break;
@@ -129,13 +128,13 @@ void asciiGameLoop() {
         // }
 
         // update pgn
-        if (!board.curState->blackToMove) {
+        if (!board.blackToMove()) {
             pgn << " " << moveNum << ". ";
         }
 
         pgn << movePretty(board, bestMove);
 
-        if (board.curState->blackToMove) {
+        if (board.blackToMove()) {
             moveNum++;
         }
 

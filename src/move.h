@@ -2,9 +2,9 @@
 #define MOVE_H
 
 #include <iostream>
-#include "board.h"
+//#include "board.h"
 #include <cassert>
-#include "bit_manip.h"
+#include <cstdint>
 
 enum MoveType {
     NORMAL,
@@ -61,8 +61,8 @@ public:
 
     constexpr bool operator==(const Move& m) const { return data == m.data; }
     constexpr bool operator!=(const Move& m) const { return data != m.data; }
-};
 
-std::ostream& operator<<(std::ostream& o, const Move& move);
+    friend std::ostream& operator<<(std::ostream& o, const Move& move);
+};
 
 #endif

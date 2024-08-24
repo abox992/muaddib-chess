@@ -4,7 +4,7 @@
     //#define x86 1
 
     #if defined(__x86_64__)
-        #include <bit>
+        //#include <bit>
         #include <cstdint>
         #include <immintrin.h>
 
@@ -13,7 +13,7 @@
             return _pext_u64(x, mask);
         }
 
-        inline uint64_t maskForPos(int x) {
+        inline constexpr uint64_t maskForPos(const int x) {
             return (uint64_t(1) << (x));
         }
 

@@ -11,17 +11,15 @@ int evaluation(const Board& board) {
 
     int eval = whiteValue - blackValue;
 
-    //eval += pieceScope(board);
-
-    return eval;
-    //return board.curState->blackToMove ? -eval : eval;
+    //return eval;
+    return board.blackToMove() ? -eval : eval;
 }
 
 int materialValue(const Board& board, const int color) {
     const int pieceValue[] = {100, 300, 320, 500, 900}; // pawn, knight, bishop, rook, queen
     int totalValue = 0;
     for (int i = 0; i < 5; i++) {
-        int count = std::popcount(board.curState->pieces[i * 2 + color]);
+        int count = std::popcount(board.getBB(i * 2 + color));//std::popcount(board.curState->pieces[i * 2 + color]);
         totalValue += count * pieceValue[i];
     }
 
