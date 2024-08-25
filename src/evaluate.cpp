@@ -11,8 +11,8 @@ int evaluation(const Board& board) {
 
     int eval = whiteValue - blackValue;
 
-    //return eval;
-    return board.blackToMove() ? -eval : eval;
+    return eval;
+    //return board.blackToMove() ? -eval : eval;
 }
 
 int materialValue(const Board& board, const int color) {

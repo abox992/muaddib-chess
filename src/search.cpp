@@ -51,7 +51,7 @@ SearchInfo alphaBeta(Board& board, int depth, const int startDepth, int alpha, i
 
     int maxEval = NEG_INF;
 
-    for (auto& move : moveList) {
+    for (const auto& move : moveList) {
         int extension = 0;
         if (maskForPos(move.to()) & !board.getEmpty()) { // if the node is a capture, extend search
             extension++;

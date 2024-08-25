@@ -1,25 +1,25 @@
-#include <iostream>
 #include "board.h"
+#include "evaluate.h"
+#include "helpers.h"
+#include "move_list.h"
 #include "precompute_masks.h"
-#include "movegen.h"
+#include "search.h"
 #include "test_suite.h"
 #include "zobrist.h"
-#include "search.h"
-#include "evaluate.h"
-#include "move_list.h"
-#include "helpers.h"
+#include <iostream>
 
-//#include "gui/game.h"
+// #include "gui/game.h"
 
-#include <sstream>
 #include <chrono>
+#include <sstream>
 
 void asciiGameLoop();
 void benchmarkMoveGen();
 void benchmarkPerft();
 void benchmarkMakeMove();
 
-int main() {
+int main()
+{
     Board board;
     board.setStartPos();
     initMasks();
@@ -33,27 +33,28 @@ int main() {
         std::cout << m << '\n';
     }
 
-    //benchmarkMoveGen();
-    //benchmarkMakeMove();
-    //benchmarkPerft();
+    // benchmarkMoveGen();
+    // benchmarkMakeMove();
+    // benchmarkPerft();
 
-    runTests();
+    /*runTests();*/
 
     // board = generateBoardFromFen("rnb1kbn1/ppp5/4p3/8/7q/1PP1P3/P2K3p/RNBQ1B1R b q - 0 14");
     // getBestMove(board, 7);
 
-    //asciiGameLoop();
-    //board.set("rn3bnr/p2q4/4k3/2pb1p2/P1N4P/1Q2PB2/5N2/R1B1K2R b KQ - 3 23");
-    // Move move = getBestMove(board, 5);
-    // std::cout << move << '\n';
+    asciiGameLoop();
+    // board.set("rn3bnr/p2q4/4k3/2pb1p2/P1N4P/1Q2PB2/5N2/R1B1K2R b KQ - 3 23");
+    //  Move move = getBestMove(board, 5);
+    //  std::cout << move << '\n';
 
-    //Game game;
-    //game.runGameLoop();
+    // Game game;
+    // game.runGameLoop();
 
     return 0;
 }
 
-void benchmarkMoveGen() {
+void benchmarkMoveGen()
+{
     Board board("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -");
 
     int iterations = 1'000'000;
@@ -67,7 +68,8 @@ void benchmarkMoveGen() {
     std::cout << "Movegen speed: " << time_span.count() / static_cast<double>(iterations) << " microseconds" << std::endl;
 }
 
-void benchmarkMakeMove() {
+void benchmarkMakeMove()
+{
     Board board("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -");
 
     MoveList<MoveFilter::ALL> moveList(board);
@@ -84,8 +86,9 @@ void benchmarkMakeMove() {
     std::cout << "Make/unmake speed: " << time_span.count() / static_cast<double>(iterations) << " microseconds" << std::endl;
 }
 
-void benchmarkPerft() {
-    //uint64_t answer = 3'195'901'860;
+void benchmarkPerft()
+{
+    // uint64_t answer = 3'195'901'860;
 
     Board board;
     board.setStartPos();
@@ -96,23 +99,24 @@ void benchmarkPerft() {
 
     std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
 
-    //assert(answer == result);
+    // assert(answer == result);
 
     auto time_span = std::chrono::duration_cast<std::chrono::seconds>(end - start);
     std::cout << "Engine speed: " << (static_cast<double>(result) / time_span.count()) / 1000000 << " MN/sec" << std::endl;
 }
 
-void asciiGameLoop() {
+void asciiGameLoop()
+{
     Board board;
     board.setStartPos();
 
-    //board.set("r1bqk2r/p2nppbp/2pp1np1/1p6/3PP3/2N1BP2/PPPQN1PP/R3KB1R w KQkq - 2 8");
+    // board.set("r1bqk2r/p2nppbp/2pp1np1/1p6/3PP3/2N1BP2/PPPQN1PP/R3KB1R w KQkq - 2 8");
 
     // ascii console game loop
     std::stringstream pgn;
     int moveNum = 1;
     while (board.getHalfMoves() < 100 && board.getHighestRepeat() < 3) {
-        Move bestMove = getBestMove(board, 7);
+        Move bestMove = getBestMove(board, 5);
 
         if (bestMove.isNull()) { // no moves available
             break;
@@ -142,9 +146,9 @@ void asciiGameLoop() {
 
         std::cout << "\x1B[2J\x1B[H"; // clear screen
         std::cout << board << std::endl;
-        //std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-        // std::string x;
-        // std::cin >> x;
+        // std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+        //  std::string x;
+        //  std::cin >> x;
 
         // std::cout << board.curState->halfMoves << '\n';
         // std::cout << board.curState->highestRepeat << '\n';
