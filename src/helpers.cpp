@@ -52,13 +52,13 @@ std::string movePretty(const Board& board, const Move& move) {
     const char file[] = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'};
 
     int fromFile = 7 - unsigned(move.from()) % 8;
-
+    int fromRank = unsigned(move.from()) / 8;
     int toRank = unsigned(move.to()) / 8;
     int toFile = 7 - unsigned(move.to()) % 8;
 
     const std::string pieceChars[] = {"", "N", "B", "R", "Q", "K"};
     if (move.moveType() != MoveType::CASTLE) {
-        result << " " << pieceChars[pieceNum] << file[fromFile] << capture << file[toFile] << toRank + 1;
+        result << " " << pieceChars[pieceNum] << file[fromFile] << fromRank + 1 << capture << file[toFile] << toRank + 1;
     } else {
         result << " " << "O-O";
 

@@ -20,10 +20,11 @@ void benchmarkMakeMove();
 
 int main()
 {
-    Board board;
-    board.setStartPos();
+    
     initMasks();
     initZobrist();
+    
+    Board board;
 
     MoveList<MoveFilter::ALL> moveList(board);
 
@@ -33,22 +34,14 @@ int main()
         std::cout << m << '\n';
     }
 
+    std::cout << "initial hash: " << board.hash() << '\n';
     // benchmarkMoveGen();
     // benchmarkMakeMove();
     // benchmarkPerft();
 
-    /*runTests();*/
-
-    // board = generateBoardFromFen("rnb1kbn1/ppp5/4p3/8/7q/1PP1P3/P2K3p/RNBQ1B1R b q - 0 14");
-    // getBestMove(board, 7);
+    //runTests();
 
     asciiGameLoop();
-    // board.set("rn3bnr/p2q4/4k3/2pb1p2/P1N4P/1Q2PB2/5N2/R1B1K2R b KQ - 3 23");
-    //  Move move = getBestMove(board, 5);
-    //  std::cout << move << '\n';
-
-    // Game game;
-    // game.runGameLoop();
 
     return 0;
 }
@@ -116,14 +109,15 @@ void asciiGameLoop()
     std::stringstream pgn;
     int moveNum = 1;
     while (board.getHalfMoves() < 100 && board.getHighestRepeat() < 3) {
-        Move bestMove = getBestMove(board, 5);
+        SearchInfo result = getBestMove(board, 5);
+        Move bestMove = result.bestMove;
 
-        if (bestMove.isNull()) { // no moves available
+        if (result.bestMove.isNull()) { // no moves available
             break;
         }
 
         std::cout << moveNum << ". " << bestMove << std::endl;
-        std::cout << evaluation(board) << '\n';
+        std::cout << result.bestEval << '\n';
 
         // MoveList<MoveFilter::ALL> moveList(board);
 
@@ -133,7 +127,7 @@ void asciiGameLoop()
 
         // update pgn
         if (!board.blackToMove()) {
-            pgn << " " << moveNum << ". ";
+            pgn << " " << moveNum << ".";
         }
 
         pgn << movePretty(board, bestMove);

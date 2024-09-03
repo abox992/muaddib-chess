@@ -2,7 +2,6 @@
 #define MOVE_H
 
 #include <iostream>
-//#include "board.h"
 #include <cassert>
 #include <cstdint>
 
@@ -39,27 +38,27 @@ public:
         return Move( (moveType << 14) | (pt << 12) | (to << 6) | from );
     }
 
-    constexpr int from() const {
+    inline constexpr int from() const {
         return data & 0x3F;
     }
 
-    constexpr int to() const {
+    inline constexpr int to() const {
         return (data >> 6) & 0x3F;
     }
 
-    constexpr PromoPiece promotionPiece() const { 
+    inline constexpr PromoPiece promotionPiece() const { 
         return PromoPiece((data >> 12) & 3);
     }
 
-    constexpr MoveType moveType() const { 
+    inline constexpr MoveType moveType() const { 
         return MoveType((data >> 14) & 3); 
     }
 
-    constexpr bool isNull() const {
+    inline constexpr bool isNull() const {
         return data == 0;
     }
 
-    constexpr bool operator==(const Move& m) const { return data == m.data; }
+    inline constexpr bool operator==(const Move& m) const { return data == m.data; }
     constexpr bool operator!=(const Move& m) const { return data != m.data; }
 
     friend std::ostream& operator<<(std::ostream& o, const Move& move);

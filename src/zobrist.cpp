@@ -1,10 +1,8 @@
-
-#include <iostream>
+#include "zobrist.h"
 #include <random>
 #include <cmath>
-#include "board.h"
-#include "helpers.h"
 #include "bit_manip.h"
+#include "board_state.h"
 
 uint64_t randomTable[64][12];
 uint64_t randomBlackToMove;
@@ -44,4 +42,12 @@ uint64_t zhash(const BoardState& state) {
     }
 
     return hash;
+}
+
+uint64_t zhash(const Move& move, const uint64_t oldHash) {
+    if (maskForPos(move.to())) {
+
+    } 
+
+    return 0;
 }

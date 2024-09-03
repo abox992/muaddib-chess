@@ -4,7 +4,6 @@
     //#define x86 1
 
     #if defined(__x86_64__)
-        //#include <bit>
         #include <cstdint>
         #include <immintrin.h>
 

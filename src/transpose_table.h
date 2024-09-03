@@ -1,37 +1,72 @@
 #ifndef TRANSPOSE_TABLE_H
 #define TRANSPOSE_TABLE_H
 
+#include <cassert>
 #include <cstdint>
+#include <list>
 #include <unordered_map>
-#include "move.h"
-#include "zobrist.h"
 
-struct TpEntry {
+struct TtEntry {
     int depth;
     int eval;
-    Move bestMove;
+
+    enum Flags {
+        EXACT,
+        UPPER,
+        LOWER
+    };
+
+    Flags flag; 
 };
 
 class TranspositionTable {
 private:
-    std::unordered_map<uint64_t, TpEntry> hashTable;
-public:
-    TranspositionTable() = default;
+    std::unordered_map<uint64_t, TtEntry> hashTable;
+    std::list<uint64_t> hashes; // head is oldest, tail is newest
+    size_t size;
+    size_t maxSize;
 
-    bool contains(uint64_t key) {
+public:
+    TranspositionTable(int maxSize)
+        : size(0)
+        , maxSize(maxSize)
+    {
+    }
+
+    inline bool contains(uint64_t key)
+    {
         return hashTable.contains(key);
     }
 
-    TpEntry get(uint64_t key) {
+    inline TtEntry get(uint64_t key)
+    {
+        assert(hashTable.contains(key));
         return hashTable[key];
     }
 
-    void put(const Board& board, int depth, int eval, Move bestMove) {
-        TpEntry e;
-        e.depth = depth;
-        e.eval = eval;
-        e.bestMove = bestMove;
-        hashTable[zhash(*board.curState)] = e;
+    inline void removeOldest()
+    {
+        uint64_t oldestKey = hashes.front();
+        hashes.pop_front();
+        hashTable.erase(oldestKey);
+        size--;
+    }
+
+    inline void put(uint64_t key, TtEntry entry)
+    {
+        size++;
+
+        if (size > maxSize) {
+            this->removeOldest();
+        }
+
+        hashTable[key] = entry;
+        hashes.push_back(key);
+    }
+
+    inline size_t getSize() const
+    {
+        return size;
     }
 };
 

@@ -1,16 +1,17 @@
-#include "board.h"
-#include "move.h"
+
+#include "bit_manip.h"
+#include "check_pin_masks.h"
 #include "helpers.h"
+#include "move.h"
 #include "precompute_masks.h"
 #include "types.h"
-#include "bit_manip.h"
 #include "zobrist.h"
-#include "check_pin_masks.h"
 
 #include <cstring>
 
 // NOTE: THIS DOES NOT COPY PREVSTATE
-BoardState::BoardState(const BoardState& copy) {
+BoardState::BoardState(const BoardState& copy)
+{
     memcpy(this->pieces, copy.pieces, sizeof(uint64_t) * (std::end(copy.pieces) - std::begin(copy.pieces)));
     memcpy(this->allPieces, copy.allPieces, sizeof(uint64_t) * (std::end(copy.allPieces) - std::begin(copy.allPieces)));
     memcpy(this->canCastle, copy.canCastle, sizeof(bool) * (std::end(copy.canCastle) - std::begin(copy.canCastle)));
@@ -20,141 +21,145 @@ BoardState::BoardState(const BoardState& copy) {
     this->halfMoves = copy.halfMoves;
     this->fullMoves = copy.fullMoves;
 
-    //this->prevState = copy.prevState;
+    // this->prevState = copy.prevState;
     this->hash = copy.hash;
     this->highestRepeat = copy.highestRepeat;
 }
 
-Board::Board() {
+Board::Board()
+{
     curState = nullptr;
     setStartPos();
 }
 
-Board::Board(const std::string fen) {
+Board::Board(const std::string fen)
+{
     curState = nullptr;
     setStartPos();
 
     this->set(fen);
 }
 
-void Board::set(const std::string fen) {
+void Board::set(const std::string fen)
+{
     this->setStartPos(); // reset the board
 
-    for(int i = 0; i < 12; i++) { // zero all bitboards
+    for (int i = 0; i < 12; i++) { // zero all bitboards
         this->setPieceSet(i, 0);
     }
 
     std::vector<std::string> tokens = split(fen, ' ');
     for (int field = 0; field < int(tokens.size()); field++) {
         switch (field) {
-            case 0: { // piece positions
-                int currentPos = 63;
-                for (int i = 0; i < int(tokens[field].length()); i++) {
-                    char currentChar = tokens[field][i];
+        case 0: { // piece positions
+            int currentPos = 63;
+            for (int i = 0; i < int(tokens[field].length()); i++) {
+                char currentChar = tokens[field][i];
 
-                    if (currentChar == '/') {
-                        continue;
-                    }
-
-                    if (isdigit(currentChar)) {
-                        currentPos -= int(currentChar - '0');
-                        continue;
-                    }
-
-                    // update pieces
-                    char pieceChars[] = {'P', 'p', 'N', 'n', 'B', 'b', 'R', 'r', 'Q', 'q', 'K', 'k'};
-                    for (int j = 0; j < 12; j++) {
-                        if (currentChar == pieceChars[j]) {
-                            this->setPieceSet(j, this->curState->pieces[j] | (uint64_t(1) << currentPos));
-                        }
-                    }
-
-                    currentPos--;
-
+                if (currentChar == '/') {
+                    continue;
                 }
 
-                break;
-            } case 1: { // piece to move
+                if (isdigit(currentChar)) {
+                    currentPos -= int(currentChar - '0');
+                    continue;
+                }
 
-                for (int i = 0; i < int(tokens[field].length()); i++) {
-                    char currentChar = tokens[field][i];
-
-                    if (currentChar == 'w') {
-                        this->curState->blackToMove = false;
-                    } else {
-                        this->curState->blackToMove = true;
+                // update pieces
+                char pieceChars[] = { 'P', 'p', 'N', 'n', 'B', 'b', 'R', 'r', 'Q', 'q', 'K', 'k' };
+                for (int j = 0; j < 12; j++) {
+                    if (currentChar == pieceChars[j]) {
+                        this->setPieceSet(j, this->curState->pieces[j] | (uint64_t(1) << currentPos));
                     }
                 }
 
-                break;
-            } case 2: { // castling
-
-                for (int i = 0; i < 4; i++) {
-                    this->curState->canCastle[i] = false;
-                }
-
-                for (int i = 0; i < int(tokens[field].length()); i++) {
-                    char currentChar = tokens[field][i];
-
-                    if (currentChar == '-') {
-                        break;
-                    }
-
-                    if (currentChar == 'K') {
-                        this->curState->canCastle[0] = true;
-                    } else if (currentChar == 'Q') {
-                        this->curState->canCastle[2] = true;
-                    } else if (currentChar == 'k') {
-                        this->curState->canCastle[1] = true;
-                    } else if (currentChar == 'q') {
-                        this->curState->canCastle[3] = true;
-                    }
-
-                }
-
-                break;
-            } case 3: { // enpassant
-                int pos = 0;
-                for (int i = 0; i < int(tokens[field].length()); i++) {
-                    char currentChar = tokens[field][i];
-
-                    if (currentChar == '-') {
-                        this->curState->enpassantPos = 0;
-                        break;
-                    }
-
-                    if (i == 0) {
-                        pos += 'h' - currentChar;
-                    }
-
-                    if (i == 1) {
-                        pos += 8 * ((currentChar - '0') - 1);
-                        this->curState->enpassantPos = pos;
-                    }
-
-                }
-
-                break;
-            } case 4: { // halfmove clock
-
-                for (int i = 0; i < int(tokens[field].length()); i++) {
-                    char currentChar = tokens[field][i];
-
-                    this->curState->halfMoves = int(currentChar - '0');
-                }
-
-                break;
-            } case 5: { // full move number
-
-                for (int i = 0; i < int(tokens[field].length()); i++) {
-                    char currentChar = tokens[field][i];
-
-                    this->curState->fullMoves = int(currentChar - '0');
-                }
-
-                break;
+                currentPos--;
             }
-            
+
+            break;
+        }
+        case 1: { // piece to move
+
+            for (int i = 0; i < int(tokens[field].length()); i++) {
+                char currentChar = tokens[field][i];
+
+                if (currentChar == 'w') {
+                    this->curState->blackToMove = false;
+                } else {
+                    this->curState->blackToMove = true;
+                }
+            }
+
+            break;
+        }
+        case 2: { // castling
+
+            for (int i = 0; i < 4; i++) {
+                this->curState->canCastle[i] = false;
+            }
+
+            for (int i = 0; i < int(tokens[field].length()); i++) {
+                char currentChar = tokens[field][i];
+
+                if (currentChar == '-') {
+                    break;
+                }
+
+                if (currentChar == 'K') {
+                    this->curState->canCastle[0] = true;
+                } else if (currentChar == 'Q') {
+                    this->curState->canCastle[2] = true;
+                } else if (currentChar == 'k') {
+                    this->curState->canCastle[1] = true;
+                } else if (currentChar == 'q') {
+                    this->curState->canCastle[3] = true;
+                }
+            }
+
+            break;
+        }
+        case 3: { // enpassant
+            int pos = 0;
+            for (int i = 0; i < int(tokens[field].length()); i++) {
+                char currentChar = tokens[field][i];
+
+                if (currentChar == '-') {
+                    this->curState->enpassantPos = 0;
+                    break;
+                }
+
+                if (i == 0) {
+                    pos += 'h' - currentChar;
+                }
+
+                if (i == 1) {
+                    pos += 8 * ((currentChar - '0') - 1);
+                    this->curState->enpassantPos = pos;
+                }
+            }
+
+            break;
+        }
+        case 4: { // halfmove clock
+
+            for (int i = 0; i < int(tokens[field].length()); i++) {
+                char currentChar = tokens[field][i];
+
+                this->curState->halfMoves = int(currentChar - '0');
+            }
+
+            break;
+        }
+        case 5: { // full move number
+
+            for (int i = 0; i < int(tokens[field].length()); i++) {
+                char currentChar = tokens[field][i];
+
+                this->curState->fullMoves = int(currentChar - '0');
+            }
+
+            break;
+        }
         }
     }
 
@@ -164,17 +169,19 @@ void Board::set(const std::string fen) {
     this->curState->hash = zhash(*this->curState);
 }
 
-void Board::setPieceSet(int i, uint64_t num) {
+void Board::setPieceSet(int i, uint64_t num)
+{
     this->curState->pieces[i] = num;
 }
 
-void Board::setStartPos() {
-    //BoardState state;
-    this->curState = std::make_unique<BoardState>();//new BoardState();
+void Board::setStartPos()
+{
+    // BoardState state;
+    this->curState = std::make_unique<BoardState>(); // new BoardState();
     this->curState->prevState = nullptr;
 
-    this->curState->pieces[ColorPiece::WPAWNS]   = 0x000000000000FF00;
-    this->curState->pieces[ColorPiece::BPAWNS]   = 0x00FF000000000000;
+    this->curState->pieces[ColorPiece::WPAWNS] = 0x000000000000FF00;
+    this->curState->pieces[ColorPiece::BPAWNS] = 0x00FF000000000000;
 
     this->curState->pieces[ColorPiece::WKNIGHTS] = 0x0000000000000042;
     this->curState->pieces[ColorPiece::BKNIGHTS] = 0x4200000000000000;
@@ -182,14 +189,14 @@ void Board::setStartPos() {
     this->curState->pieces[ColorPiece::WBISHOPS] = 0x0000000000000024;
     this->curState->pieces[ColorPiece::BBISHOPS] = 0x2400000000000000;
 
-    this->curState->pieces[ColorPiece::WROOKS]   = 0x0000000000000081;
-    this->curState->pieces[ColorPiece::BROOKS]   = 0x8100000000000000;
+    this->curState->pieces[ColorPiece::WROOKS] = 0x0000000000000081;
+    this->curState->pieces[ColorPiece::BROOKS] = 0x8100000000000000;
 
-    this->curState->pieces[ColorPiece::WQUEENS]  = 0x0000000000000010;
-    this->curState->pieces[ColorPiece::BQUEENS]  = 0x1000000000000000;
+    this->curState->pieces[ColorPiece::WQUEENS] = 0x0000000000000010;
+    this->curState->pieces[ColorPiece::BQUEENS] = 0x1000000000000000;
 
-    this->curState->pieces[ColorPiece::WKING]    = 0x000000000000008;
-    this->curState->pieces[ColorPiece::BKING]    = 0x800000000000000;
+    this->curState->pieces[ColorPiece::WKING] = 0x000000000000008;
+    this->curState->pieces[ColorPiece::BKING] = 0x800000000000000;
 
     updateAllPieces();
 
@@ -208,25 +215,17 @@ void Board::setStartPos() {
     this->curState->hash = zhash(*this->curState);
 }
 
-void Board::updateAllPieces() {
-    this->curState->allPieces[0] = (this->curState->pieces[0] | 
-                    this->curState->pieces[2] | 
-                    this->curState->pieces[4] | 
-                    this->curState->pieces[6] | 
-                    this->curState->pieces[8] | 
-                    this->curState->pieces[10]);
+void Board::updateAllPieces()
+{
+    this->curState->allPieces[0] = (this->curState->pieces[0] | this->curState->pieces[2] | this->curState->pieces[4] | this->curState->pieces[6] | this->curState->pieces[8] | this->curState->pieces[10]);
 
-    this->curState->allPieces[1] = (this->curState->pieces[1] | 
-                    this->curState->pieces[3] | 
-                    this->curState->pieces[5] | 
-                    this->curState->pieces[7] | 
-                    this->curState->pieces[9] | 
-                    this->curState->pieces[11]);
+    this->curState->allPieces[1] = (this->curState->pieces[1] | this->curState->pieces[3] | this->curState->pieces[5] | this->curState->pieces[7] | this->curState->pieces[9] | this->curState->pieces[11]);
 
     this->curState->empty = ~(this->curState->allPieces[0] | this->curState->allPieces[1]);
 }
 
-void Board::makeMove(const Move& move) {
+void Board::makeMove(const Move& move)
+{
 
     // create a copy of the current state (add to head of list)
     std::unique_ptr<BoardState> newState = std::make_unique<BoardState>(*this->curState);
@@ -264,7 +263,7 @@ void Board::makeMove(const Move& move) {
     this->curState->pieces[piece + static_cast<int>(color)] |= toMask; // add new position
 
     // update opponent pieces
-    for (int i = enemyColor; i < 12; i+=2) {
+    for (int i = enemyColor; i < 12; i += 2) {
         if ((this->curState->pieces[i] & toMask) != 0) { // found enemy piece taken
             this->curState->pieces[i] &= ~toMask;
             this->curState->halfMoves = 0; // capture, reset halfMoves
@@ -274,12 +273,12 @@ void Board::makeMove(const Move& move) {
 
     // update castle bitboards
     if (move.moveType() == MoveType::CASTLE) {
-        //uint64_t tempMoveCastle = move.castle;
-        //int pos = tz_count(tempMoveCastle);
+        // uint64_t tempMoveCastle = move.castle;
+        // int pos = tz_count(tempMoveCastle);
 
         uint64_t castleSide = toMask & this->curState->pieces[Piece::ROOKS + static_cast<int>(color)]; // bit mask for rook taken
         assert(castleSide != 0);
-        int pos = move.to(); //tz_count(castleSide);
+        int pos = move.to(); // tz_count(castleSide);
         if (pos == 56) {
             pos = 1;
         } else if (pos == 7) {
@@ -330,7 +329,7 @@ void Board::makeMove(const Move& move) {
     }
     this->curState->enpassantPos = 0;
 
-    if (piece == 0 && (abs(move.to() - move.from()) > 9)) { // pawn push move, need to set enpassant pos
+    if (piece == Piece::PAWNS && (abs(move.to() - move.from()) > 9)) { // pawn push move, need to set enpassant pos
         if (color) { // black
             this->curState->enpassantPos = move.to() + 8;
         } else { // white
@@ -340,12 +339,11 @@ void Board::makeMove(const Move& move) {
 
     // promotion
     if (move.moveType() == MoveType::PROMOTION) {
-        int promoPieces[4] = {2, 4, 6, 8};
-        //uint64_t tempMovePromo = move.promotion;
+        const int promoPieces[4] = { 2, 4, 6, 8 };
+        // uint64_t tempMovePromo = move.promotion;
         int index = move.promotionPiece();
         this->curState->pieces[promoPieces[index] + static_cast<int>(color)] |= toMask; // add new piece
         this->curState->pieces[color] &= ~toMask; // remove old pawn
-
     }
 
     // update black to move
@@ -370,20 +368,21 @@ void Board::makeMove(const Move& move) {
     }
 }
 
-void Board::unmakeMove() {
+void Board::unmakeMove()
+{
 
     if (this->curState == nullptr || this->curState->prevState == nullptr) {
         return;
     }
 
-    //BoardState* temp = this->curState;
+    // BoardState* temp = this->curState;
     this->curState = std::move(this->curState->prevState);
 
-    //delete temp; // make sure we free the old state from memory
-
+    // delete temp; // make sure we free the old state from memory
 }
 
-bool Board::inCheck() const {
+bool Board::inCheck() const
+{
     if (this->curState->blackToMove) {
         return attacksToKing<Color::BLACK, false>(*this);
     }
@@ -391,11 +390,12 @@ bool Board::inCheck() const {
     return attacksToKing<Color::WHITE, false>(*this);
 }
 
-std::ostream& operator<<(std::ostream& o, Board& board) {
+std::ostream& operator<<(std::ostream& o, Board& board)
+{
 
     // white upper, black lower
-    char printPiece[] = {'P', 'p', 'N', 'n', 'B', 'b', 'R', 'r', 'Q', 'q', 'K', 'k'};
-    //string printPiece[] = {"\u2659", "\u265F", "\u2658", "\u265E", "\u2657", "\u265D", "\u2656", "\u265C", "\u2655", "\u265B", "\u2654", "\u265A"};
+    char printPiece[] = { 'P', 'p', 'N', 'n', 'B', 'b', 'R', 'r', 'Q', 'q', 'K', 'k' };
+    // string printPiece[] = {"\u2659", "\u265F", "\u2658", "\u265E", "\u2657", "\u265D", "\u2656", "\u265C", "\u2655", "\u265B", "\u2654", "\u265A"};
 
     o << "    a   b   c   d   e   f   g   h  " << std::endl;
     o << "  +---+---+---+---+---+---+---+---+" << std::endl;
@@ -406,7 +406,7 @@ std::ostream& operator<<(std::ostream& o, Board& board) {
 
         for (int file = 0; file < 8; file++) {
             uint64_t mask = uint64_t(1) << ((7 - file) + (8 * rank));
-            //cout << std::bitset<64>(mask) << endl;
+            // cout << std::bitset<64>(mask) << endl;
             bool foundPiece = false;
 
             for (int piece = 0; piece < 12; piece++) {
@@ -421,13 +421,11 @@ std::ostream& operator<<(std::ostream& o, Board& board) {
                     foundPiece = true;
                     break;
                 }
-
             }
 
             if (!foundPiece) {
                 o << "|   ";
             }
-
         }
 
         o << "| " << (rank + 1) << std::endl;
