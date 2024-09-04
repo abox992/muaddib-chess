@@ -4,10 +4,8 @@
 #include "bit_manip.h"
 #include "board_state.h"
 
-uint64_t randomTable[64][12];
-uint64_t randomBlackToMove;
 
-void initZobrist() {
+void Zobrist::initZobrist() {
     std::random_device rd;
 
     std::mt19937_64 e2(rd());
@@ -24,7 +22,7 @@ void initZobrist() {
 
 }
 
-uint64_t zhash(const BoardState& state) {
+uint64_t Zobrist::zhash(const BoardState& state) {
     uint64_t hash = 0;
 
     if (state.blackToMove) {
@@ -44,10 +42,3 @@ uint64_t zhash(const BoardState& state) {
     return hash;
 }
 
-uint64_t zhash(const Move& move, const uint64_t oldHash) {
-    if (maskForPos(move.to())) {
-
-    } 
-
-    return 0;
-}

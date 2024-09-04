@@ -166,7 +166,7 @@ void Board::set(const std::string fen)
     this->updateAllPieces();
 
     this->curState->highestRepeat = 1;
-    this->curState->hash = zhash(*this->curState);
+    this->curState->hash = Zobrist::zhash(*this->curState);
 }
 
 void Board::setPieceSet(int i, uint64_t num)
@@ -212,7 +212,7 @@ void Board::setStartPos()
     this->curState->fullMoves = 1;
 
     this->curState->highestRepeat = 1;
-    this->curState->hash = zhash(*this->curState);
+    this->curState->hash = Zobrist::zhash(*this->curState);
 }
 
 void Board::updateAllPieces()
@@ -353,7 +353,7 @@ void Board::makeMove(const Move& move)
     updateAllPieces();
 
     // finally, set the hash
-    this->curState->hash = zhash(*this->curState);
+    this->curState->hash = Zobrist::zhash(*this->curState);
 
     // check position repeats
     int count = 1;
