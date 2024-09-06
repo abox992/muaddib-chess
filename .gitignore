@@ -9,3 +9,6 @@
 
 # build folder
 /build/
+
+# .cache folder which showed up on my mac
+.cache/

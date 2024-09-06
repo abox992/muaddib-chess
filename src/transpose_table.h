@@ -6,7 +6,7 @@
 #include <list>
 #include <unordered_map>
 
-struct TtEntry {
+struct TTEntry {
     int depth;
     int eval;
 
@@ -21,7 +21,7 @@ struct TtEntry {
 
 class TranspositionTable {
 private:
-    std::unordered_map<uint64_t, TtEntry> hashTable;
+    std::unordered_map<uint64_t, TTEntry> hashTable;
     std::list<uint64_t> hashes; // head is oldest, tail is newest
     size_t size;
     size_t maxSize;
@@ -38,7 +38,7 @@ public:
         return hashTable.contains(key);
     }
 
-    inline TtEntry get(uint64_t key)
+    inline TTEntry get(uint64_t key)
     {
         assert(hashTable.contains(key));
         return hashTable[key];
@@ -52,7 +52,7 @@ public:
         size--;
     }
 
-    inline void put(uint64_t key, TtEntry entry)
+    inline void put(uint64_t key, TTEntry entry)
     {
         size++;
 

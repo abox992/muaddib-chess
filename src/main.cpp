@@ -6,6 +6,7 @@
 #include "search.h"
 #include "test_suite.h"
 #include "zobrist.h"
+#include "transpose_table.h"
 #include <iostream>
 
 // #include "gui/game.h"
@@ -22,7 +23,7 @@ int main()
 {
     
     initMasks();
-    initZobrist();
+    Zobrist::initZobrist();
     
     Board board;
 
@@ -42,6 +43,7 @@ int main()
     //runTests();
 
     asciiGameLoop();
+    //std::cout << sizeof(TTEntry) << std::endl;
 
     return 0;
 }
@@ -103,13 +105,15 @@ void asciiGameLoop()
     Board board;
     board.setStartPos();
 
+    Searcher searcher;
+
     // board.set("r1bqk2r/p2nppbp/2pp1np1/1p6/3PP3/2N1BP2/PPPQN1PP/R3KB1R w KQkq - 2 8");
 
     // ascii console game loop
     std::stringstream pgn;
     int moveNum = 1;
     while (board.getHalfMoves() < 100 && board.getHighestRepeat() < 3) {
-        SearchInfo result = getBestMove(board, 5);
+        Searcher::SearchInfo result = searcher.getBestMove(board, 5);
         Move bestMove = result.bestMove;
 
         if (result.bestMove.isNull()) { // no moves available

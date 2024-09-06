@@ -66,6 +66,10 @@ public:
         return tz_count(curState->pieces[Piece::KINGS + static_cast<int>(color)]);
     }
 
+    inline int kingPos(Color color) {
+        return tz_count(curState->pieces[Piece::KINGS + static_cast<int>(color)]);
+    }
+
     inline uint64_t hash() const { return curState->hash; }
 
     friend std::ostream& operator<<(std::ostream& o, Board& board);
