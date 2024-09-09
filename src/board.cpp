@@ -6,25 +6,9 @@
 #include "precompute_masks.h"
 #include "types.h"
 #include "zobrist.h"
+#include "board_state.h"
 
 #include <cstring>
-
-// NOTE: THIS DOES NOT COPY PREVSTATE
-BoardState::BoardState(const BoardState& copy)
-{
-    memcpy(this->pieces, copy.pieces, sizeof(uint64_t) * (std::end(copy.pieces) - std::begin(copy.pieces)));
-    memcpy(this->allPieces, copy.allPieces, sizeof(uint64_t) * (std::end(copy.allPieces) - std::begin(copy.allPieces)));
-    memcpy(this->canCastle, copy.canCastle, sizeof(bool) * (std::end(copy.canCastle) - std::begin(copy.canCastle)));
-    this->enpassantPos = copy.enpassantPos;
-    this->empty = copy.empty;
-    this->blackToMove = copy.blackToMove;
-    this->halfMoves = copy.halfMoves;
-    this->fullMoves = copy.fullMoves;
-
-    // this->prevState = copy.prevState;
-    this->hash = copy.hash;
-    this->highestRepeat = copy.highestRepeat;
-}
 
 Board::Board()
 {
@@ -232,9 +216,12 @@ void Board::makeMove(const Move& move)
     newState->prevState = std::move(this->curState);
     this->curState = std::move(newState);
 
+    const int from = move.from();
+    const int to = move.to();
+
     // make the move (update bitboards) - normal moves
-    uint64_t fromMask = uint64_t(1) << move.from();
-    uint64_t toMask = uint64_t(1) << move.to();
+    uint64_t fromMask = maskForPos(from);
+    uint64_t toMask = maskForPos(to);
 
     const Color color = this->curState->allPieces[Color::WHITE] & fromMask ? Color::WHITE : Color::BLACK;
     const Color enemyColor = static_cast<Color>(!color);
@@ -250,8 +237,8 @@ void Board::makeMove(const Move& move)
     this->curState->hash ^= Zobrist::randomBlackToMove;
 
     if (move.moveType() == MoveType::NORMAL) {
-        this->curState->hash ^= Zobrist::randomTable[move.from()][piece + static_cast<int>(color)];
-        this->curState->hash ^= Zobrist::randomTable[move.to()][piece + static_cast<int>(color)];
+        this->curState->hash ^= Zobrist::randomTable[from][piece + static_cast<int>(color)];
+        this->curState->hash ^= Zobrist::randomTable[to][piece + static_cast<int>(color)];
     }
 
     this->curState->halfMoves++;
@@ -277,7 +264,7 @@ void Board::makeMove(const Move& move)
             this->curState->halfMoves = 0; // capture, reset halfMoves
 
             // update hash for normal capture
-            this->curState->hash ^= Zobrist::randomTable[move.to()][i]; // remove piece taken
+            this->curState->hash ^= Zobrist::randomTable[to][i]; // remove piece taken
             break;
         }
     }
@@ -289,7 +276,7 @@ void Board::makeMove(const Move& move)
 
         //uint64_t castleSide = toMask & this->curState->pieces[Piece::ROOKS + static_cast<int>(color)]; // bit mask for rook taken
         //assert(castleSide != 0);
-        int pos = move.to(); // tz_count(castleSide);
+        int pos = to; // tz_count(castleSide);
         if (pos == 56) {
             pos = 1;
         } else if (pos == 7) {
@@ -306,9 +293,9 @@ void Board::makeMove(const Move& move)
         this->curState->canCastle[color + 2] = false;
 
         // update hash
-        this->curState->hash ^= Zobrist::randomTable[move.to()][Piece::ROOKS + static_cast<int>(color)]; // remove old rook pos
+        this->curState->hash ^= Zobrist::randomTable[to][Piece::ROOKS + static_cast<int>(color)]; // remove old rook pos
         this->curState->hash ^= Zobrist::randomTable[tz_count(castleRookSquares[pos])][Piece::ROOKS + static_cast<int>(color)]; // add new rook pos
-        this->curState->hash ^= Zobrist::randomTable[move.from()][Piece::KINGS + static_cast<int>(color)]; // remove old king pos
+        this->curState->hash ^= Zobrist::randomTable[from][Piece::KINGS + static_cast<int>(color)]; // remove old king pos
         this->curState->hash ^= Zobrist::randomTable[this->kingPos(color)][Piece::KINGS + static_cast<int>(color)]; // add new king pos
     }
 
@@ -347,18 +334,18 @@ void Board::makeMove(const Move& move)
         this->curState->pieces[enemyColor] &= ~maskForPos(capturedPawnPos);
 
         // update hash
-        this->curState->hash ^= Zobrist::randomTable[move.from()][Piece::PAWNS + static_cast<int>(color)]; // remmove old pawn
-        this->curState->hash ^= Zobrist::randomTable[move.to()][Piece::PAWNS + static_cast<int>(color)]; // add new pawn
+        this->curState->hash ^= Zobrist::randomTable[from][Piece::PAWNS + static_cast<int>(color)]; // remmove old pawn
+        this->curState->hash ^= Zobrist::randomTable[to][Piece::PAWNS + static_cast<int>(color)]; // add new pawn
         this->curState->hash ^= Zobrist::randomTable[capturedPawnPos][Piece::PAWNS + static_cast<int>(enemyColor)]; 
     }
 
     this->curState->enpassantPos = 0;
 
-    if (piece == Piece::PAWNS && (abs(move.to() - move.from()) > 9)) { // pawn push move, need to set enpassant pos
+    if (piece == Piece::PAWNS && (abs(to - from) > 9)) { // pawn push move, need to set enpassant pos
         if (color) { // black
-            this->curState->enpassantPos = move.to() + 8;
+            this->curState->enpassantPos = to + 8;
         } else { // white
-            this->curState->enpassantPos = move.to() - 8;
+            this->curState->enpassantPos = to - 8;
         }
     }
 
@@ -371,8 +358,8 @@ void Board::makeMove(const Move& move)
         this->curState->pieces[color] &= ~toMask; // remove old pawn
 
         // update hash
-        this->curState->hash ^= Zobrist::randomTable[move.from()][Piece::PAWNS + static_cast<int>(color)]; // remmove old pawn
-        this->curState->hash ^= Zobrist::randomTable[move.to()][promoPieces[index] + static_cast<int>(color)]; // add new piece
+        this->curState->hash ^= Zobrist::randomTable[from][Piece::PAWNS + static_cast<int>(color)]; // remmove old pawn
+        this->curState->hash ^= Zobrist::randomTable[to][promoPieces[index] + static_cast<int>(color)]; // add new piece
 
     }
 

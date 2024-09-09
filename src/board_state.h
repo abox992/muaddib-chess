@@ -34,6 +34,7 @@ public:
     std::unique_ptr<BoardState> prevState;
     uint64_t hash;
     int highestRepeat;
+
 };
 
 #endif

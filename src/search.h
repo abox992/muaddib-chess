@@ -29,10 +29,12 @@ public:
         Line line;
     };
 
-    Searcher() : ttable(10000), totalNodes(0) {}
+    Searcher() : ttable(20000), totalNodes(0) {}
 
     SearchInfo alphaBeta(Board& board, int depth, const int, int alpha, int beta);
     SearchInfo getBestMove(Board& board, int depth);
+
+    int quiesce(Board& board, int alpha, int beta); 
 };
 
 

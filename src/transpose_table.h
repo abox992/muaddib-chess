@@ -5,10 +5,12 @@
 #include <cstdint>
 #include <list>
 #include <unordered_map>
+#include "move.h"
 
 struct TTEntry {
     int depth;
     int eval;
+    Move move;
 
     enum Flags {
         EXACT,

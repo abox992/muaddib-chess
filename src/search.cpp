@@ -4,9 +4,8 @@
 #include "move_list.h"
 #include "transpose_table.h"
 #include <algorithm>
-#include <map>
 
-#define DEBUG 0
+#define DEBUG 1 
 
 #define INF (20000)
 #define NEG_INF (-20000)
@@ -37,6 +36,10 @@ Searcher::SearchInfo Searcher::alphaBeta(Board& board, int depth, const int star
     info.bestMove = Move(0);
 
     MoveList<MoveFilter::ALL> moveList(board);
+    if (depth == startDepth) {
+        std::cout << moveList.size() << '\n';
+
+    }
 
     const int perspective = board.blackToMove() ? -1 : 1;
 
@@ -60,26 +63,30 @@ Searcher::SearchInfo Searcher::alphaBeta(Board& board, int depth, const int star
     // check transposition table
     int originalAlpha = alpha;
     const int curHash = board.hash();
-    if (ttable.contains(curHash)) {
-        TTEntry entry = ttable.get(curHash);
+    if (depth == startDepth) {
+        if (ttable.contains(curHash)) {
+            TTEntry entry = ttable.get(curHash);
 
-        if (entry.depth >= depth) {
-            switch (entry.flag) {
-            case TTEntry::EXACT:
-                info.bestEval = entry.eval;
-                return info;
-                break;
-            case TTEntry::UPPER:
-                beta = std::min(beta, entry.eval);
-                break;
-            case TTEntry::LOWER:
-                alpha = std::max(alpha, entry.eval);
-                break;
-            }
+            if (entry.depth >= depth) {
+                switch (entry.flag) {
+                    case TTEntry::EXACT:
+                        info.bestEval = entry.eval;
+                        info.bestMove = entry.move;
+                        return info;
+                        break;
+                    case TTEntry::UPPER:
+                        beta = std::min(beta, entry.eval);
+                        break;
+                    case TTEntry::LOWER:
+                        alpha = std::max(alpha, entry.eval);
+                        break;
+                }
 
-            if (alpha >= beta) {
-                info.bestEval = entry.eval;
-                return info;
+                if (alpha >= beta) {
+                    info.bestEval = entry.eval;
+                    info.bestMove = entry.move;
+                    return info;
+                }
             }
         }
     }
@@ -96,18 +103,20 @@ Searcher::SearchInfo Searcher::alphaBeta(Board& board, int depth, const int star
 
     for (const auto& move : moveList) {
         int extension = 0;
-        if ((maskForPos(move.to()) & board.getOccupied()) && depth == 1) { // if the node is a capture, extend search
-            //extension = 1;
-        }
 
         board.makeMove(move);
 
         if (board.inCheck() && depth == 1) { // if the move puts the king in check, extend search
             //extension = 1;
         }
+        SearchInfo result;
 
-        SearchInfo result = alphaBeta(board, depth - 1 + extension, startDepth, -beta, -alpha);
-        int eval = -result.bestEval;
+        if ((maskForPos(move.to()) & board.getOccupied()) && depth == 1) { // if the node is a capture, extend search
+            result.bestEval = -quiesce(board, -beta, -alpha);
+        } else {
+            result.bestEval = -alphaBeta(board, depth - 1 + extension, startDepth, -beta, -alpha).bestEval;
+        }
+        int eval = result.bestEval;
 
         totalNodes++;
 
@@ -132,7 +141,8 @@ Searcher::SearchInfo Searcher::alphaBeta(Board& board, int depth, const int star
 
     // update transposition table with new values
     TTEntry entry;
-    entry.eval = maxEval;
+    entry.eval = info.bestEval;
+    entry.move = info.bestMove;
     
     // set flag
     if (maxEval <= originalAlpha) {
@@ -150,3 +160,39 @@ Searcher::SearchInfo Searcher::alphaBeta(Board& board, int depth, const int star
 
     return info;
 }
+
+
+int Searcher::quiesce(Board& board, int alpha, int beta) {
+    const int perspective = board.blackToMove() ? -1 : 1;
+
+    int standPat = evaluation(board) * perspective; 
+
+    if (standPat >= beta) {
+        return beta;
+    }
+
+    if (standPat > alpha) {
+        alpha = standPat;
+    }
+
+    MoveList<MoveFilter::CAPTURES> moveList(board);
+
+    for (auto& move : moveList) {
+        board.makeMove(move);
+        int eval = -quiesce(board, -beta, -alpha);
+        board.unmakeMove();
+
+        if (eval >= beta) {
+            return beta;
+        }
+
+        if (eval > alpha) {
+            alpha = eval;
+        }
+    }
+
+    return alpha;
+}
+
+
+

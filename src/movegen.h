@@ -520,7 +520,7 @@ inline int generateKingMoves(const Board& board, Move* moveList,
 
             int pos = 0; // tz_count(maskForPos(index) & board.getBB(Piece::ROOKS +
                          // static_cast<int>(color)));
-            assert(index == 56 || index == 7 || index == 63 || index == 0);
+            //assert(index == 56 || index == 7 || index == 63 || index == 0);
             if (index == 56) {
                 pos = 1;
             } else if (index == 7) {
@@ -529,8 +529,7 @@ inline int generateKingMoves(const Board& board, Move* moveList,
                 pos = 3;
             }
 
-            index = tz_count(
-                castleSquares[pos]); // get the actual square the king will be on
+            index = tz_count(castleSquares[pos]); // get the actual square the king will be on
         }
 
         // filter out moves that leave the king in check

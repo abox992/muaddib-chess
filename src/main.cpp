@@ -43,7 +43,7 @@ int main()
     //runTests();
 
     asciiGameLoop();
-    //std::cout << sizeof(TTEntry) << std::endl;
+    //std::cout << sizeof(BoardState) << std::endl;
 
     return 0;
 }
@@ -117,11 +117,10 @@ void asciiGameLoop()
         Move bestMove = result.bestMove;
 
         if (result.bestMove.isNull()) { // no moves available
+            //std::cout << "here" << std::endl;
             break;
         }
 
-        std::cout << moveNum << ". " << bestMove << std::endl;
-        std::cout << result.bestEval << '\n';
 
         // MoveList<MoveFilter::ALL> moveList(board);
 
@@ -144,6 +143,17 @@ void asciiGameLoop()
 
         std::cout << "\x1B[2J\x1B[H"; // clear screen
         std::cout << board << std::endl;
+        std::cout << moveNum << ". " << bestMove << std::endl;
+        std::cout << "Eval: " << result.bestEval << '\n';
+        std::cout << "Repeats: " << board.getHighestRepeat() << '\n';
+
+        /*MoveList<MoveFilter::ALL> moveList(board);*/
+        /**/
+        /*for (auto& m : moveList) {*/
+        /*     std::cout << m << '\n';*/
+        /*}*/
+
+
         // std::this_thread::sleep_for(std::chrono::milliseconds(1000));
         //  std::string x;
         //  std::cin >> x;
