@@ -1,12 +1,10 @@
 #include "board.h"
-#include "evaluate.h"
 #include "helpers.h"
 #include "move_list.h"
 #include "precompute_masks.h"
 #include "search.h"
 #include "test_suite.h"
 #include "zobrist.h"
-#include "transpose_table.h"
 #include <iostream>
 
 // #include "gui/game.h"

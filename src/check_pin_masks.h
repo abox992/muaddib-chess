@@ -22,26 +22,26 @@ uint64_t attacksOnSquare(const Board& board, int pos) {
     uint64_t blockers;
 
     if constexpr (!ignoreKing) {
-        blockers = (board.getOccupied()) & rookMasks[pos];
+        blockers = (board.getOccupied()) & Bitboard::rookMasks[pos];
     } else {
-        blockers = ((board.getOccupied()) & ~board.getBB(KINGS + static_cast<int>(color))) & rookMasks[pos];
+        blockers = ((board.getOccupied()) & ~board.getBB(KINGS + static_cast<int>(color))) & Bitboard::rookMasks[pos];
     }
 
-    uint64_t rookCompressedBlockers = extract_bits(blockers, rookMasks[pos]);
+    uint64_t rookCompressedBlockers = extract_bits(blockers, Bitboard::rookMasks[pos]);
 
     if constexpr (!ignoreKing) {
-        blockers = (board.getOccupied()) & bishopMasks[pos];
+        blockers = (board.getOccupied()) & Bitboard::bishopMasks[pos];
     } else {
-        blockers = ((board.getOccupied()) & ~board.getBB(KINGS + static_cast<int>(color))) & bishopMasks[pos];
+        blockers = ((board.getOccupied()) & ~board.getBB(KINGS + static_cast<int>(color))) & Bitboard::bishopMasks[pos];
     }
 
-    uint64_t bishopCompressedBlockers = extract_bits(blockers, bishopMasks[pos]);
+    uint64_t bishopCompressedBlockers = extract_bits(blockers, Bitboard::bishopMasks[pos]);
 
-    uint64_t kingAttackers = (pawnAttackMasks[color][pos] & opPawns)
-        | (knightMasks[pos] & opKnights)
-        | (bishopLegalMoves[pos][bishopCompressedBlockers] & opBQ)
-        | (rookLegalMoves[pos][rookCompressedBlockers] & opRQ)
-        | (kingMasks[pos] & opKing)
+    uint64_t kingAttackers = (Bitboard::pawnAttackMasks[color][pos] & opPawns)
+        | (Bitboard::knightMasks[pos] & opKnights)
+        | (Bitboard::bishopLegalMoves[pos][bishopCompressedBlockers] & opBQ)
+        | (Bitboard::rookLegalMoves[pos][rookCompressedBlockers] & opRQ)
+        | (Bitboard::kingMasks[pos] & opKing)
         ;
 
     return kingAttackers;
@@ -65,25 +65,25 @@ uint64_t attacksToKing(const Board& board) {
     uint64_t blockers;
 
     if constexpr (!xray) {
-        blockers = (board.getOccupied()) & rookMasks[kingPos];
+        blockers = (board.getOccupied()) & Bitboard::rookMasks[kingPos];
     } else {
-        blockers = (board.getAll<enemyColor>()) & rookMasks[kingPos];
+        blockers = (board.getAll<enemyColor>()) & Bitboard::rookMasks[kingPos];
     }
 
-    uint64_t rookCompressedBlockers = extract_bits(blockers, rookMasks[kingPos]);
+    uint64_t rookCompressedBlockers = extract_bits(blockers, Bitboard::rookMasks[kingPos]);
 
     if constexpr (!xray) {
-        blockers = (board.getOccupied()) & bishopMasks[kingPos];
+        blockers = (board.getOccupied()) & Bitboard::bishopMasks[kingPos];
     } else {
-        blockers = (board.getAll<enemyColor>()) & bishopMasks[kingPos];
+        blockers = (board.getAll<enemyColor>()) & Bitboard::bishopMasks[kingPos];
     }
 
-    uint64_t bishopCompressedBlockers = extract_bits(blockers, bishopMasks[kingPos]);
+    uint64_t bishopCompressedBlockers = extract_bits(blockers, Bitboard::bishopMasks[kingPos]);
 
-    uint64_t kingAttackers = (pawnAttackMasks[color][kingPos] & opPawns)
-        | (knightMasks[kingPos] & opKnights)
-        | (bishopLegalMoves[kingPos][bishopCompressedBlockers] & opBQ)
-        | (rookLegalMoves[kingPos][rookCompressedBlockers] & opRQ)
+    uint64_t kingAttackers = (Bitboard::pawnAttackMasks[color][kingPos] & opPawns)
+        | (Bitboard::knightMasks[kingPos] & opKnights)
+        | (Bitboard::bishopLegalMoves[kingPos][bishopCompressedBlockers] & opBQ)
+        | (Bitboard::rookLegalMoves[kingPos][rookCompressedBlockers] & opRQ)
         ;
 
     return kingAttackers;
@@ -101,11 +101,11 @@ uint64_t generateCheckMask(const Board& board) {
         return ~kingAttackers;
     }
 
-    uint64_t blockersCompressed = extract_bits(kingAttackers, rookMasks[kingPos]);
-    uint64_t checkMask = checkMasksHV[kingPos][blockersCompressed];
+    uint64_t blockersCompressed = extract_bits(kingAttackers, Bitboard::rookMasks[kingPos]);
+    uint64_t checkMask = Bitboard::checkMasksHV[kingPos][blockersCompressed];
 
-    blockersCompressed = extract_bits(kingAttackers, bishopMasks[kingPos]);
-    checkMask |= checkMasksDiag[kingPos][blockersCompressed];
+    blockersCompressed = extract_bits(kingAttackers, Bitboard::bishopMasks[kingPos]);
+    checkMask |= Bitboard::checkMasksDiag[kingPos][blockersCompressed];
 
     checkMask |= kingAttackers; // make sure we include knights
 
@@ -119,11 +119,11 @@ uint64_t generatePinMask(const Board& board) {
 
     uint64_t kingAttackers = attacksToKing<color, true>(board);
 
-    uint64_t blockersCompressed = extract_bits(kingAttackers, rookMasks[kingPos]);
-    uint64_t pinMask = checkMasksHV[kingPos][blockersCompressed];
+    uint64_t blockersCompressed = extract_bits(kingAttackers, Bitboard::rookMasks[kingPos]);
+    uint64_t pinMask = Bitboard::checkMasksHV[kingPos][blockersCompressed];
 
-    blockersCompressed = extract_bits(kingAttackers, bishopMasks[kingPos]);
-    pinMask |= checkMasksDiag[kingPos][blockersCompressed];
+    blockersCompressed = extract_bits(kingAttackers, Bitboard::bishopMasks[kingPos]);
+    pinMask |= Bitboard::checkMasksDiag[kingPos][blockersCompressed];
 
     // for (int i = 0; i < 8; i++) { // loop through all directions/axis'
     //     uint64_t axis = pinMask & directionMasks[i][kingPos];

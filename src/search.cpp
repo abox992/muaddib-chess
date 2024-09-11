@@ -5,7 +5,7 @@
 #include "transpose_table.h"
 #include <algorithm>
 
-#define DEBUG 1 
+#define DEBUG 0 
 
 #define INF (20000)
 #define NEG_INF (-20000)
@@ -14,15 +14,7 @@
 
 Searcher::SearchInfo Searcher::getBestMove(Board& board, int depth)
 {
-    cacheHits.clear();
-    totalNodes = 0;
     SearchInfo result = alphaBeta(board, depth, depth, NEG_INF, INF);
-
-    // print cache results
-    for (auto& v : cacheHits) {
-        std::cout << v.first << ": " << v.second << '\n';
-    }
-    std::cout << totalNodes << '\n';
 
     return result;
 }
@@ -40,6 +32,8 @@ Searcher::SearchInfo Searcher::alphaBeta(Board& board, int depth, const int star
         std::cout << moveList.size() << '\n';
 
     }
+
+    __builtin_prefetch(&ttable);
 
     const int perspective = board.blackToMove() ? -1 : 1;
 
@@ -117,8 +111,6 @@ Searcher::SearchInfo Searcher::alphaBeta(Board& board, int depth, const int star
             result.bestEval = -alphaBeta(board, depth - 1 + extension, startDepth, -beta, -alpha).bestEval;
         }
         int eval = result.bestEval;
-
-        totalNodes++;
 
         board.unmakeMove();
 

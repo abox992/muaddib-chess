@@ -12,8 +12,8 @@
 
 // move list to add moves to, color to gen moves for (0 for white 1 for black),
 // returns movecount
-template <MoveFilter moveFilter, Color color>
-int generateMoves(const Board& board, Move* moveList)
+template <GenType gt, Color color>
+int generateAllMoves(const Board& board, Move* moveList)
 {
     // make sure movelist is not resizing
     // assert(moveList.capacity() == 256);
@@ -22,50 +22,51 @@ int generateMoves(const Board& board, Move* moveList)
 
     const uint64_t checkMask = generateCheckMask<color>(board);
     const uint64_t pinMask = generatePinMask<color>(board);
-    const int kingPos = tz_count(board.getBB(Piece::KINGS + static_cast<int>(color)));
+    const int kingPos = tz_count(board.getBB(PieceType::KINGS + static_cast<int>(color)));
 
     int count = 0;
 
+    uint64_t target; // set the target according to gentype - this filters the moves
+    if constexpr (gt == ALL) {
+        target = (board.getEmpty() | board.getAll<!color>());
+    } else if constexpr (gt == CAPTURES) {
+        target = board.getAll<!color>();
+    } else if constexpr (gt == QUIET) {
+        target = board.getEmpty();
+    }
+
+    target &= checkMask;
+
     // if king is in double-check, only need to enumerate king moves
     if (attackersCount < 2) {
-        count += generatePawnMoves<moveFilter, color>(board, moveList + count,
-            checkMask, pinMask, kingPos);
-        count += generateKnightMoves<moveFilter, color>(
-            board, moveList + count, checkMask, pinMask, kingPos);
-        count += generateBishopMoves<moveFilter, color>(
-            board, moveList + count, checkMask, pinMask, kingPos);
-        count += generateRookMoves<moveFilter, color>(board, moveList + count,
-            checkMask, pinMask, kingPos);
-        count += generateQueenMoves<moveFilter, color>(board, moveList + count,
-            checkMask, pinMask, kingPos);
+        /*count += generatePawnMoves<moveFilter, color>(board, moveList + count,*/
+        /*    checkMask, pinMask, kingPos);*/
+        /*count += generateKnightMoves<moveFilter, color>(*/
+        /*    board, moveList + count, checkMask, pinMask, kingPos);*/
+        /*count += generateBishopMoves<moveFilter, color>(*/
+        /*    board, moveList + count, checkMask, pinMask, kingPos);*/
+        /*count += generateRookMoves<moveFilter, color>(board, moveList + count,*/
+        /*    checkMask, pinMask, kingPos);*/
+        /*count += generateQueenMoves<moveFilter, color>(board, moveList + count,*/
+        /*    checkMask, pinMask, kingPos);*/
+        count += generateMoves<KNIGHTS, color>(board, moveList + count, target); 
     }
-    count += generateKingMoves<moveFilter, color>(board, moveList + count,
-        checkMask, kingPos);
+    /*count += generateKingMoves<moveFilter, color>(board, moveList + count,*/
+    /*    checkMask, kingPos);*/
 
     // make sure movelist is not resizing
     // assert(moveList.capacity() == 256 && moveList.size() < 256);
     return count;
 }
 
-template <MoveFilter moveFilter, Color color>
-inline int generatePawnMoves(const Board& board, Move* moveList,
-    const uint64_t& checkMask, const uint64_t& pinMask,
-    const int& kingPos)
+template <Color color>
+inline int generatePawnMoves(const Board& board, Move* moveList, const uint64_t& target)
 {
     int count = 0;
 
     constexpr Color enemyColor = static_cast<Color>(!color);
 
-    uint64_t moveTypeMask; // we generate all moves, then filter by this mask
-    if constexpr (moveFilter == MoveFilter::ALL) {
-        moveTypeMask = ~uint64_t(0);
-    } else if constexpr (moveFilter == MoveFilter::CAPTURES) {
-        moveTypeMask = board.getAll<enemyColor>();
-    } else if constexpr (moveFilter == MoveFilter::QUIET) {
-        moveTypeMask = board.getEmpty();
-    }
-
-    uint64_t bitboard = board.getBB(Piece::PAWNS + static_cast<int>(color));
+    uint64_t bitboard = board.getBB(PAWNS + static_cast<int>(color));
     while (bitboard) { // bitloop
         const int currentSquare = tz_count(bitboard);
         pop_lsb(bitboard); // we only need to get current square, can do this now
@@ -73,8 +74,8 @@ inline int generatePawnMoves(const Board& board, Move* moveList,
 
         const uint64_t currentSquareMask = maskForPos(currentSquare);
 
-        uint64_t initialMoveMask = pawnMoveMasks[color][currentSquare];
-        uint64_t initialAttackMask = pawnAttackMasks[color][currentSquare];
+        uint64_t initialMoveMask = Bitboard::getPawnMovesBB<color>(currentSquare); 
+        uint64_t initialAttackMask = Bitboard::getPawnAttacksBB<color>(currentSquare); 
 
         uint64_t pLegalMoves = initialMoveMask & board.getEmpty();
         uint64_t pLegalAttacks = initialAttackMask & board.getAll<enemyColor>();
@@ -88,11 +89,6 @@ inline int generatePawnMoves(const Board& board, Move* moveList,
         }
 
         pLegalMoves |= pLegalAttacks;
-
-        // adjust for checks
-        pLegalMoves &= checkMask;
-        // adjust for move type
-        pLegalMoves &= moveTypeMask;
 
         uint64_t enpassantSquareMask = maskForPos(board.enpassantPos());
         // en passant is special - have to play it out and check if we are still in
@@ -177,6 +173,57 @@ inline int generatePawnMoves(const Board& board, Move* moveList,
             *moveList++ = curMove; // moveList.push_back(curMove);
         }
 
+    } // bitloop
+
+    return count;
+}
+
+template <PieceType pt, Color color>
+int generateMoves(const Board& board, Move* moveList, const uint64_t& target) {
+    static_assert(pt != PieceType::PAWNS && pt != PieceType::KINGS);
+
+    int count = 0;
+
+    constexpr Color enemyColor = static_cast<Color>(!color);
+
+    uint64_t bitboard = board.getBB(piece + static_cast<int>(color));
+    while (bitboard) { // bitloop
+        const int currentSquare = tz_count(bitboard);
+        pop_lsb(bitboard);
+        const uint64_t currentSquareMask = maskForPos(currentSquare);
+
+        uint64_t pLegalMoves = Bitboard::getMovesBB<pt>(board, currentSquare) & target;
+        // adjust for checks
+        pLegalMoves &= checkMask;
+        // adjust for move type
+        pLegalMoves &= moveTypeMask;
+
+        // adjust from pins pins
+        if ((pinMask & currentSquareMask) != 0) { // might be pinned
+            for (int i = 0; i < 8; i++) { // loop through all directions/axis'
+                uint64_t axis = pinMask & directionMasks[i][kingPos];
+                if ((axis & currentSquareMask) == 0) {
+                    continue; // not on this pin axis
+                }
+
+                if (std::popcount(axis & board.getAll<color>()) == 1) { // more than 1 piece would mean were not actually pinned
+                    pLegalMoves &= axis;
+                    break; // can only be pinned on a single axis, stop checking if we
+                           // find one
+                }
+            }
+        }
+
+        // save the number of moves
+        count += std::popcount(pLegalMoves);
+
+        while (pLegalMoves) {
+            const int index = tz_count(pLegalMoves);
+            pop_lsb(pLegalMoves);
+
+            Move curMove = Move::make<NORMAL>(currentSquare, index);
+            *moveList++ = curMove; // moveList.push_back(curMove);
+        }
     } // bitloop
 
     return count;

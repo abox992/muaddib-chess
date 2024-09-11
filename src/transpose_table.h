@@ -42,7 +42,7 @@ public:
 
     inline TTEntry get(uint64_t key)
     {
-        assert(hashTable.contains(key));
+        //assert(hashTable.contains(key));
         return hashTable[key];
     }
 

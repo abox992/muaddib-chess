@@ -1,22 +1,22 @@
 #ifndef TYPES_H
 #define TYPES_H
 
-enum ColorPiece {
-    WPAWNS,
-    BPAWNS,
-    WKNIGHTS,
-    BKNIGHTS,
-    WBISHOPS,
-    BBISHOPS,
-    WROOKS,
-    BROOKS,
-    WQUEENS,
-    BQUEENS,
-    WKING,
-    BKING
-};
+/*enum ColorPiece {*/
+/*    WPAWNS,*/
+/*    BPAWNS,*/
+/*    WKNIGHTS,*/
+/*    BKNIGHTS,*/
+/*    WBISHOPS,*/
+/*    BBISHOPS,*/
+/*    WROOKS,*/
+/*    BROOKS,*/
+/*    WQUEENS,*/
+/*    BQUEENS,*/
+/*    WKING,*/
+/*    BKING*/
+/*};*/
 
-enum Piece {
+enum PieceType {
     PAWNS = 0,
     KNIGHTS = 2,
     BISHOPS = 4,
@@ -37,7 +37,7 @@ enum Direction {
     UP, DOWN, LEFT, RIGHT, TOP_LEFT, BOTTOM_RIGHT, TOP_RIGHT, BOTTOM_LEFT
 };
 
-enum MoveFilter {
+enum GenType {
     ALL,
     CAPTURES,
     QUIET

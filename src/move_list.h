@@ -20,9 +20,9 @@ public:
     MoveList(const Board& board) {
 
         if (board.blackToMove()) {
-            count = generateMoves<filter, Color::BLACK>(board, moveList.data());
+            count = generateAllMoves<filter, Color::BLACK>(board, moveList.data());
         } else {
-            count = generateMoves<filter, Color::WHITE>(board, moveList.data());
+            count = generateAllMoves<filter, Color::WHITE>(board, moveList.data());
         }
 
     }
@@ -30,9 +30,9 @@ public:
     MoveList(const Board& board, const Color color) {
 
         if (color == Color::BLACK) {
-            count = generateMoves<filter, Color::BLACK>(board, moveList.data());
+            count = generateAllMoves<filter, Color::BLACK>(board, moveList.data());
         } else {
-            count = generateMoves<filter, Color::WHITE>(board, moveList.data());
+            count = generateAllMoves<filter, Color::WHITE>(board, moveList.data());
         }
     }
 

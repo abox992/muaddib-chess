@@ -4,7 +4,6 @@
 #include "move.h"
 #include "board.h"
 #include "transpose_table.h"
-#include <map>
 
 class Searcher {
 private:
@@ -19,8 +18,6 @@ private:
 
 
     TranspositionTable ttable;
-    std::map<int, int> cacheHits;
-    int totalNodes;
 
 public:
     struct SearchInfo {
@@ -29,7 +26,7 @@ public:
         Line line;
     };
 
-    Searcher() : ttable(20000), totalNodes(0) {}
+    Searcher() : ttable(100000) {}
 
     SearchInfo alphaBeta(Board& board, int depth, const int, int alpha, int beta);
     SearchInfo getBestMove(Board& board, int depth);

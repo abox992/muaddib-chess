@@ -1,38 +1,9 @@
 #include "precompute_masks.h"
-#include <iostream>
 #include <cstdint>
+#include <algorithm>
 #include "bit_manip.h"
 
-// 0 for white 1 for black
-uint64_t pawnMoveMasks[2][64];
-uint64_t pawnAttackMasks[2][64];
-
-uint64_t knightMasks[64];
-uint64_t kingMasks[64];
-uint64_t bishopMasks[64];
-uint64_t rookMasks[64];
-
-// [piece pos, blockers (compressed)]
-uint64_t rookLegalMoves[64][16384];
-uint64_t bishopLegalMoves[64][16384];
-
-uint64_t checkMasksHV[64][16384];
-uint64_t checkMasksDiag[64][16384];
-
-uint64_t castleMasks[4];
-uint64_t castleSquares[4];
-uint64_t castleRookSquares[4];
-uint64_t originalRookSquares[4];
-
-uint64_t rowMasks[64];
-uint64_t colMasks[64];
-
-// up, down, left, right, tl, br, tr, bl
-uint64_t directionMasks[8][64];
-
-bool promoSquare[64];
-
-void initPawnMasks() {
+void Bitboard::initPawnMasks() {
     // white
     int relativePos[] = {9, 7};
     for (int i = 0; i < 64; i++) {
@@ -135,7 +106,7 @@ void initPawnMasks() {
     }
 }
 
-void initKnightMasks() {
+void Bitboard::initKnightMasks() {
     int relativePos[] = {17, 15, 10, 6 , -6, -10, -15, -17};
     for (int i = 0; i < 64; i++) {
         uint64_t mask = 0x0;
@@ -161,7 +132,7 @@ void initKnightMasks() {
     }
 }
 
-void initKingMasks() {
+void Bitboard::initKingMasks() {
     int relativePos[] = {9, 8, 7, 1 , -1, -7, -8, -9};
     for (int i = 0; i < 64; i++) {
         uint64_t mask = 0x0;
@@ -187,7 +158,7 @@ void initKingMasks() {
     }
 }
 
-void initBishopMasks() {
+void Bitboard::initBishopMasks() {
     int relativePos[] = {9, 7, -7, -9};
     for (int i = 0; i < 64; i++) {
         uint64_t mask = 0x0;
@@ -215,7 +186,7 @@ void initBishopMasks() {
     }
 }
 
-void initRookMasks() {
+void Bitboard::initRookMasks() {
     int relativePos[] = {8, 1, -1, -8};
     for (int i = 0; i < 64; i++) {
         uint64_t mask = 0x0;
@@ -243,7 +214,7 @@ void initRookMasks() {
     }
 }
 
-void initRookMovesTable() {
+void Bitboard::initRookMovesTable() {
     // for each square
     for (int currentSquare = 0; currentSquare < 64; currentSquare++) {
 
@@ -295,7 +266,7 @@ void initRookMovesTable() {
     }
 }
 
-void initCheckMaskTable() {
+void Bitboard::initCheckMaskTable() {
     // for each square
     for (int currentSquare = 0; currentSquare < 64; currentSquare++) {
 
@@ -407,7 +378,7 @@ void initCheckMaskTable() {
     }
 }
 
-void initBishopMovesTable() {
+void Bitboard::initBishopMovesTable() {
     // for each square
     for (int currentSquare = 0; currentSquare < 64; currentSquare++) {
 
@@ -459,7 +430,7 @@ void initBishopMovesTable() {
     }
 }
 
-void initCastleMasks() {
+void Bitboard::initCastleMasks() {
     uint64_t castle = 0;
     castle |= uint64_t(1) << 1;
     castle |= uint64_t(1) << 2;
@@ -494,7 +465,7 @@ void initCastleMasks() {
 
 }
 
-void initRowColMasks() {
+void Bitboard::initRowColMasks() {
     uint64_t rowMask = 0xFF;
     uint64_t colMask = 0x101010101010101;
     for (int i = 0; i < 64; i++) {
@@ -538,7 +509,7 @@ void initRowColMasks() {
     }
 }
 
-void initPromoSquareTable() {
+void Bitboard::initPromoSquareTable() {
     for (int i = 0; i < 64; i++) {
         if ((i / 8) == 0 || (i / 8) == 7) {
             promoSquare[i] = true;
@@ -548,7 +519,7 @@ void initPromoSquareTable() {
     }
 }
 
-void initMasks() {
+void Bitboard::initMasks() {
     initPawnMasks();
     initKnightMasks();
     initKingMasks();
