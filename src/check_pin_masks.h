@@ -2,22 +2,22 @@
 #define CHECK_PIN_MASKS_H
 
 #include <cstdint>
-//#include <tuple>
+// #include <tuple>
 #include "board.h"
-#include "types.h"
 #include "precompute_masks.h"
+#include "types.h"
 
 template <Color color, bool ignoreKing>
 uint64_t attacksOnSquare(const Board& board, int pos) {
     constexpr Color enemyColor = static_cast<Color>(!color);
 
     uint64_t opPawns, opKnights, opRQ, opBQ, opKing;
-    opPawns = board.getBB(PAWNS + static_cast<int>(enemyColor));//board.curState->pieces[0 + static_cast<int>(enemyColor)];
-    opKnights = board.getBB(KNIGHTS + static_cast<int>(enemyColor));//board.curState->pieces[2 + enemyColor];
-    opRQ = opBQ = board.getBB(QUEENS + static_cast<int>(enemyColor));//board.curState->pieces[8 + enemyColor];
-    opRQ |= board.getBB(ROOKS + static_cast<int>(enemyColor));//board.curState->pieces[6 + enemyColor];
-    opBQ |= board.getBB(BISHOPS + static_cast<int>(enemyColor));//board.curState->pieces[4 + enemyColor];
-    opKing = board.getBB(KINGS + static_cast<int>(enemyColor));//board.curState->pieces[10 + enemyColor];
+    opPawns = board.getBB(PAWNS + static_cast<int>(enemyColor)); // board.curState->pieces[0 + static_cast<int>(enemyColor)];
+    opKnights = board.getBB(KNIGHTS + static_cast<int>(enemyColor)); // board.curState->pieces[2 + enemyColor];
+    opRQ = opBQ = board.getBB(QUEENS + static_cast<int>(enemyColor)); // board.curState->pieces[8 + enemyColor];
+    opRQ |= board.getBB(ROOKS + static_cast<int>(enemyColor)); // board.curState->pieces[6 + enemyColor];
+    opBQ |= board.getBB(BISHOPS + static_cast<int>(enemyColor)); // board.curState->pieces[4 + enemyColor];
+    opKing = board.getBB(KINGS + static_cast<int>(enemyColor)); // board.curState->pieces[10 + enemyColor];
 
     uint64_t blockers;
 
@@ -41,26 +41,25 @@ uint64_t attacksOnSquare(const Board& board, int pos) {
         | (Bitboard::knightMasks[pos] & opKnights)
         | (Bitboard::bishopLegalMoves[pos][bishopCompressedBlockers] & opBQ)
         | (Bitboard::rookLegalMoves[pos][rookCompressedBlockers] & opRQ)
-        | (Bitboard::kingMasks[pos] & opKing)
-        ;
+        | (Bitboard::kingMasks[pos] & opKing);
 
     return kingAttackers;
 }
 
-template<Color color, bool xray>
+template <Color color, bool xray>
 uint64_t attacksToKing(const Board& board) {
     constexpr Color enemyColor = static_cast<Color>(!color);
 
-    //int kingPos = tz_count(board.curState->pieces[Piece::KINGS + color]); //board.getPiecePos(10 + color);
+    // int kingPos = tz_count(board.curState->pieces[Piece::KINGS + color]); //board.getPiecePos(10 + color);
     int kingPos = board.kingPos<color>();
 
     uint64_t opPawns, opKnights, opRQ, opBQ;
-    opPawns = board.getBB(PAWNS + static_cast<int>(enemyColor));//board.curState->pieces[0 + enemyColor];
-    opKnights = board.getBB(KNIGHTS + static_cast<int>(enemyColor));//board.curState->pieces[2 + enemyColor];
-    opRQ = opBQ = board.getBB(QUEENS + static_cast<int>(enemyColor));//board.curState->pieces[8 + enemyColor];
-    opRQ |= board.getBB(ROOKS + static_cast<int>(enemyColor));//board.curState->pieces[6 + enemyColor];
-    opBQ |= board.getBB(BISHOPS + static_cast<int>(enemyColor));//board.curState->pieces[4 + enemyColor];
-    //opKing = board.getBB(KINGS + static_cast<int>(enemyColor));//board.curState->pieces[10 + enemyColor];
+    opPawns = board.getBB(PAWNS + static_cast<int>(enemyColor)); // board.curState->pieces[0 + enemyColor];
+    opKnights = board.getBB(KNIGHTS + static_cast<int>(enemyColor)); // board.curState->pieces[2 + enemyColor];
+    opRQ = opBQ = board.getBB(QUEENS + static_cast<int>(enemyColor)); // board.curState->pieces[8 + enemyColor];
+    opRQ |= board.getBB(ROOKS + static_cast<int>(enemyColor)); // board.curState->pieces[6 + enemyColor];
+    opBQ |= board.getBB(BISHOPS + static_cast<int>(enemyColor)); // board.curState->pieces[4 + enemyColor];
+    // opKing = board.getBB(KINGS + static_cast<int>(enemyColor));//board.curState->pieces[10 + enemyColor];
 
     uint64_t blockers;
 
@@ -83,16 +82,15 @@ uint64_t attacksToKing(const Board& board) {
     uint64_t kingAttackers = (Bitboard::pawnAttackMasks[color][kingPos] & opPawns)
         | (Bitboard::knightMasks[kingPos] & opKnights)
         | (Bitboard::bishopLegalMoves[kingPos][bishopCompressedBlockers] & opBQ)
-        | (Bitboard::rookLegalMoves[kingPos][rookCompressedBlockers] & opRQ)
-        ;
+        | (Bitboard::rookLegalMoves[kingPos][rookCompressedBlockers] & opRQ);
 
     return kingAttackers;
 }
 
 // path from all attacks to king, including the attacking piece (note knights do not have a path as they cannot be blocked)
-template<Color color>
+template <Color color>
 uint64_t generateCheckMask(const Board& board) {
-    int kingPos = board.kingPos<color>();//tz_count(board.curState->pieces[Piece::KINGS + color]);//board.getPiecePos(10 + color);
+    int kingPos = board.kingPos<color>(); // tz_count(board.curState->pieces[Piece::KINGS + color]);//board.getPiecePos(10 + color);
 
     uint64_t kingAttackers = attacksToKing<color, false>(board);
 
@@ -113,9 +111,9 @@ uint64_t generateCheckMask(const Board& board) {
 }
 
 // path from all attacks to king, including the attacking piece *AFTER REMOVING FRIENDLY PIECES - XRAY* (note knights do not have a path as they cannot be blocked)
-template<Color color>
+template <Color color>
 uint64_t generatePinMask(const Board& board) {
-    int kingPos = board.kingPos<color>();//tz_count(board.curState->pieces[Piece::KINGS + color]);//board.getPiecePos(10 + color);
+    int kingPos = board.kingPos<color>(); // tz_count(board.curState->pieces[Piece::KINGS + color]);//board.getPiecePos(10 + color);
 
     uint64_t kingAttackers = attacksToKing<color, true>(board);
 

@@ -27,7 +27,7 @@ Searcher::SearchInfo Searcher::alphaBeta(Board& board, int depth, const int star
     SearchInfo info;
     info.bestMove = Move(0);
 
-    MoveList<MoveFilter::ALL> moveList(board);
+    MoveList<ALL> moveList(board);
     if (depth == startDepth) {
         std::cout << moveList.size() << '\n';
 
@@ -167,7 +167,7 @@ int Searcher::quiesce(Board& board, int alpha, int beta) {
         alpha = standPat;
     }
 
-    MoveList<MoveFilter::CAPTURES> moveList(board);
+    MoveList<CAPTURES> moveList(board);
 
     for (auto& move : moveList) {
         board.makeMove(move);

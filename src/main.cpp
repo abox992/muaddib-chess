@@ -1,7 +1,7 @@
 #include "board.h"
 #include "helpers.h"
 #include "move_list.h"
-#include "precompute_masks.h"
+#include "bitboard.h"
 #include "search.h"
 #include "test_suite.h"
 #include "zobrist.h"
@@ -20,12 +20,12 @@ void benchmarkMakeMove();
 int main()
 {
     
-    initMasks();
+    Bitboard::initMasks();
     Zobrist::initZobrist();
     
     Board board;
 
-    MoveList<MoveFilter::ALL> moveList(board);
+    MoveList<ALL> moveList(board);
 
     std::cout << board << '\n';
 
@@ -53,7 +53,7 @@ void benchmarkMoveGen()
     int iterations = 1'000'000;
     std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < iterations; i++) {
-        MoveList<MoveFilter::ALL> moveList(board);
+        MoveList<ALL> moveList(board);
     }
     std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
 
@@ -65,7 +65,7 @@ void benchmarkMakeMove()
 {
     Board board("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -");
 
-    MoveList<MoveFilter::ALL> moveList(board);
+    MoveList<ALL> moveList(board);
 
     int iterations = 1'000'000;
     std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();

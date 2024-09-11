@@ -1,4 +1,4 @@
-#include "precompute_masks.h"
+#include "bitboard.h"
 #include <cstdint>
 #include <algorithm>
 #include "bit_manip.h"

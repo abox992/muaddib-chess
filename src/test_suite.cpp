@@ -1,6 +1,4 @@
 #include "test_suite.h"
-#include "helpers.h"
-#include "movegen.h"
 #include "move_list.h"
 #include <iostream>
 #include <iomanip>
@@ -30,7 +28,7 @@ uint64_t moveGenTestRecurrsive(int startDepth, int depth, Board& board) {
     //     generateMoves<MoveFilter::ALL, Color::WHITE>(board, moveList);
     // }
 
-    MoveList<MoveFilter::ALL> moveList(board);
+    MoveList<ALL> moveList(board);
 
     //generateMoves<MoveType::ALL_MOVES>(board, moveList, static_cast<Color>(board.curState->blackToMove));
     uint64_t totalNodes = 0;

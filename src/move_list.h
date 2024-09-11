@@ -9,7 +9,7 @@
 
 #define MAX_MOVES 256
 
-template <MoveFilter filter>
+template <GenType gt>
 class MoveList {
 private:
     std::array<Move, MAX_MOVES> moveList;
@@ -20,9 +20,9 @@ public:
     MoveList(const Board& board) {
 
         if (board.blackToMove()) {
-            count = generateAllMoves<filter, Color::BLACK>(board, moveList.data());
+            count = generateAllMoves<gt, Color::BLACK>(board, moveList.data());
         } else {
-            count = generateAllMoves<filter, Color::WHITE>(board, moveList.data());
+            count = generateAllMoves<gt, Color::WHITE>(board, moveList.data());
         }
 
     }
@@ -30,9 +30,9 @@ public:
     MoveList(const Board& board, const Color color) {
 
         if (color == Color::BLACK) {
-            count = generateAllMoves<filter, Color::BLACK>(board, moveList.data());
+            count = generateAllMoves<gt, Color::BLACK>(board, moveList.data());
         } else {
-            count = generateAllMoves<filter, Color::WHITE>(board, moveList.data());
+            count = generateAllMoves<gt, Color::WHITE>(board, moveList.data());
         }
     }
 

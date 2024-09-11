@@ -1,8 +1,8 @@
 #include "board_state.h"
+#include <cstring>
 
 // NOTE: THIS DOES NOT COPY PREVSTATE
-BoardState::BoardState(const BoardState& copy)
-{
+BoardState::BoardState(const BoardState& copy) {
     memcpy(this->pieces, copy.pieces, sizeof(uint64_t) * (std::end(copy.pieces) - std::begin(copy.pieces)));
     memcpy(this->allPieces, copy.allPieces, sizeof(uint64_t) * (std::end(copy.allPieces) - std::begin(copy.allPieces)));
     memcpy(this->canCastle, copy.canCastle, sizeof(bool) * (std::end(copy.canCastle) - std::begin(copy.canCastle)));
