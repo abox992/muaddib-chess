@@ -38,9 +38,9 @@ int main()
     // benchmarkMakeMove();
     // benchmarkPerft();
 
-    //runTests();
+    runTests();
 
-    asciiGameLoop();
+    //asciiGameLoop();
     //std::cout << sizeof(BoardState) << std::endl;
 
     return 0;

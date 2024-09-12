@@ -16,9 +16,6 @@ inline int rankOf(const int square) {
     return (square >> 3);
 }
 
-inline bool moreThanOne(uint64_t bb) {
-    return bb & (bb - 1);
-}
 
 class Bitboard {
 public:
