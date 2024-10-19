@@ -38,9 +38,10 @@ int main()
     // benchmarkMakeMove();
     // benchmarkPerft();
 
-    runTests();
+    std::cout << sizeof(Cluster) << '\n';
+    //runTests();
 
-    //asciiGameLoop();
+    asciiGameLoop();
     //std::cout << sizeof(BoardState) << std::endl;
 
     return 0;

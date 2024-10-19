@@ -1,10 +1,10 @@
 #ifndef MOVE_LIST_H
 #define MOVE_LIST_H
 
-#include "move.h"
-#include "types.h"
 #include "board.h"
+#include "move.h"
 #include "movegen.h"
+#include "types.h"
 #include <array>
 
 #define MAX_MOVES 256
@@ -24,7 +24,6 @@ public:
         } else {
             count = generateAllMoves<gt, Color::WHITE>(board, moveList.data());
         }
-
     }
 
     MoveList(const Board& board, const Color color) {
@@ -33,6 +32,22 @@ public:
             count = generateAllMoves<gt, Color::BLACK>(board, moveList.data());
         } else {
             count = generateAllMoves<gt, Color::WHITE>(board, moveList.data());
+        }
+    }
+
+    void sort(const Board& board) {
+        size_t next = 0;
+        for (size_t i = 0; i < count; i++) {
+            if (maskForPos(moveList[i].to()) && board.getOccupied()) {
+                Move temp = moveList[next];
+                moveList[next] = moveList[i];
+                moveList[i] = temp;
+                
+                if (i != next) {
+                    i--;
+                }
+                next++;
+            }  
         }
     }
 

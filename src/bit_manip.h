@@ -28,6 +28,11 @@ inline void pop_lsb(uint64_t& x) {
 inline bool moreThanOne(uint64_t bb) {
     return _blsr_u64(bb); 
 }
+
+inline uint64_t mulhi64(uint64_t a, uint64_t b) {
+    return (a * (unsigned __int128) b) >> 64;
+}
+
 #else
 #include <bit>
 #include <cstdint>

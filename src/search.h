@@ -26,7 +26,7 @@ public:
         Line line;
     };
 
-    Searcher() : ttable(100000) {}
+    Searcher() : ttable(64) {}
 
     SearchInfo alphaBeta(Board& board, int depth, const int, int alpha, int beta);
     SearchInfo getBestMove(Board& board, int depth);

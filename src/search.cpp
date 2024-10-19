@@ -4,6 +4,7 @@
 #include "move_list.h"
 #include "transpose_table.h"
 #include <algorithm>
+#include <cstdint>
 
 #define DEBUG 0 
 
@@ -14,6 +15,9 @@
 
 Searcher::SearchInfo Searcher::getBestMove(Board& board, int depth)
 {
+
+    /*depth += (32 - std::popcount(board.getOccupied())) >> 3; */
+
     SearchInfo result = alphaBeta(board, depth, depth, NEG_INF, INF);
 
     return result;
@@ -30,10 +34,9 @@ Searcher::SearchInfo Searcher::alphaBeta(Board& board, int depth, const int star
     MoveList<ALL> moveList(board);
     if (depth == startDepth) {
         std::cout << moveList.size() << '\n';
-
     }
 
-    __builtin_prefetch(&ttable);
+    moveList.sort(board);
 
     const int perspective = board.blackToMove() ? -1 : 1;
 
@@ -59,7 +62,7 @@ Searcher::SearchInfo Searcher::alphaBeta(Board& board, int depth, const int star
     const int curHash = board.hash();
     if (depth == startDepth) {
         if (ttable.contains(curHash)) {
-            TTEntry entry = ttable.get(curHash);
+            TTEntry entry = ttable.probe(curHash);
 
             if (entry.depth >= depth) {
                 switch (entry.flag) {
@@ -148,7 +151,9 @@ Searcher::SearchInfo Searcher::alphaBeta(Board& board, int depth, const int star
     // set depth
     entry.depth = depth;
 
-    ttable.put(curHash, entry);
+    entry.lower16 = uint16_t(curHash);
+
+    ttable.save(curHash, entry);
 
     return info;
 }
