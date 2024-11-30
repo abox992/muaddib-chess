@@ -11,17 +11,6 @@
 #define NEG_INF (-20000)
 #define WIN (10000)
 
-void Searcher::updateRepeatEval(const Board& board, uint64_t lastMoveHash) {
-    if (board.getRepeats(lastMoveHash) == 2) {
-        if (ttable.contains(lastMoveHash)) {
-            std::cout << "updating hash: " << lastMoveHash << std::endl;
-            TTEntry entry = ttable.get(lastMoveHash);
-            entry.eval = 0;
-            ttable.put(lastMoveHash, entry);
-        }
-    }
-}
-
 std::tuple<Move, int> Searcher::getBestMove(Board& board, int depth) {
     return alphaBeta(board, depth, depth, NEG_INF, INF);
 }
@@ -64,7 +53,7 @@ std::tuple<Move, int> Searcher::alphaBeta(Board& board, int depth, const int sta
     int originalAlpha = alpha;
     const int curHash = board.hash();
     if (ttable.contains(curHash)) {
-        TTEntry entry = ttable.get(curHash);
+        TTData entry = ttable.get(curHash);
 
         if (entry.depth >= depth) {
             switch (entry.flag) {
@@ -147,7 +136,8 @@ std::tuple<Move, int> Searcher::alphaBeta(Board& board, int depth, const int sta
     // set depth
     entry.depth = depth;
 
-    ttable.put(curHash, entry);
+    /*ttable.put(curHash, entry);*/
+    ttable.save(curHash, entry);
 
     return {bestMove, bestEval};
 }

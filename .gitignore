@@ -10,5 +10,8 @@
 # build folder
 /build/
 
+# lichessbot
+/lichess-bot/
+
 # .cache folder which showed up on my mac
 .cache/

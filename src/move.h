@@ -1,9 +1,9 @@
 #ifndef MOVE_H
 #define MOVE_H
 
-#include <iostream>
 #include <cassert>
 #include <cstdint>
+#include <iostream>
 
 enum MoveType {
     NORMAL,
@@ -27,15 +27,16 @@ enum PromoPiece {
 */
 class Move {
 private:
-    uint16_t data;
+    uint16_t data = 0;
 
 public:
     Move() = default;
-    constexpr explicit Move(std::uint16_t d) : data(d) {}
+    constexpr explicit Move(std::uint16_t d)
+        : data(d) { }
 
-    template<MoveType moveType>
+    template <MoveType moveType>
     static constexpr Move make(int from, int to, PromoPiece pt = PromoPiece::KNIGHT) {
-        return Move( (moveType << 14) | (pt << 12) | (to << 6) | from );
+        return Move((moveType << 14) | (pt << 12) | (to << 6) | from);
     }
 
     inline constexpr int from() const {
@@ -46,12 +47,12 @@ public:
         return (data >> 6) & 0x3F;
     }
 
-    inline constexpr PromoPiece promotionPiece() const { 
+    inline constexpr PromoPiece promotionPiece() const {
         return PromoPiece((data >> 12) & 3);
     }
 
-    inline constexpr MoveType moveType() const { 
-        return MoveType((data >> 14) & 3); 
+    inline constexpr MoveType moveType() const {
+        return MoveType((data >> 14) & 3);
     }
 
     inline constexpr bool isNull() const {

@@ -25,6 +25,9 @@ int main()
     
     Bitboard::initMasks();
     Zobrist::initZobrist();
+
+
+    std::cout << sizeof(Cluster) << std::endl;
     
     std::string mode;
     std::cin >> mode;

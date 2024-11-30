@@ -4,7 +4,6 @@
 #include "board.h"
 #include "move.h"
 #include "transpose_table.h"
-#include <cstdint>
 
 class Searcher {
 private:
@@ -33,8 +32,6 @@ public:
     std::tuple<Move, int> getBestMove(Board& board, int depth);
 
     int quiesce(Board& board, int alpha, int beta);
-
-    void updateRepeatEval(const Board& board, uint64_t lastMoveHash);
 };
 
 #endif
