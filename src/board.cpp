@@ -1,8 +1,8 @@
 #include "bit_manip.h"
+#include "bitboard.h"
 #include "board_state.h"
 #include "helpers.h"
 #include "move.h"
-#include "bitboard.h"
 #include "types.h"
 #include "zobrist.h"
 #include <cstring>
@@ -391,6 +391,17 @@ void Board::unmakeMove() {
     this->curState = std::move(this->curState->prevState);
 
     // delete temp; // make sure we free the old state from memory
+}
+
+int Board::getRepeats(uint64_t hash) const {
+    int count = 0;
+    for (BoardState* temp = this->curState.get(); temp != nullptr; temp = temp->prevState.get()) {
+        if (temp->hash == hash) {
+            count++;
+        }
+    }
+
+    return count;
 }
 
 bool Board::inCheck() const {

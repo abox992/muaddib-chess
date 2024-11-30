@@ -49,6 +49,8 @@ public:
 
     inline int getHighestRepeat() const { return curState->highestRepeat; }
 
+    int getRepeats(uint64_t hash) const;
+
     inline uint64_t getEmpty() const { return curState->empty; }
 
     inline uint64_t getOccupied() const { return ~curState->empty; }

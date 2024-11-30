@@ -4,6 +4,7 @@
 #include "bitboard.h"
 #include "search.h"
 #include "test_suite.h"
+#include "transpose_table.h"
 #include "zobrist.h"
 #include <iostream>
 
@@ -17,12 +18,21 @@ void benchmarkMoveGen();
 void benchmarkPerft();
 void benchmarkMakeMove();
 
+void runUCI();
+
 int main()
 {
     
     Bitboard::initMasks();
     Zobrist::initZobrist();
     
+    std::string mode;
+    std::cin >> mode;
+    if (mode == "uci") {
+        runUCI();
+        return 0;
+    }
+
     Board board;
 
     MoveList<ALL> moveList(board);
@@ -34,15 +44,21 @@ int main()
     }
 
     std::cout << "initial hash: " << board.hash() << '\n';
+    std::cout << sizeof(TTEntry) << '\n';
     // benchmarkMoveGen();
     // benchmarkMakeMove();
     // benchmarkPerft();
 
-    std::cout << sizeof(Cluster) << '\n';
     //runTests();
 
+    std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
+
     asciiGameLoop();
-    //std::cout << sizeof(BoardState) << std::endl;
+
+    std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
+
+    auto time_span = std::chrono::duration_cast<std::chrono::seconds>(end - start);
+    std::cout << "Game took: " << time_span.count() << " seconds." << std::endl;
 
     return 0;
 }
@@ -99,6 +115,25 @@ void benchmarkPerft()
     std::cout << "Engine speed: " << (static_cast<double>(result) / time_span.count()) / 1000000 << " MN/sec" << std::endl;
 }
 
+void runUCI() {
+    Board board;
+    board.setStartPos();
+
+    std::cout << "id name mangoEngine" << std::endl;
+    std::cout << "id author abox992" << std::endl;
+    std::cout << "uciok" << std::endl;
+
+    std::string input = "";
+    while (input != "isready") {
+        std::cin >> input; 
+    }
+    std::cout << "readyok" << std::endl;
+
+    while (input != "quit") {
+        std::cin >> input;
+    }
+}
+
 void asciiGameLoop()
 {
     Board board;
@@ -112,10 +147,9 @@ void asciiGameLoop()
     std::stringstream pgn;
     int moveNum = 1;
     while (board.getHalfMoves() < 100 && board.getHighestRepeat() < 3) {
-        Searcher::SearchInfo result = searcher.getBestMove(board, 5);
-        Move bestMove = result.bestMove;
+        auto [bestMove, bestEval] = searcher.getBestMove(board, 5);
 
-        if (result.bestMove.isNull()) { // no moves available
+        if (bestMove.isNull()) { // no moves available
             //std::cout << "here" << std::endl;
             break;
         }
@@ -139,13 +173,14 @@ void asciiGameLoop()
         }
 
         board.makeMove(bestMove);
+        //searcher.updateRepeatEval(board, board.hash());
 
         std::cout << "\x1B[2J\x1B[H"; // clear screen
         std::cout << board << std::endl;
         std::cout << moveNum << ". " << bestMove << std::endl;
-        std::cout << "Eval: " << result.bestEval << '\n';
+        std::cout << "Eval: " << bestEval << '\n';
         std::cout << "Repeats: " << board.getHighestRepeat() << '\n';
-
+        std::cout << "Hash: " << board.hash() << '\n';
         /*MoveList<MoveFilter::ALL> moveList(board);*/
         /**/
         /*for (auto& m : moveList) {*/

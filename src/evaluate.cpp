@@ -1,8 +1,8 @@
 #include "evaluate.h"
 #include "bit_manip.h"
 #include "board.h"
-#include "types.h"
 #include "move_list.h"
+#include "types.h"
 #include <bit>
 #include <cstdint>
 
@@ -23,7 +23,7 @@ int evaluation(const Board& board) {
     return eval;
 }
 
-const int pieceTables[6][64] = {
+const int pieceTables[8][64] = {
     { /* pawn start */
         0, 0, 0, 0, 0, 0, 0, 0,
         50, 50, 50, 50, 50, 50, 50, 50,
@@ -77,12 +77,33 @@ const int pieceTables[6][64] = {
         -20, -30, -30, -40, -40, -30, -30, -20,
         -10, -20, -20, -20, -20, -20, -20, -10,
         20, 20, -5, -5, -5, -5, 20, 20,
-        20, 30, 10, 0, 0, 10, 30, 20 }
+        20, 30, 10, 0, 0, 10, 30, 20 },
+    { /* pawns end */
+        0, 0, 0, 0, 0, 0, 0, 0,
+        80, 80, 80, 80, 80, 80, 80, 80,
+        50, 50, 50, 50, 50, 50, 50, 50,
+        30, 30, 30, 30, 30, 30, 30, 30,
+        20, 20, 20, 20, 20, 20, 20, 20,
+        10, 10, 10, 10, 10, 10, 10, 10,
+        10, 10, 10, 10, 10, 10, 10, 10,
+        0, 0, 0, 0, 0, 0, 0, 0 },
+    { /* kings end */
+        -20, -10, -10, -10, -10, -10, -10, -20,
+        -5, 0, 5, 5, 5, 5, 0, -5,
+        -10, -5, 20, 30, 30, 20, -5, -10,
+        -15, -10, 35, 45, 45, 35, -10, -15,
+        -20, -15, 30, 40, 40, 30, -15, -20,
+        -25, -20, 20, 25, 25, 20, -20, -25,
+        -30, -25, 0, 0, 0, 0, -25, -30,
+        -50, -30, -30, -30, -30, -30, -30, -50 }
 };
 
 int piecePosValue(const Board& board, const int color) {
+    /*int pieceCount = std::popcount(~board.getEmpty());*/
+    /*float endgame = pieceCount <= 16 ? 1 : 1 - (pieceCount - 16) / 16;*/
+    /*float earlygame = 1 - endgame;*/
     int value = 0;
-    for (int i = 0; i < 5; i++) {
+    for (int i = 0; i < 6; i++) {
         uint64_t bb = board.getBB(i * 2 + color);
         while (bb) {
             int curSquare = tz_count(bb);
@@ -91,6 +112,16 @@ int piecePosValue(const Board& board, const int color) {
             if (color == Color::WHITE) {
                 curSquare = 63 - curSquare;
             }
+
+            /*if (i == 0) {*/
+            /*    int ptValue = pieceTables[i][curSquare] * earlygame + pieceTables[6][curSquare] * endgame;*/
+            /*    value += ptValue;*/
+            /*} else if (i == 5) {*/
+            /*    int ptValue = pieceTables[i][curSquare] * earlygame + pieceTables[7][curSquare] * endgame;*/
+            /*    value += ptValue;*/
+            /*} else {*/
+            /*    value += pieceTables[i][curSquare];*/
+            /*}*/
 
             value += pieceTables[i][curSquare];
         }
