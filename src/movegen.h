@@ -6,8 +6,8 @@
 #include "bit_manip.h"
 #include "board.h"
 // #include "check_pin_masks.h"
-#include "move.h"
 #include "bitboard.h"
+#include "move.h"
 #include "types.h"
 
 // move list to add moves to, color to gen moves for (0 for white 1 for black),
@@ -21,8 +21,7 @@ int generateAllMoves(const Board& board, Move* moveList) {
 
     const uint64_t checkMask = Bitboard::generateCheckMask<color>(board);
     const uint64_t pinMask = Bitboard::generatePinMask<color>(board);
-    const int kingPos = tz_count(board.getBB(PieceType::KINGS + static_cast<int>(color)));
-
+    const int kingPos = board.kingPos<color>();
 
     constexpr Color enemyColor = static_cast<Color>(!color);
 
@@ -40,7 +39,7 @@ int generateAllMoves(const Board& board, Move* moveList) {
     target &= checkMask;
 
     // if king is in double-check, only need to enumerate king moves
-    if (attackersCount < 2) {
+    if (attackersCount < 2) [[likely]] {
         count += generatePawnMoves<color>(board, moveList, target, pinMask, kingPos);
         count += generateMoves<KNIGHTS, color>(board, moveList + count, target, pinMask, kingPos);
         count += generateMoves<BISHOPS, color>(board, moveList + count, target, pinMask, kingPos);
@@ -60,7 +59,8 @@ inline int generatePawnMoves(const Board& board, Move* moveList, const uint64_t&
 
     constexpr Color enemyColor = static_cast<Color>(!color);
 
-    uint64_t bitboard = board.getBB(PAWNS + static_cast<int>(color));
+    //uint64_t bitboard = board.getBB(PAWNS + static_cast<int>(color));
+    uint64_t bitboard = board.getBB<PAWNS, color>();
     while (bitboard) { // bitloop
         const int currentSquare = tz_count(bitboard);
         pop_lsb(bitboard); // we only need to get current square, can do this now
@@ -89,7 +89,7 @@ inline int generatePawnMoves(const Board& board, Move* moveList, const uint64_t&
         uint64_t enpassantSquareMask = maskForPos(board.enpassantPos());
         // en passant is special - have to play it out and check if we are still in
         // check manually, does not get pruned away by masks
-        if ((initialAttackMask & enpassantSquareMask) && board.enpassantPos() > 0) {
+        if ((board.enpassantPos() > 0 && initialAttackMask & enpassantSquareMask)) [[unlikely]] {
             pLegalMoves |= (initialAttackMask & enpassantSquareMask); // a
 
             constexpr int offset = color == Color::WHITE ? -8 : 8;
@@ -278,11 +278,8 @@ inline int generateKingMoves(const Board& board, Move* moveList, const uint64_t&
 
         if (maskForPos(index) & board.getBB(PieceType::ROOKS + static_cast<int>(color))) { // taking our own rook -> castle move
             curMove = Move::make<CASTLE>(kingPos, index);
-            // std::cout << "made castle move" << std::endl;
 
-            int pos = 0; // tz_count(maskForPos(index) & board.getBB(Piece::ROOKS +
-                         // static_cast<int>(color)));
-            // assert(index == 56 || index == 7 || index == 63 || index == 0);
+            int pos = 0; 
             if (index == 56) {
                 pos = 1;
             } else if (index == 7) {

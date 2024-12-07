@@ -18,19 +18,8 @@ uint64_t moveGenTestRecurrsive(int startDepth, int depth, Board& board) {
         return 1;
     }
 
-    // struct Move moveList[256];
-    // std::vector<Move> moveList;
-    // moveList.reserve(256);
-
-    // if (board.curState->blackToMove) {
-    //     generateMoves<MoveFilter::ALL, Color::BLACK>(board, moveList);
-    // } else {
-    //     generateMoves<MoveFilter::ALL, Color::WHITE>(board, moveList);
-    // }
-
     MoveList<ALL> moveList(board);
 
-    //generateMoves<MoveType::ALL_MOVES>(board, moveList, static_cast<Color>(board.curState->blackToMove));
     uint64_t totalNodes = 0;
     
     for (size_t i = 0; i < moveList.size(); i++) {

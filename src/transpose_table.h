@@ -43,16 +43,17 @@ struct Cluster {
     char padding[2];
 };
 
-struct AllignedAllocFree {
+struct Deleter {
     template <typename T>
     void operator()(T ptr) {
         return std::free(ptr);
     }
 };
 
+
 class TranspositionTable {
 private:
-    std::unique_ptr<Cluster[], AllignedAllocFree> table;
+    std::unique_ptr<Cluster[], Deleter> table;
     std::unordered_map<uint64_t, TTEntry> hashTable;
     std::list<uint64_t> hashes; // head is oldest, tail is newest
     size_t size;

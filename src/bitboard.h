@@ -1,25 +1,14 @@
-#ifndef PRECOMPUTE_MASKS_H
-#define PRECOMPUTE_MASKS_H
+#ifndef BITBOARD_H
+#define BITBOARD_H
 
 #include "board.h"
 #include <cassert>
 #include <cstdint>
-
-// returns file of square (col - a,b,c etc)
-inline int fileOf(int square) {
-    assert(square >= 0 && square < 64);
-    return (square & 7);
-}
-
-// returns the rank of a square (row - 1,2,3 etc)
-inline int rankOf(const int square) {
-    return (square >> 3);
-}
-
+#include <array>
 
 class Bitboard {
 public:
-    inline static uint64_t pawnMoveMasks[2][64];
+    inline static uint64_t pawnMoveMasks[2][64]; 
     inline static uint64_t pawnAttackMasks[2][64];
     inline static uint64_t knightMasks[64];
     inline static uint64_t kingMasks[64];
@@ -201,11 +190,61 @@ public:
         return pawnAttackMasks[color][square];
     }
 
+    constexpr static inline int fileOf(int square) {
+        assert(square >= 0 && square < 64);
+        return (square & 7);
+    }
+
+    constexpr static inline int rankOf(const int square) {
+        assert(square >= 0 && square < 64);
+        return (square >> 3);
+    }
+
+    constexpr static inline bool isOk(const int square) {
+        return square < 64 && square >= 0;
+    }
+
+    static inline int fileDistance(const int from, const int to) {
+        assert(isOk(from) && isOk(to));
+        return std::abs(fileOf(from) - fileOf(to));
+    }
+
+    static inline int rankDistance(const int from, const int to) {
+        assert(isOk(from) && isOk(to));
+        return std::abs(rankOf(from) - rankOf(to));
+    }
+
+    static inline int distance(const int from, const int to) {
+        assert(isOk(from) && isOk(to));
+        return std::max(fileDistance(from, to), rankDistance(from, to));
+    }
+
+    constexpr static inline bool safeDestination(const int from, const int to) {
+        assert(isOk(from) && isOk(to));
+        return distance(from, to) < 2;
+    }
+
     static void initPawnMasks();
     static void initKnightMasks();
     static void initKingMasks();
-    static void initBishopMasks();
-    static void initRookMasks();
+
+    template <PieceType pt>
+    static void initSliderMask() {
+        int rookDirections[4] = { 8, 1, -1, -8 };
+        int bishopDirections[4] = { 9, 7, -7, -9 };
+        for (int i = 0; i < 64; i++) {
+            uint64_t mask = 0;
+            for (int offset : pt == ROOKS ? rookDirections : bishopDirections) {
+                int dest = i + offset;
+                while (isOk(dest) && safeDestination(dest - offset, dest)) {
+                    mask |= maskForPos(dest);
+                    dest += offset;
+                }
+            }
+
+            pt == ROOKS ? (rookMasks[i] = mask) : (bishopMasks[i] = mask);
+        }
+    }
 
     static void initBishopMovesTable();
     static void initRookMovesTable();
@@ -217,7 +256,9 @@ public:
     static void initCheckMaskTable();
     static void initPromoSquareTable();
 
-    static void initMasks();
+    static void init();
 };
+
+
 
 #endif

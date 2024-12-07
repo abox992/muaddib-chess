@@ -12,10 +12,11 @@
 #define WIN (10000)
 
 std::tuple<Move, int> Searcher::getBestMove(Board& board, int depth) {
-    return alphaBeta(board, depth, depth, NEG_INF, INF);
+    Searcher::Line line;
+    return alphaBeta(board, depth, depth, NEG_INF, INF, line);
 }
 
-std::tuple<Move, int> Searcher::alphaBeta(Board& board, int depth, const int startDepth, int alpha, int beta) {
+std::tuple<Move, int> Searcher::alphaBeta(Board& board, int depth, const int startDepth, int alpha, int beta, Line& line) {
 
     Move bestMove;
     int bestEval;
@@ -27,26 +28,27 @@ std::tuple<Move, int> Searcher::alphaBeta(Board& board, int depth, const int sta
         std::cout << moveList.size() << '\n';
     }
 
-    // moveList.sort(board);
+    moveList.sort(board);
 
-    const int perspective = board.blackToMove() ? -1 : 1;
+    //const int perspective = board.blackToMove() ? -1 : 1;
 
     // no moves means we are either in checkmate or a stalemate
     if (moveList.size() == 0) {
         if (board.inCheck()) {
             bestEval = -(WIN + depth);
 
-            return {bestMove, bestEval};
+            return { bestMove, bestEval };
         }
         bestEval = 0;
-        return {bestMove, bestEval};
+        return { bestMove, bestEval };
     }
 
     // depth limit reached, return evaluation
     if (depth == 0) {
-        bestEval = evaluation(board) * perspective;
+        /*bestEval = evaluation(board) * perspective;*/
+        bestEval = quiesce(board, alpha, beta);
 
-        return {bestMove, bestEval};
+        return { bestMove, bestEval };
     }
 
     // check transposition table for already computed position
@@ -60,7 +62,7 @@ std::tuple<Move, int> Searcher::alphaBeta(Board& board, int depth, const int sta
             case TTEntry::EXACT:
                 bestEval = entry.eval;
                 bestMove = entry.move;
-                return {bestMove, bestEval};
+                return { bestMove, bestEval };
                 break;
             case TTEntry::UPPER:
                 beta = std::min(beta, entry.eval);
@@ -73,7 +75,7 @@ std::tuple<Move, int> Searcher::alphaBeta(Board& board, int depth, const int sta
             if (alpha >= beta) {
                 bestEval = entry.eval;
                 bestMove = entry.move;
-                return {bestMove, bestEval};
+                return { bestMove, bestEval };
             }
         }
     }
@@ -92,12 +94,17 @@ std::tuple<Move, int> Searcher::alphaBeta(Board& board, int depth, const int sta
         int curEval;
 
         // board has repeated, result is a draw (cut off the search)
+        /*if (board.getRepeats(board.hash()) == 2) {*/
+        /*    curEval = -1;*/
+        /*} else if ((maskForPos(move.to()) & board.getOccupied()) && depth == 1) { // if the node is a capture, extend search*/
+        /*    curEval = -quiesce(board, -beta, -alpha);*/
+        /*} else { // normal search*/
+        /*    curEval = -std::get<1>(alphaBeta(board, depth - 1 + extension, startDepth, -beta, -alpha));*/
+        /*}*/
         if (board.getRepeats(board.hash()) == 2) {
             curEval = -1;
-        } else if ((maskForPos(move.to()) & board.getOccupied()) && depth == 1) { // if the node is a capture, extend search
-            curEval = -quiesce(board, -beta, -alpha);
         } else { // normal search
-            curEval = -std::get<1>(alphaBeta(board, depth - 1 + extension, startDepth, -beta, -alpha));
+            curEval = -std::get<1>(alphaBeta(board, depth - 1 + extension, startDepth, -beta, -alpha, line));
         }
 
         board.unmakeMove();
@@ -139,7 +146,7 @@ std::tuple<Move, int> Searcher::alphaBeta(Board& board, int depth, const int sta
     /*ttable.put(curHash, entry);*/
     ttable.save(curHash, entry);
 
-    return {bestMove, bestEval};
+    return { bestMove, bestEval };
 }
 
 int Searcher::quiesce(Board& board, int alpha, int beta) {

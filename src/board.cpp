@@ -143,7 +143,7 @@ void Board::set(const std::string fen) {
 
     this->updateAllPieces();
 
-    this->curState->highestRepeat = 1;
+    /*this->curState->highestRepeat = 1;*/
     this->curState->hash = Zobrist::zhash(*this->curState);
 }
 
@@ -152,7 +152,6 @@ void Board::setPieceSet(int i, uint64_t num) {
 }
 
 void Board::setStartPos() {
-    // BoardState state;
     this->curState = std::make_unique<BoardState>(); // new BoardState();
     this->curState->prevState = nullptr;
 
@@ -187,7 +186,7 @@ void Board::setStartPos() {
     this->curState->halfMoves = 0;
     this->curState->fullMoves = 1;
 
-    this->curState->highestRepeat = 1;
+    /*this->curState->highestRepeat = 1;*/
     this->curState->hash = Zobrist::zhash(*this->curState);
 }
 
@@ -264,12 +263,7 @@ void Board::makeMove(const Move& move) {
 
     // update castle bitboards
     if (move.moveType() == MoveType::CASTLE) {
-        // uint64_t tempMoveCastle = move.castle;
-        // int pos = tz_count(tempMoveCastle);
-
-        // uint64_t castleSide = toMask & this->curState->pieces[ROOKS + static_cast<int>(color)]; // bit mask for rook taken
-        // assert(castleSide != 0);
-        int pos = to; // tz_count(castleSide);
+        int pos = to; 
         if (pos == 56) {
             pos = 1;
         } else if (pos == 7) {
@@ -369,16 +363,16 @@ void Board::makeMove(const Move& move) {
     /*}*/
 
     // check position repeats
-    int count = 1;
-    for (BoardState* temp = this->curState->prevState.get(); temp != nullptr; temp = temp->prevState.get()) {
-        if (temp->hash == this->curState->hash) {
-            count++;
-        }
-    }
-
-    if (this->curState->highestRepeat < count) {
-        this->curState->highestRepeat = count;
-    }
+    /*int count = 1;*/
+    /*for (BoardState* temp = this->curState->prevState.get(); temp != nullptr; temp = temp->prevState.get()) {*/
+    /*    if (temp->hash == this->curState->hash) {*/
+    /*        count++;*/
+    /*    }*/
+    /*}*/
+    /**/
+    /*if (this->curState->highestRepeat < count) {*/
+    /*    this->curState->highestRepeat = count;*/
+    /*}*/
 }
 
 void Board::unmakeMove() {
@@ -387,10 +381,7 @@ void Board::unmakeMove() {
         return;
     }
 
-    // BoardState* temp = this->curState;
     this->curState = std::move(this->curState->prevState);
-
-    // delete temp; // make sure we free the old state from memory
 }
 
 int Board::getRepeats(uint64_t hash) const {

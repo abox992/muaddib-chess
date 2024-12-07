@@ -1,130 +1,63 @@
 #include "bitboard.h"
-#include <cstdint>
-#include <algorithm>
 #include "bit_manip.h"
+#include "types.h"
+#include <algorithm>
+#include <cstdint>
 
 void Bitboard::initPawnMasks() {
-    // white
-    int relativePos[] = {9, 7};
-    for (int i = 0; i < 64; i++) {
-        uint64_t mask = 0x0;
-        int currentY = i / 8;
-        int currentX = i % 8;
-        for (int offset : relativePos) {
+    for (Color color : { WHITE, BLACK }) {
+        // attacks
+        for (int i = 0; i < 64; i++) {
+            uint64_t mask = 0;
+            for (int offset : { 9, 7 }) {
+                int dest = color ? i - offset : i + offset;
 
-            if ((i + offset) > 63 || (i + offset) < 0) {
+                if (!isOk(dest))
+                    continue;
+
+                if (safeDestination(i, dest)) {
+                    mask |= maskForPos(dest);
+                }
+            }
+
+            pawnAttackMasks[color][i] = mask;
+        }
+
+        // moves
+        for (int i = 0; i < 64; i++) {
+            uint64_t mask = 0;
+            int offset = 8;
+
+            int dest = color ? i - offset : i + offset;
+            int doubleDest = color ? i - 16 : i + 16;
+
+            if (!isOk(dest))
                 continue;
+
+            if (safeDestination(i, dest)) {
+                mask |= maskForPos(dest);
+            }
+            if (rankOf(i) == (color ? 6 : 1)) {
+                mask |= maskForPos(doubleDest);
             }
 
-            int jumpY = (i + offset) / 8;
-            int jumpX = (i + offset) % 8;
-
-            int maxDif = std::max(std::abs(currentX - jumpX), std::abs(currentY - jumpY));
-
-            if (maxDif == 1) {
-                mask |= (uint64_t(1) << (i + offset));
-            }
+            pawnMoveMasks[color][i] = mask;
         }
-
-        pawnAttackMasks[0][i] = mask;
-    }
-
-    for (int i = 0; i < 64; i++) {
-        uint64_t mask = 0x0;
-        int currentY = i / 8;
-        int currentX = i % 8;
-        int offset = 8;
-        if ((i + offset) > 63 || (i + offset) < 0) {
-            continue;
-        }
-
-        int jumpY = (i + offset) / 8;
-        int jumpX = (i + offset) % 8;
-
-        int maxDif = std::max(std::abs(currentX - jumpX), std::abs(currentY - jumpY));
-
-        if (maxDif == 1) {
-            mask |= (uint64_t(1) << (i + offset));
-        }
-
-
-        if (i > 7 && i < 16) {
-            mask |= (uint64_t(1) << (i + 16));
-        }
-
-        pawnMoveMasks[0][i] = mask;
-    }
-
-    // black
-    for (int i = 0; i < 64; i++) {
-        uint64_t mask = 0x0;
-        int currentY = i / 8;
-        int currentX = i % 8;
-        for (int offset : relativePos) {
-
-            if ((i - offset) > 63 || (i - offset) < 0) {
-                continue;
-            }
-
-            int jumpY = (i - offset) / 8;
-            int jumpX = (i - offset) % 8;
-
-            int maxDif = std::max(std::abs(currentX - jumpX), std::abs(currentY - jumpY));
-
-            if (maxDif == 1) {
-                mask |= (uint64_t(1) << (i - offset));
-            }
-        }
-
-        pawnAttackMasks[1][i] = mask;
-    }
-
-    for (int i = 0; i < 64; i++) {
-        uint64_t mask = 0x0;
-        int currentY = i / 8;
-        int currentX = i % 8;
-        int offset = 8;
-        if ((i - offset) > 63 || (i - offset) < 0) {
-            continue;
-        }
-
-        int jumpY = (i - offset) / 8;
-        int jumpX = (i - offset) % 8;
-
-        int maxDif = std::max(std::abs(currentX - jumpX), std::abs(currentY - jumpY));
-
-        if (maxDif == 1) {
-            mask |= (uint64_t(1) << (i - offset));
-        }
-
-
-        if (i > 47 && i < 56) {
-            mask |= (uint64_t(1) << (i - 16));
-        }
-
-        pawnMoveMasks[1][i] = mask;
     }
 }
 
 void Bitboard::initKnightMasks() {
-    int relativePos[] = {17, 15, 10, 6 , -6, -10, -15, -17};
     for (int i = 0; i < 64; i++) {
-        uint64_t mask = 0x0;
-        int currentY = i / 8;
-        int currentX = i % 8;
-        for (int offset : relativePos) {
+        uint64_t mask = 0;
+        for (int offset : { 17, 15, 10, 6, -6, -10, -15, -17 }) {
 
-            if ((i + offset) > 63 || (i + offset) < 0) {
+            int dest = i + offset;
+
+            if (!isOk(dest))
                 continue;
-            }
 
-            int jumpY = (i + offset) / 8;
-            int jumpX = (i + offset) % 8;
-
-            int maxDif = std::max(std::abs(currentX - jumpX), std::abs(currentY - jumpY));
-
-            if (maxDif == 2) {
-                mask |= (uint64_t(1) << (i + offset));
+            if (distance(i, dest) == 2) {
+                mask |= maskForPos(dest);
             }
         }
 
@@ -133,84 +66,20 @@ void Bitboard::initKnightMasks() {
 }
 
 void Bitboard::initKingMasks() {
-    int relativePos[] = {9, 8, 7, 1 , -1, -7, -8, -9};
     for (int i = 0; i < 64; i++) {
-        uint64_t mask = 0x0;
-        int currentY = i / 8;
-        int currentX = i % 8;
-        for (int offset : relativePos) {
+        uint64_t mask = 0;
+        for (int offset : { 9, 8, 7, 1, -1, -7, -8, -9 }) {
+            int dest = i + offset;
 
-            if ((i + offset) > 63 || (i + offset) < 0) {
+            if (!isOk(dest))
                 continue;
-            }
 
-            int jumpY = (i + offset) / 8;
-            int jumpX = (i + offset) % 8;
-
-            int maxDif = std::max(std::abs(currentX - jumpX), std::abs(currentY - jumpY));
-
-            if (maxDif == 1) {
+            if (safeDestination(i, dest)) {
                 mask |= (uint64_t(1) << (i + offset));
             }
         }
 
         kingMasks[i] = mask;
-    }
-}
-
-void Bitboard::initBishopMasks() {
-    int relativePos[] = {9, 7, -7, -9};
-    for (int i = 0; i < 64; i++) {
-        uint64_t mask = 0x0;
-        for (int offset : relativePos) {
-            int temp = offset;
-            while ((i + temp) < 64 && (i + temp) > -1) {
-
-                int currentY = (i + temp) / 8;
-                int currentX = (i + temp) % 8;
-                int prevY = (i + temp - offset) / 8;
-                int prevX = (i + temp - offset) % 8;
-
-                int maxDif = std::max(std::abs(currentX - prevX), std::abs(currentY - prevY));
-
-                if (maxDif != 1) {
-                    break;
-                }
-
-                mask |= (uint64_t(1) << (i + temp));
-                temp += offset;
-            }
-        }
-
-        bishopMasks[i] = mask;
-    }
-}
-
-void Bitboard::initRookMasks() {
-    int relativePos[] = {8, 1, -1, -8};
-    for (int i = 0; i < 64; i++) {
-        uint64_t mask = 0x0;
-        for (int offset : relativePos) {
-            int temp = offset;
-            while ((i + temp) < 64 && (i + temp) > -1) {
-
-                int currentY = (i + temp) / 8;
-                int currentX = (i + temp) % 8;
-                int prevY = (i + temp - offset) / 8;
-                int prevX = (i + temp - offset) % 8;
-
-                int maxDif = std::max(std::abs(currentX - prevX), std::abs(currentY - prevY));
-
-                if (maxDif != 1) {
-                    break;
-                }
-
-                mask |= (uint64_t(1) << (i + temp));
-                temp += offset;
-            }
-        }
-
-        rookMasks[i] = mask;
     }
 }
 
@@ -231,12 +100,10 @@ void Bitboard::initRookMovesTable() {
 
                 blockMask |= (uint64_t((compressed >> count) & 1) << index);
                 count++;
-                    
             }
 
-            //rookLegalMoves[currentSquare][i] = blockMask;
             uint64_t legalMask = rookMasks[currentSquare];
-            int directions[] = {8, 1, -1, -8};
+            int directions[] = { 8, 1, -1, -8 };
             for (int offset : directions) {
 
                 bool hitBlocker = false;
@@ -256,13 +123,10 @@ void Bitboard::initRookMovesTable() {
                     index += offset;
                     count++;
                 }
-
             }
 
             rookLegalMoves[currentSquare][i] = legalMask;
-
         }
-
     }
 }
 
@@ -283,12 +147,11 @@ void Bitboard::initCheckMaskTable() {
 
                 blockMask |= (uint64_t((compressed >> count) & 1) << index);
                 count++;
-                    
             }
 
-            //rookLegalMoves[currentSquare][i] = blockMask;
+            // rookLegalMoves[currentSquare][i] = blockMask;
             uint64_t checkMaskHV = rookMasks[currentSquare];
-            int directions[] = {8, 1, -1, -8};
+            int directions[] = { 8, 1, -1, -8 };
             for (int offset : directions) {
 
                 uint64_t directionMask = 0;
@@ -312,13 +175,10 @@ void Bitboard::initCheckMaskTable() {
                 if (!hitBlocker) {
                     checkMaskHV &= ~directionMask;
                 }
-
             }
 
             checkMasksHV[currentSquare][i] = checkMaskHV;
-
         }
-
     }
 
     // for each square
@@ -339,12 +199,11 @@ void Bitboard::initCheckMaskTable() {
 
                 blockMask |= (uint64_t((compressed >> count) & 1) << index);
                 count++;
-                    
             }
 
-            //rookLegalMoves[currentSquare][i] = blockMask;
+            // rookLegalMoves[currentSquare][i] = blockMask;
             uint64_t checkMaskDiag = bishopMasks[currentSquare];
-            int directions[] = {9, 7, -7, -9};
+            int directions[] = { 9, 7, -7, -9 };
             for (int offset : directions) {
 
                 uint64_t directionMask = 0;
@@ -368,13 +227,10 @@ void Bitboard::initCheckMaskTable() {
                 if (!hitBlocker) {
                     checkMaskDiag &= ~directionMask;
                 }
-
             }
 
             checkMasksDiag[currentSquare][i] = checkMaskDiag;
-
         }
-
     }
 }
 
@@ -395,12 +251,11 @@ void Bitboard::initBishopMovesTable() {
 
                 blockMask |= (uint64_t((compressed >> count) & 1) << index);
                 count++;
-                    
             }
 
-            //rookLegalMoves[currentSquare][i] = blockMask;
+            // rookLegalMoves[currentSquare][i] = blockMask;
             uint64_t legalMask = bishopMasks[currentSquare];
-            int directions[] = {9, 7, -7, -9};
+            int directions[] = { 9, 7, -7, -9 };
             for (int offset : directions) {
 
                 bool hitBlocker = false;
@@ -420,13 +275,10 @@ void Bitboard::initBishopMovesTable() {
                     index += offset;
                     count++;
                 }
-
             }
 
             bishopLegalMoves[currentSquare][i] = legalMask;
-
         }
-
     }
 }
 
@@ -462,7 +314,6 @@ void Bitboard::initCastleMasks() {
     originalRookSquares[1] = uint64_t(1) << 56;
     originalRookSquares[2] = uint64_t(1) << 7;
     originalRookSquares[3] = uint64_t(1) << 63;
-
 }
 
 void Bitboard::initRowColMasks() {
@@ -477,12 +328,12 @@ void Bitboard::initRowColMasks() {
     }
 
     // direction masks
-    /*  
-    *  9  8  7
-    *  1  0 -1
-    * -7 -8 -9
-    */
-    int directions[] = {8, -8, 1, -1, 9, -9, 7, -7};
+    /*
+     *  9  8  7
+     *  1  0 -1
+     * -7 -8 -9
+     */
+    int directions[] = { 8, -8, 1, -1, 9, -9, 7, -7 };
     for (int i = 0; i < 64; i++) {
         for (int j = 0; j < 8; j++) {
             uint64_t mask = 0x0;
@@ -511,7 +362,7 @@ void Bitboard::initRowColMasks() {
 
 void Bitboard::initPromoSquareTable() {
     for (int i = 0; i < 64; i++) {
-        if ((i / 8) == 0 || (i / 8) == 7) {
+        if (rankOf(i) == 0 || rankOf(i) == 7) {
             promoSquare[i] = true;
         } else {
             promoSquare[i] = false;
@@ -519,12 +370,14 @@ void Bitboard::initPromoSquareTable() {
     }
 }
 
-void Bitboard::initMasks() {
+void Bitboard::init() {
+
     initPawnMasks();
     initKnightMasks();
     initKingMasks();
-    initBishopMasks();
-    initRookMasks();
+
+    initSliderMask<ROOKS>();
+    initSliderMask<BISHOPS>();
 
     initBishopMovesTable();
     initRookMovesTable();
@@ -534,7 +387,6 @@ void Bitboard::initMasks() {
     initRowColMasks();
 
     initCheckMaskTable();
-    //initKingCheckMaskTable();
 
     initPromoSquareTable();
 }

@@ -1,22 +1,7 @@
 #ifndef TYPES_H
 #define TYPES_H
 
-/*enum ColorPiece {*/
-/*    WPAWNS,*/
-/*    BPAWNS,*/
-/*    WKNIGHTS,*/
-/*    BKNIGHTS,*/
-/*    WBISHOPS,*/
-/*    BBISHOPS,*/
-/*    WROOKS,*/
-/*    BROOKS,*/
-/*    WQUEENS,*/
-/*    BQUEENS,*/
-/*    WKING,*/
-/*    BKING*/
-/*};*/
-
-enum PieceType {
+enum PieceType : int {
     PAWNS = 0,
     KNIGHTS = 2,
     BISHOPS = 4,
@@ -29,7 +14,7 @@ enum File {
     A, B, C, D, E, F, G, H
 };
 
-enum Color {
+enum Color : int {
     WHITE, BLACK
 };
 

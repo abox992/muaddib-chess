@@ -33,7 +33,7 @@ public:
     // helpful for making/unmaking moves
     std::unique_ptr<BoardState> prevState;
     uint64_t hash;
-    int highestRepeat;
+    //int highestRepeat;
 
 };
 

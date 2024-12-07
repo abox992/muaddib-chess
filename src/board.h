@@ -36,6 +36,11 @@ public:
     // curState getters
     inline uint64_t getBB(const int i) const { return curState->pieces[i]; }
 
+    template<PieceType pt, Color color>
+    inline uint64_t getBB() const {
+        return curState->pieces[static_cast<int>(pt) + static_cast<int>(color)];
+    }
+
     template <Color color>
     inline uint64_t getAll() const {
         return curState->allPieces[color];
@@ -47,7 +52,7 @@ public:
 
     inline int getFullMoves() const { return curState->fullMoves; }
 
-    inline int getHighestRepeat() const { return curState->highestRepeat; }
+    /*inline int getHighestRepeat() const { return curState->highestRepeat; }*/
 
     int getRepeats(uint64_t hash) const;
 

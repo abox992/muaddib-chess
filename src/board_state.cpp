@@ -14,5 +14,5 @@ BoardState::BoardState(const BoardState& copy) {
 
     // this->prevState = copy.prevState;
     this->hash = copy.hash;
-    this->highestRepeat = copy.highestRepeat;
+    //this->highestRepeat = copy.highestRepeat;
 }
