@@ -5,7 +5,6 @@
 
 #include "bit_manip.h"
 #include "board.h"
-// #include "check_pin_masks.h"
 #include "bitboard.h"
 #include "move.h"
 #include "types.h"
@@ -59,7 +58,7 @@ inline int generatePawnMoves(const Board& board, Move* moveList, const uint64_t 
 
     constexpr Color enemyColor = static_cast<Color>(!color);
 
-    //uint64_t bitboard = board.getBB(PAWNS + static_cast<int>(color));
+    // uint64_t bitboard = board.getBB(PAWNS + static_cast<int>(color));
     uint64_t bitboard = board.getBB<PAWNS, color>();
     while (bitboard) { // bitloop
         const int currentSquare = tz_count(bitboard);
@@ -86,42 +85,19 @@ inline int generatePawnMoves(const Board& board, Move* moveList, const uint64_t 
 
         pLegalMoves &= target;
 
-        uint64_t enpassantSquareMask = maskForPos(board.enpassantPos());
-        // en passant is special - have to play it out and check if we are still in
-        // check manually, does not get pruned away by masks
-        if ((board.enpassantPos() > 0 && initialAttackMask & enpassantSquareMask)) [[unlikely]] {
-            pLegalMoves |= (initialAttackMask & enpassantSquareMask); // a
+        // resolve enpassant
+        uint64_t enpassantSquareMask = maskForPos(board.enpassantPos()) & initialAttackMask;
+        if (board.enpassantPos() && enpassantSquareMask) [[unlikely]] {
+            uint64_t occupied = (board.getOccupied() & ~currentSquareMask & ~maskForPos(board.enpassantPos() - Bitboard::pawnPush<color>())) | enpassantSquareMask; 
 
-            constexpr int offset = color == Color::WHITE ? -8 : 8;
-
-            // Borrowed from attacksToSquare(), we are just augmenting the position initially
-            uint64_t adjustedPieces = (board.getOccupied());
-            adjustedPieces &= ~currentSquareMask;
-            adjustedPieces &= ~maskForPos(board.enpassantPos() + offset);
-            adjustedPieces |= enpassantSquareMask;
-
-            uint64_t opPawns, opKnights, opRQ, opBQ;
-            opPawns = board.getBB(0 + enemyColor);
-            opKnights = board.getBB(2 + enemyColor);
-            opRQ = opBQ = board.getBB(8 + enemyColor);
-            opRQ |= board.getBB(6 + enemyColor);
-            opBQ |= board.getBB(4 + enemyColor);
-
-            opPawns &= ~maskForPos(board.enpassantPos() + offset);
-
-            uint64_t blockers = adjustedPieces & Bitboard::rookMasks[kingPos];
-            uint64_t rookCompressedBlockers = extract_bits(blockers, Bitboard::rookMasks[kingPos]);
-
-            blockers = adjustedPieces & Bitboard::bishopMasks[kingPos];
-            uint64_t bishopCompressedBlockers = extract_bits(blockers, Bitboard::bishopMasks[kingPos]);
-
-            uint64_t kingAttackers = (Bitboard::pawnAttackMasks[color][kingPos] & opPawns) | (Bitboard::knightMasks[kingPos] & opKnights) | (Bitboard::bishopLegalMoves[kingPos][bishopCompressedBlockers] & opBQ) | (Bitboard::rookLegalMoves[kingPos][rookCompressedBlockers] & opRQ);
-
-            // remove if still in check
-            if (kingAttackers != 0) {
-                pLegalMoves &= ~(initialAttackMask & enpassantSquareMask);
+            if (!(Bitboard::rookLegalMoves[kingPos][extract_bits(occupied, Bitboard::rookMasks[kingPos])] & 
+                (board.getBB<ROOKS, enemyColor>() | board.getBB<QUEENS, enemyColor>())) && 
+                !(Bitboard::bishopLegalMoves[kingPos][extract_bits(occupied, Bitboard::bishopMasks[kingPos])] & 
+                (board.getBB<BISHOPS, enemyColor>() | board.getBB<QUEENS, enemyColor>()))
+            ) {
+                pLegalMoves |= enpassantSquareMask; 
             }
-        }
+        } 
 
         uint64_t pinHV = pinMask & Bitboard::rookMasks[kingPos];
         uint64_t pinDiag = pinMask & Bitboard::bishopMasks[kingPos];
@@ -138,9 +114,7 @@ inline int generatePawnMoves(const Board& board, Move* moveList, const uint64_t 
         count += std::popcount(pLegalMoves);
 
         // moves are now all legal, add them to the list
-        while (
-            pLegalMoves) { // for (int index = tz_count(pLegalMoves); pLegalMoves;
-                           // pop_lsb(pLegalMoves), index = tz_count(pLegalMoves))
+        while (pLegalMoves) {
             const int index = tz_count(pLegalMoves);
             pop_lsb(pLegalMoves);
 
@@ -152,8 +126,7 @@ inline int generatePawnMoves(const Board& board, Move* moveList, const uint64_t 
                 count += 3; // adjust count for promotions accordingly
 
                 for (int i = 0; i < 4; i++) { // add all 4 promotion options
-                    curMove = Move::make<MoveType::PROMOTION>(currentSquare, index,
-                        static_cast<PromoPiece>(i));
+                    curMove = Move::make<MoveType::PROMOTION>(currentSquare, index, static_cast<PromoPiece>(i));
                     *moveList++ = curMove;
                 }
 
@@ -269,7 +242,7 @@ inline int generateKingMoves(const Board& board, Move* moveList, const uint64_t 
         if (maskForPos(index) & board.getBB(PieceType::ROOKS + static_cast<int>(color))) { // taking our own rook -> castle move
             curMove = Move::make<CASTLE>(kingPos, index);
 
-            int pos = 0; 
+            int pos = 0;
             if (index == 56) {
                 pos = 1;
             } else if (index == 7) {

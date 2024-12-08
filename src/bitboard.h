@@ -50,6 +50,11 @@ constexpr inline bool safeDestination(const int from, const int to) {
     return distance(from, to) < 2;
 }
 
+template<Color color>
+constexpr inline int pawnPush() {
+    return color == WHITE ? 8 : -8;
+}
+
 /* INIT COMPILETIME PRECOMPUTED BITBOARDS */
 
 using Arr_2x64 = std::array<std::array<uint64_t, 64>, 2>;
@@ -232,19 +237,18 @@ inline const Arr_64x16384 rookLegalMoves = [] {
             }
 
             uint64_t legalMask = rookMasks[currentSquare];
-            int directions[] = { 8, 1, -1, -8 };
-            for (int offset : directions) {
+            for (int offset : { 8, 1, -1, -8 }) {
 
                 bool hitBlocker = false;
                 int index = currentSquare + offset;
                 int count = 0; // do it a max of 7 times so we dont wrap
-                while (index < 64 && index > -1 && count < 7) {
+                while (isOk(index) && count < 7) {
 
                     if (hitBlocker) {
-                        legalMask &= ~(uint64_t(1) << index);
+                        legalMask &= ~maskForPos(index);
                     } else {
                         // check if index is blocker in blocker mask
-                        if ((blockMask & (uint64_t(1) << index)) != 0) {
+                        if ((blockMask & maskForPos(index)) != 0) {
                             hitBlocker = true;
                         }
                     }

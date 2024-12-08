@@ -28,7 +28,7 @@ public:
 
     void updateAllPieces();
 
-    void makeMove(const class Move& move);
+    void makeMove(const Move& move);
     void unmakeMove();
 
     bool inCheck() const;
