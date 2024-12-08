@@ -21,16 +21,6 @@ void benchmarkMakeMove();
 
 void runUCI();
 
-constexpr std::array<int,1> x = []{
-    std::array<int,1> x {};
-    x[0] = 1;
-    return x;
-}();
-
-constinit int y = []{
-    return x[0];
-}();
-
 int main() {
 
     Zobrist::initZobrist();
@@ -64,7 +54,7 @@ int main() {
 
     std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
 
-    // asciiGameLoop();
+    //asciiGameLoop();
 
     std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
 

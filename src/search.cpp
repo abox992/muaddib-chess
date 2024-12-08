@@ -30,7 +30,7 @@ std::tuple<Move, int> Searcher::alphaBeta(Board& board, int depth, const int sta
 
     moveList.sort(board);
 
-    //const int perspective = board.blackToMove() ? -1 : 1;
+    // const int perspective = board.blackToMove() ? -1 : 1;
 
     // no moves means we are either in checkmate or a stalemate
     if (moveList.size() == 0) {
@@ -49,6 +49,10 @@ std::tuple<Move, int> Searcher::alphaBeta(Board& board, int depth, const int sta
         bestEval = quiesce(board, alpha, beta);
 
         return { bestMove, bestEval };
+    }
+
+    if (board.getRepeats(board.hash()) == 2) {
+        return { bestMove, -1 };
     }
 
     // check transposition table for already computed position
@@ -87,31 +91,13 @@ std::tuple<Move, int> Searcher::alphaBeta(Board& board, int depth, const int sta
 
         board.makeMove(move);
 
-        if (board.inCheck() && depth == 1) { // if the move puts the king in check, extend search
-            // extension = 1;
-        }
-
-        int curEval;
-
-        // board has repeated, result is a draw (cut off the search)
-        /*if (board.getRepeats(board.hash()) == 2) {*/
-        /*    curEval = -1;*/
-        /*} else if ((maskForPos(move.to()) & board.getOccupied()) && depth == 1) { // if the node is a capture, extend search*/
-        /*    curEval = -quiesce(board, -beta, -alpha);*/
-        /*} else { // normal search*/
-        /*    curEval = -std::get<1>(alphaBeta(board, depth - 1 + extension, startDepth, -beta, -alpha));*/
-        /*}*/
-        if (board.getRepeats(board.hash()) == 2) {
-            curEval = -1;
-        } else { // normal search
-            curEval = -std::get<1>(alphaBeta(board, depth - 1 + extension, startDepth, -beta, -alpha, line));
-        }
+        int curEval = -std::get<1>(alphaBeta(board, depth - 1 + extension, startDepth, -beta, -alpha, line));
 
         board.unmakeMove();
 
         if constexpr (DEBUG) {
             if (depth == startDepth) {
-                std::cout << move << " " << curEval << " " << alpha << " " << beta << '\n';
+                std::cout << move << " " << curEval << '\n';
             }
         }
 

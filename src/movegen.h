@@ -123,20 +123,15 @@ inline int generatePawnMoves(const Board& board, Move* moveList, const uint64_t 
             }
         }
 
-        // adjust from pins pins
-        if ((pinMask & currentSquareMask) != 0) { // might be pinned
-            for (int i = 0; i < 8; i++) { // loop through all directions
-                uint64_t axis = pinMask & Bitboard::directionMasks[i][kingPos];
-                if ((axis & currentSquareMask) == 0) {
-                    continue; // not on this pin axis
-                }
+        uint64_t pinHV = pinMask & Bitboard::rookMasks[kingPos];
+        uint64_t pinDiag = pinMask & Bitboard::bishopMasks[kingPos];
 
-                if (std::popcount(axis & board.getAll<color>()) == 1) { // more than 1 piece means were not actually pinned
-                    pLegalMoves &= axis;
-                    break; // can only be pinned on a single axis, stop checking if we
-                           // find one
-                }
-            }
+        if (currentSquareMask & pinHV) {
+            pLegalMoves &= Bitboard::rookMasks[currentSquare];
+            pLegalMoves &= pinHV;
+        } else if (currentSquareMask & pinDiag) {
+            pLegalMoves &= Bitboard::bishopMasks[currentSquare];
+            pLegalMoves &= pinDiag;
         }
 
         // save the number of moves
@@ -187,20 +182,15 @@ int generateMoves(const Board& board, Move* moveList, const uint64_t target, con
 
         uint64_t pLegalMoves = Bitboard::getMovesBB<pt>(board, currentSquare) & target;
 
-        // adjust from pins pins
-        if ((pinMask & currentSquareMask) != 0) { // might be pinned
-            for (int i = 0; i < 8; i++) { // loop through all directions/axis'
-                uint64_t axis = pinMask & Bitboard::directionMasks[i][kingPos];
-                if ((axis & currentSquareMask) == 0) {
-                    continue; // not on this pin axis
-                }
+        uint64_t pinHV = pinMask & Bitboard::rookMasks[kingPos];
+        uint64_t pinDiag = pinMask & Bitboard::bishopMasks[kingPos];
 
-                if (std::popcount(axis & board.getAll<color>()) == 1) { // more than 1 piece would mean were not actually pinned
-                    pLegalMoves &= axis;
-                    break; // can only be pinned on a single axis, stop checking if we
-                           // find one
-                }
-            }
+        if (currentSquareMask & pinHV) {
+            pLegalMoves &= Bitboard::rookMasks[currentSquare];
+            pLegalMoves &= pinHV;
+        } else if (currentSquareMask & pinDiag) {
+            pLegalMoves &= Bitboard::bishopMasks[currentSquare];
+            pLegalMoves &= pinDiag;
         }
 
         // save the number of moves
