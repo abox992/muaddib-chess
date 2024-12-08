@@ -54,7 +54,7 @@ int generateAllMoves(const Board& board, Move* moveList) {
 }
 
 template <Color color>
-inline int generatePawnMoves(const Board& board, Move* moveList, const uint64_t& target, const uint64_t& pinMask, const int& kingPos) {
+inline int generatePawnMoves(const Board& board, Move* moveList, const uint64_t target, const uint64_t pinMask, const int kingPos) {
     int count = 0;
 
     constexpr Color enemyColor = static_cast<Color>(!color);
@@ -153,7 +153,7 @@ inline int generatePawnMoves(const Board& board, Move* moveList, const uint64_t&
 
             if (board.enpassantPos() > 0 && index == board.enpassantPos()) { // enpassant
                 curMove = Move::make<MoveType::EN_PASSANT>(currentSquare, index);
-            } else if (Bitboard::promoSquare[index]) { // promotion
+            } else if (Bitboard::rankOf(index) == 0 || Bitboard::rankOf(index) == 7) { // promotion
                 count += 3; // adjust count for promotions accordingly
 
                 for (int i = 0; i < 4; i++) { // add all 4 promotion options
@@ -220,7 +220,7 @@ int generateMoves(const Board& board, Move* moveList, const uint64_t target, con
 
 // note: castles are encoded as capturing our own rook
 template <GenType gt, Color color>
-inline int generateKingMoves(const Board& board, Move* moveList, const uint64_t& checkMask, const int& kingPos) {
+inline int generateKingMoves(const Board& board, Move* moveList, const uint64_t checkMask, const int kingPos) {
     int count = 0;
 
     // not an assert so we can continue to enumerate even if its wrong (for debug)

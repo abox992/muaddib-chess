@@ -6,6 +6,7 @@
 #include "test_suite.h"
 #include "transpose_table.h"
 #include "zobrist.h"
+#include <array>
 #include <iostream>
 
 // #include "gui/game.h"
@@ -20,9 +21,18 @@ void benchmarkMakeMove();
 
 void runUCI();
 
+constexpr std::array<int,1> x = []{
+    std::array<int,1> x {};
+    x[0] = 1;
+    return x;
+}();
+
+constinit int y = []{
+    return x[0];
+}();
+
 int main() {
 
-    Bitboard::init();
     Zobrist::initZobrist();
 
     std::cout << sizeof(Cluster) << std::endl;

@@ -49,17 +49,17 @@ constexpr uint64_t extract_bits(uint64_t x, uint64_t mask) {
     return res;
 }
 
-inline uint64_t maskForPos(int x) {
+constexpr inline uint64_t maskForPos(int x) {
     return (uint64_t(1) << (x));
 }
 
-inline int tz_count(uint64_t x) {
+constexpr inline int tz_count(uint64_t x) {
     return std::countr_zero(x);
 }
 
 // disable rightmost set bit
 // https://stackoverflow.com/questions/64605039/how-does-the-formula-x-x-1-works
-inline void pop_lsb(uint64_t& x) {
+constexpr inline void pop_lsb(uint64_t& x) {
     x &= (x - 1);
 }
 

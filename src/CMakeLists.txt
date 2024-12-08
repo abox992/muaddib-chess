@@ -8,10 +8,10 @@ project(chess)
 set(EXEC chess)
 
 # set the C++20 standard
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 23)
 
 # flags
-set(CMAKE_CXX_FLAGS "-Wall -O3 -march=native -g")
+set(CMAKE_CXX_FLAGS "-Wall -O3 -march=native") 
 
 # export compiler_commands.json
 set(CMAKE_EXPORT_COMPILE_COMMANDS true)

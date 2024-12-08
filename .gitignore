@@ -15,3 +15,6 @@
 
 # .cache folder which showed up on my mac
 .cache/
+
+# mac dsstore
+.DS_Store
