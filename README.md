@@ -25,5 +25,12 @@ Run the engine:
 ./chess
 ```
 
+# Todo
+- [ ] Move ordering
+- [ ] PV tracking
+- [ ] Smarter TT replacement strategy
+- [ ] NNUE
+- [ ] Multithread
+
 # About
 This is a personal project, I wrote this for fun as I enjoy chess and optimization problems. This has also served as a good way to practice my C++.
