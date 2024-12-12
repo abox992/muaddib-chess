@@ -31,6 +31,8 @@ Run the engine:
 - [ ] Smarter TT replacement strategy
 - [ ] NNUE
 - [ ] Multithread
+- [ ] CLI
+- [ ] UCI complete implementation
 
 # About
 This is a personal project, I wrote this for fun as I enjoy chess and optimization problems. This has also served as a good way to practice my C++.
