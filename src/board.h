@@ -33,12 +33,13 @@ public:
 
     bool inCheck() const;
 
-    // curState getters
-    inline uint64_t getBB(const int i) const { return curState->pieces[i]; }
-
-    template<PieceType pt, Color color>
-    inline uint64_t getBB() const {
+    constexpr inline uint64_t getBB(Color color, PieceType pt) const {
         return curState->pieces[static_cast<int>(pt) + static_cast<int>(color)];
+    }
+
+    template<typename... PieceTypes>
+    constexpr inline uint64_t getBB(Color color, PieceType pt, PieceTypes... pts) const {
+        return getBB(color, pt) | getBB(color, pts...);
     }
 
     template <Color color>

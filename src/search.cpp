@@ -12,74 +12,99 @@
 #define WIN (10000)
 
 std::tuple<Move, int> Searcher::getBestMove(Board& board, int depth) {
-    Searcher::Line line;
-    return alphaBeta(board, depth, depth, NEG_INF, INF, line);
+    this->ttable.NewSearch();
+    Line line{};
+    auto result = alphaBeta(board, depth, 0, NEG_INF, INF, line);
+
+    /*for (int i = 0; i < line.curMove; i++) {*/
+    /*    std::cout << line.line[i] << ' ';*/
+    /*}*/
+    /*std::cout << std::endl;*/
+    std::vector<Move> pv;
+    pv.push_back(std::get<0>(result));
+
+    board.makeMove(pv[0]);
+    int count = 1;
+
+    while (this->ttable.contains(board.hash())) {
+        auto entry = this->ttable.get(board.hash());
+        pv.push_back(entry.move);
+        count++;
+        board.makeMove(entry.move);
+    }
+
+    for (int i = 0; i < count; i++)
+        board.unmakeMove();
+
+    for (const auto& m : pv) {
+        std::cout << m << ' ';
+    }
+    std::cout << std::endl;
+
+    return result;
 }
 
-std::tuple<Move, int> Searcher::alphaBeta(Board& board, int depth, const int startDepth, int alpha, int beta, Line& line) {
+std::tuple<Move, int> Searcher::alphaBeta(Board& board, const int depth, const int ply, int alpha,
+                                          int beta, Line& line) {
 
     Move bestMove;
-    int bestEval;
+    int  bestEval;
 
     bestMove = Move(0);
 
     MoveList<ALL> moveList(board);
-    if (depth == startDepth) {
+    if (ply == 0) {
         std::cout << moveList.size() << '\n';
     }
 
     moveList.sort(board);
 
-    // const int perspective = board.blackToMove() ? -1 : 1;
-
     // no moves means we are either in checkmate or a stalemate
     if (moveList.size() == 0) {
         if (board.inCheck()) {
-            bestEval = -(WIN + depth);
+            bestEval = -WIN + ply;
 
-            return { bestMove, bestEval };
+            return {bestMove, bestEval};
         }
-        bestEval = 0;
-        return { bestMove, bestEval };
+
+        return {bestMove, 0};
     }
 
     // depth limit reached, return evaluation
     if (depth == 0) {
-        /*bestEval = evaluation(board) * perspective;*/
-        bestEval = quiesce(board, alpha, beta);
+        line.curMove = ply;
+        bestEval     = quiesce(board, alpha, beta);
 
-        return { bestMove, bestEval };
+        return {bestMove, bestEval};
     }
 
     if (board.getRepeats(board.hash()) == 2) {
-        return { bestMove, -1 };
+        // -1 because if it has to choose between an even position and drawing,
+        // it should choose the even position.
+        return {bestMove, -1};
     }
 
     // check transposition table for already computed position
-    int originalAlpha = alpha;
-    const int curHash = board.hash();
+    int       originalAlpha = alpha;
+    const int curHash       = board.hash();
     if (ttable.contains(curHash)) {
         TTData entry = ttable.get(curHash);
 
         if (entry.depth >= depth) {
             switch (entry.flag) {
-            case TTEntry::EXACT:
-                bestEval = entry.eval;
-                bestMove = entry.move;
-                return { bestMove, bestEval };
-                break;
-            case TTEntry::UPPER:
+            case TTEntry::EXACT :
+                return {entry.move, entry.eval};
+            case TTEntry::UPPER :
                 beta = std::min(beta, entry.eval);
                 break;
-            case TTEntry::LOWER:
+            case TTEntry::LOWER :
                 alpha = std::max(alpha, entry.eval);
                 break;
             }
 
             if (alpha >= beta) {
-                bestEval = entry.eval;
-                bestMove = entry.move;
-                return { bestMove, bestEval };
+                line.line[ply] = bestMove;
+                return {entry.move, entry.eval};
             }
         }
     }
@@ -91,25 +116,32 @@ std::tuple<Move, int> Searcher::alphaBeta(Board& board, int depth, const int sta
 
         board.makeMove(move);
 
-        int curEval = -std::get<1>(alphaBeta(board, depth - 1 + extension, startDepth, -beta, -alpha, line));
+        int curEval =
+          -std::get<1>(alphaBeta(board, depth - 1 + extension, ply + 1, -beta, -alpha, line));
 
         board.unmakeMove();
 
         if constexpr (DEBUG) {
-            if (depth == startDepth) {
+            if (ply == 0) {
                 std::cout << move << " " << curEval << '\n';
             }
         }
 
         if (curEval > maxEval) {
-            maxEval = curEval;
+            maxEval  = curEval;
             bestMove = move;
             bestEval = maxEval;
         }
 
+        if (curEval > alpha) {
+            alpha          = curEval;
+            line.line[ply] = bestMove;
+        }
+
         alpha = std::max(alpha, curEval);
-        if (alpha >= beta)
+        if (alpha >= beta) {
             break;
+        }
     }
 
     // update transposition table with new values
@@ -132,7 +164,7 @@ std::tuple<Move, int> Searcher::alphaBeta(Board& board, int depth, const int sta
     /*ttable.put(curHash, entry);*/
     ttable.save(curHash, entry);
 
-    return { bestMove, bestEval };
+    return {bestMove, bestEval};
 }
 
 int Searcher::quiesce(Board& board, int alpha, int beta) {

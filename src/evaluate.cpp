@@ -104,7 +104,7 @@ int piecePosValue(const Board& board, const int color) {
     /*float earlygame = 1 - endgame;*/
     int value = 0;
     for (int i = 0; i < 6; i++) {
-        uint64_t bb = board.getBB(i * 2 + color);
+        uint64_t bb = board.getBB(static_cast<Color>(color), static_cast<PieceType>(i * 2));
         while (bb) {
             int curSquare = tz_count(bb);
             pop_lsb(bb);
@@ -134,7 +134,7 @@ int materialValue(const Board& board, const int color) {
     const int pieceValue[] = { 100, 300, 320, 500, 900 }; // pawn, knight, bishop, rook, queen
     int totalValue = 0;
     for (int i = 0; i < 5; i++) {
-        int count = std::popcount(board.getBB(i * 2 + color)); // std::popcount(board.curState->pieces[i * 2 + color]);
+        int count = std::popcount(board.getBB(static_cast<Color>(color), static_cast<PieceType>(i * 2))); // std::popcount(board.curState->pieces[i * 2 + color]);
         totalValue += count * pieceValue[i];
     }
 

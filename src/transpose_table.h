@@ -4,10 +4,7 @@
 #include "move.h"
 #include <cassert>
 #include <cstdint>
-#include <list>
 #include <memory>
-#include <sys/types.h>
-#include <unordered_map>
 
 struct TTEntry {
     uint8_t depth;
@@ -15,6 +12,8 @@ struct TTEntry {
     Move move;
 
     uint16_t key16;
+
+    uint8_t generation;
 
     enum Flags : uint8_t {
         EXACT,
@@ -40,7 +39,7 @@ static constexpr int clusterSize = 3;
 struct Cluster {
     TTEntry entry[clusterSize];
 
-    char padding[2];
+    char padding[1];
 };
 
 struct Deleter {
@@ -54,10 +53,9 @@ struct Deleter {
 class TranspositionTable {
 private:
     std::unique_ptr<Cluster[], Deleter> table;
-    std::unordered_map<uint64_t, TTEntry> hashTable;
-    std::list<uint64_t> hashes; // head is oldest, tail is newest
     size_t size;
     size_t clusterCount;
+    uint8_t curGen;
 
 public:
     TranspositionTable(size_t mbSize);
@@ -106,7 +104,16 @@ public:
             }
         }
 
-        cluster[0] = entry;
+        // all are full, maybe replace one
+        for (int i = 0; i < clusterSize; i++) {
+            if (cluster[i].depth < entry.depth || cluster[i].generation + 3 < curGen) {
+                entry.generation = curGen;
+                cluster[i] = entry;
+                return;
+            }
+        }
+
+        /*cluster[0] = entry;*/
     }
 
     TTEntry* getCluster(uint64_t key) {
@@ -116,6 +123,10 @@ public:
 
     inline size_t getSize() const {
         return size;
+    }
+
+    inline void NewSearch() {
+        curGen++;
     }
 };
 

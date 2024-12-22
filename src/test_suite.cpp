@@ -1,9 +1,9 @@
 #include "test_suite.h"
 #include "move_list.h"
-#include <iostream>
-#include <iomanip>
-#include <string>
 #include <chrono>
+#include <iomanip>
+#include <iostream>
+#include <string>
 
 #define DEBUG 0
 
@@ -21,7 +21,7 @@ uint64_t moveGenTestRecurrsive(int startDepth, int depth, Board& board) {
     MoveList<ALL> moveList(board);
 
     uint64_t totalNodes = 0;
-    
+
     for (size_t i = 0; i < moveList.size(); i++) {
         board.makeMove(moveList.get(i));
 
@@ -34,31 +34,30 @@ uint64_t moveGenTestRecurrsive(int startDepth, int depth, Board& board) {
                 std::cout << moveList.get(i) << " " << subCount << std::endl;
             }
         }
-        //cout << moveList[i] << " " << subCount << endl;
 
         totalNodes += subCount;
 
         board.unmakeMove();
     }
-    
+
     return totalNodes;
 }
 
 void runTests() {
 
     std::vector<std::tuple<int, uint64_t, std::string>> tests = {
-        std::make_tuple(5, 4865609, "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"), /* 1 */ 
-        std::make_tuple(6, 11030083, "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1"), /* 2 */ 
-        std::make_tuple(5, 15587335, "r3k2r/pp3pp1/PN1pr1p1/4p1P1/4P3/3P4/P1P2PP1/R3K2R w KQkq - 4 4"), /* 3 */ 
-        std::make_tuple(5, 89941194, "rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8"), /* 4 */ 
-        std::make_tuple(4, 3894594, "r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - 0 10"), /* 5 */ 
-        std::make_tuple(5, 193690690, "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -"), /* 6 */ 
-        std::make_tuple(4, 497787, "r3k1nr/p2pp1pp/b1n1P1P1/1BK1Pp1q/8/8/2PP1PPP/6N1 w kq - 0 1"), /* 7 */ 
-        std::make_tuple(6, 1134888, "3k4/3p4/8/K1P4r/8/8/8/8 b - - 0 1"), /* 8 */ 
-        std::make_tuple(6, 1440467, "8/8/1k6/2b5/2pP4/8/5K2/8 b - d3 0 1"), /* 19 */ 
-        std::make_tuple(6, 661072, "5k2/8/8/8/8/8/8/4K2R w K - 0 1"), /* 10 */ 
-        std::make_tuple(7, 15594314, "3k4/8/8/8/8/8/8/R3K3 w Q - 0 1"), /* 11 */ 
-        std::make_tuple(4, 1274206, "r3k2r/1b4bq/8/8/8/8/7B/R3K2R w KQkq - 0 1"), /* 12 */ 
+        std::make_tuple(5, 4865609, "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"), /* 1 */
+        std::make_tuple(6, 11030083, "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1"), /* 2 */
+        std::make_tuple(5, 15587335, "r3k2r/pp3pp1/PN1pr1p1/4p1P1/4P3/3P4/P1P2PP1/R3K2R w KQkq - 4 4"), /* 3 */
+        std::make_tuple(5, 89941194, "rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8"), /* 4 */
+        std::make_tuple(4, 3894594, "r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - 0 10"), /* 5 */
+        std::make_tuple(5, 193690690, "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -"), /* 6 */
+        std::make_tuple(4, 497787, "r3k1nr/p2pp1pp/b1n1P1P1/1BK1Pp1q/8/8/2PP1PPP/6N1 w kq - 0 1"), /* 7 */
+        std::make_tuple(6, 1134888, "3k4/3p4/8/K1P4r/8/8/8/8 b - - 0 1"), /* 8 */
+        std::make_tuple(6, 1440467, "8/8/1k6/2b5/2pP4/8/5K2/8 b - d3 0 1"), /* 19 */
+        std::make_tuple(6, 661072, "5k2/8/8/8/8/8/8/4K2R w K - 0 1"), /* 10 */
+        std::make_tuple(7, 15594314, "3k4/8/8/8/8/8/8/R3K3 w Q - 0 1"), /* 11 */
+        std::make_tuple(4, 1274206, "r3k2r/1b4bq/8/8/8/8/7B/R3K2R w KQkq - 0 1"), /* 12 */
         std::make_tuple(5, 58773923, "r3k2r/8/3Q4/8/8/5q2/8/R3K2R b KQkq - 0 1"),
         std::make_tuple(6, 3821001, "2K2r2/4P3/8/8/8/8/8/3k4 w - - 0 1"),
         std::make_tuple(5, 1004658, "8/8/1P2K3/8/2n5/1q6/8/5k2 b - - 0 1"),
@@ -81,28 +80,19 @@ void runTests() {
     int testNum = 1;
 
     std::cout << std::setfill('*') << std::setw(40) << "*" << std::endl;
-    std::cout  << std::setfill(' ') << std::setw(29) <<  "Running Test Suite" << std::endl;
+    std::cout << std::setfill(' ') << std::setw(29) << "Running Test Suite" << std::endl;
     std::cout << std::setfill('*') << std::setw(40) << "*" << std::endl;
 
     std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
 
-    for (const auto &t : tests) {
-        int depth = get<0>(t);
-        uint64_t expected = get<1>(t);
-        std::string fen = get<2>(t);
+    for (const auto& t : tests) {
+        auto [depth, expected, fen] = t;
 
-        //Board board = generateBoardFromFen(fen);
         Board board(fen);
         uint64_t output = moveGenTest(depth, board);
 
         if (output == expected) {
-
-            if (testNum > 9) {
-                std::cout << "Test #" << testNum << " - \033[1;32mPASSED!\033[0m" << std::endl;
-            } else {
-                std::cout << "Test #" << testNum << "  - \033[1;32mPASSED!\033[0m" << std::endl;
-            }
-
+            std::cout << "Test #" << std::left << std::setw(2) << std::setfill(' ') << testNum << " - \033[1;32mPASSED!\033[0m" << std::endl;
         } else {
             std::cout << "FEN: " << fen << "\033[1;31m" << " FAILED" << "\033[0m" << " - " << "Expected: " << expected << " Output: " << output << std::endl;
         }
@@ -111,6 +101,6 @@ void runTests() {
     }
 
     std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
-    auto time_span =std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-    std::cout << "total time was: " << std::setprecision(4) << (float) time_span.count() / 1000 << " seconds" << std::endl;
+    auto time_span = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+    std::cout << "total time was: " << std::setprecision(4) << (float)time_span.count() / 1000 << " seconds" << std::endl;
 }

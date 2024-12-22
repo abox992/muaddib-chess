@@ -41,7 +41,7 @@ std::string movePretty(const Board& board, const Move& move) {
     // figure out piece
     int pieceNum = 0;
     for (int i = 0; i < 12; i += 2) {
-        if (board.getBB(i + color) & fromMask) {
+        if (board.getBB(color, static_cast<PieceType>(i)) & fromMask) {
             pieceNum = i;
         }
     }
