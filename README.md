@@ -31,7 +31,7 @@ Run the engine:
 - [ ] Smarter TT replacement strategy
 - [ ] NNUE
 - [ ] Multithread
-- [ ] CLI
+- [X] CLI
 - [ ] UCI complete implementation
 
 # About
