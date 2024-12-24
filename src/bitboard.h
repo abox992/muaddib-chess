@@ -53,6 +53,10 @@ constexpr inline int pawnPush() {
     return color == WHITE ? 8 : -8;
 }
 
+inline int pawnPush(Color color) {
+    return color == WHITE ? 8 : -8;
+}
+
 /* INIT COMPILETIME PRECOMPUTED BITBOARDS */
 
 using Arr_2x64 = std::array<std::array<uint64_t, 64>, 2>;

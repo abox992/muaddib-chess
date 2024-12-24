@@ -35,6 +35,8 @@ int generateAllMoves(const Board& board, Move* moveList) {
         target = board.getEmpty();
     }
 
+    uint64_t kingTarget = target;
+
     target &= checkMask;
 
     // if king is in double-check, only need to enumerate king moves
@@ -45,14 +47,14 @@ int generateAllMoves(const Board& board, Move* moveList) {
         count += generateMoves<ROOKS, color>(board, moveList + count, target, pinMask, kingPos);
         count += generateMoves<QUEENS, color>(board, moveList + count, target, pinMask, kingPos);
     }
-    count += generateKingMoves<gt, color>(board, moveList + count, checkMask, kingPos);
+    count += generateKingMoves<gt, color>(board, moveList + count, kingTarget, checkMask, kingPos);
 
     return count;
 }
 
 template<Color color>
-inline int generatePawnMoves(const Board& board, Move* moveList, const uint64_t target,
-                             const uint64_t pinMask, const int kingPos) {
+inline int generatePawnMoves(const Board& board, Move* moveList, const uint64_t target, const uint64_t pinMask,
+                             const int kingPos) {
     int count = 0;
 
     constexpr Color enemyColor = static_cast<Color>(!color);
@@ -87,7 +89,6 @@ inline int generatePawnMoves(const Board& board, Move* moveList, const uint64_t 
         // resolve enpassant
         uint64_t enpassantSquareMask = maskForPos(board.enpassantPos()) & initialAttackMask;
         if (board.enpassantPos() && enpassantSquareMask) [[unlikely]] {
-            // clang-format off
             uint64_t occupied = (board.getOccupied() & ~currentSquareMask
                                  & ~maskForPos(board.enpassantPos() - Bitboard::pawnPush<color>()))
                               | enpassantSquareMask;
@@ -95,10 +96,9 @@ inline int generatePawnMoves(const Board& board, Move* moveList, const uint64_t 
             if (!(Bitboard::rookLegalMoves[kingPos][extract_bits(occupied, Bitboard::rookMasks[kingPos])]
                   & (board.getBB(enemyColor, ROOKS, QUEENS)))
                 && !(Bitboard::bishopLegalMoves[kingPos][extract_bits(occupied, Bitboard::bishopMasks[kingPos])]
-                  & (board.getBB(enemyColor, BISHOPS, QUEENS)))) {
+                     & (board.getBB(enemyColor, BISHOPS, QUEENS)))) {
                 pLegalMoves |= enpassantSquareMask;
             }
-            //clang-format on
         }
 
         uint64_t pinHV   = pinMask & Bitboard::rookMasks[kingPos];
@@ -128,8 +128,7 @@ inline int generatePawnMoves(const Board& board, Move* moveList, const uint64_t 
                 count += 3;  // adjust count for promotions accordingly
 
                 for (int i = 0; i < 4; i++) {  // add all 4 promotion options
-                    curMove =
-                      Move::make<PROMOTION>(currentSquare, index, static_cast<PromoPiece>(i));
+                    curMove     = Move::make<PROMOTION>(currentSquare, index, static_cast<PromoPiece>(i));
                     *moveList++ = curMove;
                 }
 
@@ -178,7 +177,7 @@ int generateMoves(const Board& board, Move* moveList, const uint64_t target, con
             pop_lsb(pLegalMoves);
 
             Move curMove = Move::make<NORMAL>(currentSquare, index);
-            *moveList++  = curMove;  
+            *moveList++  = curMove;
         }
     }  // bitloop
 
@@ -187,58 +186,28 @@ int generateMoves(const Board& board, Move* moveList, const uint64_t target, con
 
 // note: castles are encoded as capturing our own rook
 template<GenType gt, Color color>
-inline int generateKingMoves(const Board& board, Move* moveList, const uint64_t checkMask,
+inline int generateKingMoves(const Board& board, Move* moveList, const uint64_t target, const uint64_t checkMask,
                              const int kingPos) {
     int count = 0;
 
-    // not an assert so we can continue to enumerate even if its wrong (for debug)
-    // assert(kingPos != 64);
-    if (kingPos == 64) {
-        return count;
-    }
-
-    constexpr Color enemyColor = static_cast<Color>(!color);
-
-    uint64_t moveTypeMask;  // we generate all moves, then filter by this mask
-    if constexpr (gt == ALL) {
-        moveTypeMask = ~uint64_t(0);
-    } else if constexpr (gt == CAPTURES) {
-        moveTypeMask = board.getAll<enemyColor>();
-    } else if constexpr (gt == QUIET) {
-        moveTypeMask = board.getEmpty();
-    }
-
     // note that since we only have 1 king, no need for a bitloop, just need kingPos
-
-    uint64_t pLegalMoves =
-      Bitboard::kingMasks[kingPos] & (board.getEmpty() | board.getAll<enemyColor>());
+    uint64_t pLegalMoves = Bitboard::kingMasks[kingPos] & target;
 
     // castles
-    if (~checkMask == 0) {             // can only castle if not in check
-        if (board.canCastle(color)) {  // king side
-            if ((board.getOccupied() & Bitboard::castleMasks[color])
-                == 0) {  // no pieces in the way
-                if (Bitboard::attacksOnSquare<color, false>(board, kingPos - 1)
-                    == 0) {  // cannot pass through check
-                    pLegalMoves |= Bitboard::originalRookSquares[color];  // we encode as taking
-                                                                          // rook on king side
-                }
-            }
-        }
-
-        if (board.canCastle(color + 2)) {  // queen side
-            if ((board.getOccupied() & Bitboard::castleMasks[color + 2])
-                == 0) {  // no pieces in the way
-                if (Bitboard::attacksOnSquare<color, false>(board, kingPos + 1)
-                    == 0) {  // cannot pass through check
-                    pLegalMoves |= Bitboard::originalRookSquares[color + 2];  // we encode as taking
-                                                                              // rook on queen side
+    if (~checkMask == 0 && gt != CAPTURES) {  // can only castle if not in check
+        for (auto side : {0 /* king side */, 2 /* queen side */}) {
+            if (board.canCastle(color + side)) {
+                // no pieces in the way
+                if ((board.getOccupied() & Bitboard::castleMasks[color + side]) == 0) {
+                    // cannot pass through check
+                    if (Bitboard::attacksOnSquare<color, false>(board, kingPos - 1 + side) == 0) {
+                        // we encode as taking our own rook on respective side
+                        pLegalMoves |= Bitboard::originalRookSquares[color + side];
+                    }
                 }
             }
         }
     }
-
-    pLegalMoves &= moveTypeMask;
 
     // save the number of moves
     count += std::popcount(pLegalMoves);
@@ -249,7 +218,7 @@ inline int generateKingMoves(const Board& board, Move* moveList, const uint64_t 
 
         Move curMove = Move::make<NORMAL>(kingPos, index);
 
-        if (maskForPos(index) & board.getBB(color, ROOKS)) { // taking our own rook -> castle move
+        if (maskForPos(index) & board.getBB(color, ROOKS)) {  // taking our own rook -> castle move
             curMove = Move::make<CASTLE>(kingPos, index);
 
             int pos = 0;
@@ -261,7 +230,7 @@ inline int generateKingMoves(const Board& board, Move* moveList, const uint64_t 
                 pos = 3;
             }
 
-            index = tz_count(Bitboard::castleSquares[pos]); // get the actual square the king will be on
+            index = tz_count(Bitboard::castleSquares[pos]);  // get the actual square the king will be on
         }
 
         // filter out moves that leave the king in check
@@ -270,7 +239,7 @@ inline int generateKingMoves(const Board& board, Move* moveList, const uint64_t 
             continue;
         }
 
-        *moveList++ = curMove;  
+        *moveList++ = curMove;
     }
 
     return count;

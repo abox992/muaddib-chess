@@ -4,16 +4,14 @@
 #include <cmath>
 #include <random>
 
-uint64_t Zobrist::randomTable[64][12];
-uint64_t Zobrist::randomBlackToMove;
+namespace Zobrist {
 
-void Zobrist::initZobrist() {
+void initZobrist() {
     std::random_device rd;
 
     std::mt19937_64 e2(rd());
 
-    std::uniform_int_distribution<long long int> dist(
-        0, std::llround(std::pow(2, 64)));
+    std::uniform_int_distribution<long long int> dist(0, std::llround(std::pow(2, 64)));
 
     Zobrist::randomBlackToMove = dist(e2);
 
@@ -24,7 +22,7 @@ void Zobrist::initZobrist() {
     }
 }
 
-uint64_t Zobrist::zhash(const BoardState& state) {
+uint64_t zhash(const BoardState& state) {
     uint64_t hash = 0;
 
     if (state.blackToMove) {
@@ -43,3 +41,5 @@ uint64_t Zobrist::zhash(const BoardState& state) {
 
     return hash;
 }
+
+}  // namespace

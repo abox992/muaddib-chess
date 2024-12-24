@@ -60,66 +60,11 @@ private:
 public:
     TranspositionTable(size_t mbSize);
 
-    bool contains(uint64_t key) {
-        TTEntry* cluster = getCluster(key);
-
-        for (int i = 0; i < clusterSize; i++) {
-            if (cluster[i].key16 == uint16_t(key)) {
-                return true;
-            }
-        }
-        
-        return false;
-    }
-
-    TTData get(uint64_t key) {
-        assert(this->contains(key));
-
-        TTEntry* cluster = getCluster(key);
-        TTData data;
-
-        for (int i = 0; i < clusterSize; i++) {
-            if (cluster[i].key16 == uint16_t(key)) {
-                data.eval = cluster[i].eval;
-                data.depth = cluster[i].depth;
-                data.flag = cluster[i].flag;
-                data.move = cluster[i].move;
-                return data;
-            }
-        }
-
-        assert(false);
-        return data; // should never hit 
-    }
-
-    void save(uint64_t key, TTEntry entry) {
-
-        TTEntry* cluster = getCluster(key);
-
-        for (int i = 0; i < clusterSize; i++) {
-            if (!cluster[i].isOccupied()) {
-                cluster[i] = entry;
-                size++;
-                return;
-            }
-        }
-
-        // all are full, maybe replace one
-        for (int i = 0; i < clusterSize; i++) {
-            if (cluster[i].depth < entry.depth || cluster[i].generation + 3 < curGen) {
-                entry.generation = curGen;
-                cluster[i] = entry;
-                return;
-            }
-        }
-
-        /*cluster[0] = entry;*/
-    }
-
-    TTEntry* getCluster(uint64_t key) {
-        assert(std::popcount(clusterCount) == 1);
-        return &table[key & (clusterCount - 1)].entry[0];
-    }
+    bool contains(uint64_t key) const;
+    TTData get(uint64_t key) const;
+    void save(uint64_t key, TTEntry entry);
+    const TTEntry* getCluster(uint64_t key) const;
+    TTEntry* getCluster(uint64_t key);
 
     inline size_t getSize() const {
         return size;

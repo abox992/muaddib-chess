@@ -9,7 +9,7 @@
 
 #define MAX_MOVES 256
 
-template <GenType gt>
+template<GenType gt>
 class MoveList {
 private:
     std::array<Move, MAX_MOVES> moveList;
@@ -39,19 +39,19 @@ public:
         size_t next = 0;
         for (size_t i = 0; i < count; i++) {
             if (maskForPos(moveList[i].to()) && board.getOccupied()) {
-                Move temp = moveList[next];
+                Move temp      = moveList[next];
                 moveList[next] = moveList[i];
-                moveList[i] = temp;
-                
+                moveList[i]    = temp;
+
                 if (i != next) {
                     i--;
                 }
                 next++;
-            }  
+            }
         }
     }
 
-    MoveList(const MoveList&) = delete;
+    MoveList(const MoveList&)            = delete;
     MoveList& operator=(const MoveList&) = delete;
 
     // I dont think this is needed, shouldnt be altering list after movegen
@@ -61,9 +61,9 @@ public:
 
     size_t size() const { return count; }
 
-    Move* begin() { return &moveList[0]; }
+    Move*       begin() { return &moveList[0]; }
     const Move* begin() const { return &moveList[0]; }
-    Move* end() { return &moveList[count]; }
+    Move*       end() { return &moveList[count]; }
     const Move* end() const { return &moveList[count]; }
 };
 
