@@ -37,7 +37,7 @@ uint64_t moveGenTestRecurrsive(int startDepth, int depth, Board& board) {
 
         totalNodes += subCount;
 
-        board.unmakeMove();
+        board.undoMove();
     }
 
     return totalNodes;

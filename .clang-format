@@ -21,6 +21,7 @@ ContinuationIndentWidth: 2
 Cpp11BracedListStyle: true
 IndentPPDirectives: BeforeHash
 IndentWidth: 4
+InsertBraces: true
 MaxEmptyLinesToKeep: 2
 NamespaceIndentation: None
 PackConstructorInitializers: Never

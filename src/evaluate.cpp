@@ -1,5 +1,6 @@
 #include "evaluate.h"
 #include "bit_manip.h"
+#include "bitboard.h"
 #include "board.h"
 #include "move_list.h"
 #include "types.h"
@@ -98,7 +99,7 @@ const int pieceTables[8][64] = {
         -50, -30, -30, -30, -30, -30, -30, -50 }
 };
 
-int piecePosValue(const Board& board, const int color) {
+int piecePosValue(const Board& board, const Color color) {
     /*int pieceCount = std::popcount(~board.getEmpty());*/
     /*float endgame = pieceCount <= 16 ? 1 : 1 - (pieceCount - 16) / 16;*/
     /*float earlygame = 1 - endgame;*/
@@ -113,16 +114,6 @@ int piecePosValue(const Board& board, const int color) {
                 curSquare = 63 - curSquare;
             }
 
-            /*if (i == 0) {*/
-            /*    int ptValue = pieceTables[i][curSquare] * earlygame + pieceTables[6][curSquare] * endgame;*/
-            /*    value += ptValue;*/
-            /*} else if (i == 5) {*/
-            /*    int ptValue = pieceTables[i][curSquare] * earlygame + pieceTables[7][curSquare] * endgame;*/
-            /*    value += ptValue;*/
-            /*} else {*/
-            /*    value += pieceTables[i][curSquare];*/
-            /*}*/
-
             value += pieceTables[i][curSquare];
         }
     }
@@ -130,7 +121,7 @@ int piecePosValue(const Board& board, const int color) {
     return value;
 }
 
-int materialValue(const Board& board, const int color) {
+int materialValue(const Board& board, const Color color) {
     const int pieceValue[] = { 100, 300, 320, 500, 900 }; // pawn, knight, bishop, rook, queen
     int totalValue = 0;
     for (int i = 0; i < 5; i++) {
@@ -146,4 +137,13 @@ int pieceScope(const Board& board) {
     MoveList<ALL> moveListBlack(board, Color::BLACK);
 
     return (moveListWhite.size() - moveListBlack.size()) / 2;
+}
+
+int castlePenalty(const Board& board, const Color color) {
+    bool canCastle = board.getCastle(color) || board.getCastle(color + 2);
+    if (!canCastle && board.getBB(color, KINGS) != Bitboard::castledKingSquares[color]) {
+        
+    }
+
+    return 0;
 }

@@ -26,7 +26,7 @@ void benchmarkMakeMove() {
     std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < iterations; i++) {
         board.makeMove(moveList.get(0));
-        board.unmakeMove();
+        board.undoMove();
     }
     std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
 

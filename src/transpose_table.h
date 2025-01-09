@@ -8,7 +8,7 @@
 
 struct TTEntry {
     uint8_t depth;
-    uint16_t eval;
+    int16_t eval;
     Move move;
 
     uint16_t key16;
@@ -23,7 +23,7 @@ struct TTEntry {
 
     Flags flag;
 
-    inline constexpr bool isOccupied() { return move.isNull(); }
+    inline constexpr bool isOccupied() { return !move.isNull(); }
 };
 
 struct TTData {

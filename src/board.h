@@ -15,8 +15,8 @@ private:
 
 public:
     Board();
-    explicit Board(std::string fen);
-    Board(const Board&) = delete;
+    explicit Board(std::string);
+    explicit Board(const Board&);
     Board& operator=(const Board&) = delete;
 
     // https://en.wikipedia.org/wiki/Forsyth%E2%80%93Edwards_Notation
@@ -29,7 +29,7 @@ public:
     void updateAllPieces();
 
     void makeMove(const Move& move);
-    void unmakeMove();
+    void undoMove();
 
     bool inCheck() const;
 
@@ -42,7 +42,9 @@ public:
         return getBB(color, pt) | getBB(color, pts...);
     }
 
-    template <Color color>
+    inline uint64_t getBB(int i) const { return curState->pieces[i]; }
+
+    template<Color color>
     inline uint64_t getAll() const {
         return curState->allPieces[color];
     }
@@ -52,8 +54,6 @@ public:
     inline int getHalfMoves() const { return curState->halfMoves; }
 
     inline int getFullMoves() const { return curState->fullMoves; }
-
-    /*inline int getHighestRepeat() const { return curState->highestRepeat; }*/
 
     int getRepeats(uint64_t hash) const;
 
@@ -65,16 +65,14 @@ public:
 
     inline bool blackToMove() const { return curState->blackToMove; }
 
-    inline bool canCastle(const int i) const { return curState->canCastle[i]; }
+    inline bool getCastle(const int i) const { return curState->canCastle[i]; }
 
-    template <Color color>
+    template<Color color>
     inline int kingPos() const {
         return tz_count(curState->pieces[KINGS + static_cast<int>(color)]);
     }
 
-    inline int kingPos(Color color) {
-        return tz_count(curState->pieces[KINGS + static_cast<int>(color)]);
-    }
+    inline int kingPos(Color color) { return tz_count(curState->pieces[KINGS + static_cast<int>(color)]); }
 
     inline uint64_t hash() const { return curState->hash; }
 

@@ -1,41 +1,60 @@
 #include "zobrist.h"
-#include "bit_manip.h"
-#include "board_state.h"
-#include <cmath>
-#include <random>
+#include "bitboard.h"
+#include "board.h"
+#include "types.h"
+#include "helpers.h"
 
 namespace Zobrist {
 
 void initZobrist() {
-    std::random_device rd;
+    PRNG generator(1070372);
 
-    std::mt19937_64 e2(rd());
-
-    std::uniform_int_distribution<long long int> dist(0, std::llround(std::pow(2, 64)));
-
-    Zobrist::randomBlackToMove = dist(e2);
 
     for (int i = 0; i < 64; i++) {
         for (int j = 0; j < 12; j++) {
-            Zobrist::randomTable[i][j] = dist(e2);
+            randomTable[i][j] = generator.rand<uint64_t>();
         }
     }
+
+    for (int i = 0; i < 8; i++) {
+        enpassantFile[i] = generator.rand<uint64_t>();
+    }
+    
+    for (int i = 0; i < 4; i++) {
+        castling[i] = generator.rand<uint64_t>();
+    }
+
+    randomBlackToMove = generator.rand<uint64_t>();
+    noPawns = generator.rand<uint64_t>();
 }
 
-uint64_t zhash(const BoardState& state) {
+uint64_t zhash(const Board& board) {
     uint64_t hash = 0;
 
-    if (state.blackToMove) {
-        hash ^= Zobrist::randomBlackToMove;
+    if (board.blackToMove()) {
+        hash ^= randomBlackToMove;
+    }
+
+    if ((board.getBB(WHITE, PAWNS) | board.getBB(BLACK, PAWNS)) == 0) {
+        hash ^= noPawns;
+    }
+
+    if (board.enpassantPos()) {
+        hash ^= enpassantFile[Bitboard::fileOf(board.enpassantPos())];
+    }
+
+    for (int i = 0; i < 4; i++) {
+        if (board.getCastle(i)) {
+            hash ^= castling[i]; 
+        }
     }
 
     for (int i = 0; i < 12; i++) {
-
-        uint64_t curBB = state.pieces[i];
+        uint64_t curBB = board.getBB(i);
         while (curBB) {
             const int sq = tz_count(curBB);
             pop_lsb(curBB);
-            hash ^= Zobrist::randomTable[sq][i];
+            hash ^= randomTable[sq][i];
         }
     }
 

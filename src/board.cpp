@@ -6,10 +6,27 @@
 #include "types.h"
 #include "zobrist.h"
 #include <cstring>
+#include <memory>
 
 Board::Board() {
     curState = nullptr;
     setStartPos();
+}
+
+Board::Board(const Board& source) {
+    this->curState = std::make_unique<BoardState>(*source.curState);
+    if (source.curState->prevState == nullptr) {
+        this->curState->prevState = nullptr;
+        return;
+    }
+    auto cur       = this->curState.get();
+    auto sourceCur = source.curState->prevState.get();
+
+    while (sourceCur) {
+        cur->prevState = std::make_unique<BoardState>(*sourceCur);
+        cur            = cur->prevState.get();
+        sourceCur      = sourceCur->prevState.get();
+    }
 }
 
 Board::Board(const std::string fen) {
@@ -143,8 +160,7 @@ void Board::set(const std::string fen) {
 
     this->updateAllPieces();
 
-    /*this->curState->highestRepeat = 1;*/
-    this->curState->hash = Zobrist::zhash(*this->curState);
+    this->curState->hash = Zobrist::zhash(*this);
 }
 
 void Board::setPieceSet(int i, uint64_t num) { this->curState->pieces[i] = num; }
@@ -168,7 +184,8 @@ void Board::setStartPos() {
 
     updateAllPieces();
 
-    this->curState->enpassantPos = 0;  // not possible for enpessant sqaure to be 0, so this fine
+    // while 0 is a position on the board, it is not possible for enpessant sqaure to be 0, so this fine
+    this->curState->enpassantPos = 0;
 
     for (int i = 0; i < 4; i++) {
         this->curState->canCastle[i] = true;
@@ -179,8 +196,7 @@ void Board::setStartPos() {
     this->curState->halfMoves = 0;
     this->curState->fullMoves = 1;
 
-    /*this->curState->highestRepeat = 1;*/
-    this->curState->hash = Zobrist::zhash(*this->curState);
+    this->curState->hash = Zobrist::zhash(*this);
 }
 
 void Board::updateAllPieces() {
@@ -194,7 +210,9 @@ void Board::updateAllPieces() {
     this->curState->empty = ~(this->curState->allPieces[0] | this->curState->allPieces[1]);
 }
 
+// move is assumed to be legal, undefinded behavior with an illegal/null move
 void Board::makeMove(const Move& move) {
+    assert(!move.isNull());
 
     // create a copy of the current state (add to head of list)
     std::unique_ptr<BoardState> newState = std::make_unique<BoardState>(*this->curState);
@@ -208,7 +226,7 @@ void Board::makeMove(const Move& move) {
     uint64_t fromMask = maskForPos(from);
     uint64_t toMask   = maskForPos(to);
 
-    const Color color      = this->curState->allPieces[Color::WHITE] & fromMask ? Color::WHITE : Color::BLACK;
+    const Color color      = this->blackToMove() ? BLACK : WHITE;
     const Color enemyColor = static_cast<Color>(!color);
 
     PieceType piece = PAWNS;
@@ -223,6 +241,7 @@ void Board::makeMove(const Move& move) {
 
     // update hash
     this->curState->hash ^= Zobrist::randomBlackToMove;
+    // remove old position from hash, this happens regardless of move type
     this->curState->hash ^= Zobrist::randomTable[from][colorPiece];
 
     if (move.moveType() == MoveType::NORMAL) {
@@ -245,44 +264,54 @@ void Board::makeMove(const Move& move) {
     this->curState->pieces[colorPiece] &= ~fromMask;  // remove old position
     this->curState->pieces[colorPiece] |= toMask;     // add new position
 
-    // update opponent pieces
+    // update opponent pieces (if its a capture)
     for (int i = enemyColor; i < 12; i += 2) {
         if ((this->curState->pieces[i] & toMask) != 0) {  // found enemy piece taken
             this->curState->pieces[i] &= ~toMask;
             this->curState->halfMoves = 0;  // capture, reset halfMoves
 
-            // update hash for normal capture
-            this->curState->hash ^= Zobrist::randomTable[to][i];  // remove piece taken
+            // update hash for normal capture, remove the piece taken
+            this->curState->hash ^= Zobrist::randomTable[to][i];
+
+            // if a pawn is captured, check if its the last pawn on the board
+            if (i == 0 || i == 1) {
+                if ((this->getBB(WHITE, PAWNS) | this->getBB(BLACK, PAWNS)) == 0) {
+                    this->curState->hash ^= Zobrist::noPawns;
+                }
+            }
             break;
         }
     }
 
     // update castle bitboards
     if (move.moveType() == MoveType::CASTLE) {
-        int pos = to;
-        if (pos == 56) {
-            pos = 1;
-        } else if (pos == 7) {
-            pos = 2;
-        } else if (pos == 63) {
-            pos = 3;
-        }
+        /*int pos = to;*/
+        /*if (pos == 56) {*/
+        /*    pos = 1;*/
+        /*} else if (pos == 7) {*/
+        /*    pos = 2;*/
+        /*} else if (pos == 63) {*/
+        /*    pos = 3;*/
+        /*}*/
+        int pos = Bitboard::rookPosToIndex(to);
 
-        this->curState->pieces[KINGS + static_cast<int>(color)] = Bitboard::castleSquares[pos];  // update king pos
-        this->curState->pieces[ROOKS + static_cast<int>(color)] |=
-          Bitboard::castleRookSquares[pos];  // add new rook pos
-        this->curState->pieces[ROOKS + static_cast<int>(color)] &=
-          ~Bitboard::originalRookSquares[pos];  // remove old rook pos
+        // update king and rook pos
+        this->curState->pieces[KINGS + static_cast<int>(color)] = Bitboard::castledKingSquares[pos];
+        this->curState->pieces[ROOKS + static_cast<int>(color)] |= Bitboard::castledRookSquares[pos];
+        this->curState->pieces[ROOKS + static_cast<int>(color)] &= ~Bitboard::originalRookSquares[pos];
 
         this->curState->canCastle[color]     = false;
         this->curState->canCastle[color + 2] = false;
 
-        // update hash
-        this->curState->hash ^= Zobrist::randomTable[to][ROOKS + static_cast<int>(color)];  // remove old rook pos
-        this->curState->hash ^= Zobrist::randomTable[tz_count(Bitboard::castleRookSquares[pos])]
-                                                    [ROOKS + static_cast<int>(color)];  // add new rook pos
+        // update piece table hashes
+        this->curState->hash ^= Zobrist::randomTable[to][ROOKS + static_cast<int>(color)];
         this->curState->hash ^=
-          Zobrist::randomTable[this->kingPos(color)][KINGS + static_cast<int>(color)];  // add new king pos
+          Zobrist::randomTable[tz_count(Bitboard::castledRookSquares[pos])][ROOKS + static_cast<int>(color)];
+        this->curState->hash ^= Zobrist::randomTable[this->kingPos(color)][KINGS + static_cast<int>(color)];
+
+        // remove castle rights hashes
+        this->curState->hash ^= Zobrist::castling[color];
+        this->curState->hash ^= Zobrist::castling[color + 2];
     }
 
     if (piece == KINGS) {  // king move, can no longer castle
@@ -310,14 +339,19 @@ void Board::makeMove(const Move& move) {
     }
 
     // update enpassant bitboards
-    if (move.moveType() == MoveType::EN_PASSANT) {  // enpassant move
+    if (move.moveType() == MoveType::EN_PASSANT) {  // enpassant capture
         // pawn was already moved above, just have to get rid of the piece it took
         int capturedPawnPos = this->curState->enpassantPos - Bitboard::pawnPush(color);
         this->curState->pieces[enemyColor] &= ~maskForPos(capturedPawnPos);
 
         // update hash
-        this->curState->hash ^= Zobrist::randomTable[to][colorPiece];  // add new pawn
+        this->curState->hash ^= Zobrist::randomTable[to][colorPiece];
         this->curState->hash ^= Zobrist::randomTable[capturedPawnPos][PAWNS + static_cast<int>(enemyColor)];
+    }
+
+    // remove old enpassant file from hash
+    if (this->curState->enpassantPos) {
+        this->curState->hash ^= Zobrist::enpassantFile[Bitboard::fileOf(this->curState->enpassantPos)];
     }
 
     this->curState->enpassantPos = 0;
@@ -328,6 +362,9 @@ void Board::makeMove(const Move& move) {
         } else {  // white
             this->curState->enpassantPos = to - 8;
         }
+
+        // update hash with new enpassant file
+        this->curState->hash ^= Zobrist::enpassantFile[Bitboard::fileOf(this->curState->enpassantPos)];
     }
 
     // promotion
@@ -349,7 +386,7 @@ void Board::makeMove(const Move& move) {
     updateAllPieces();
 }
 
-void Board::unmakeMove() {
+void Board::undoMove() {
 
     if (this->curState == nullptr || this->curState->prevState == nullptr) {
         return;

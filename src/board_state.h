@@ -3,26 +3,27 @@
 
 #include <cstdint>
 #include <memory>
+#include <array>
 
 class BoardState {
 public:
     BoardState() = default;
     BoardState& operator=(const BoardState&) = delete;
-    BoardState(const BoardState&);
+    explicit BoardState(const BoardState&);
 
     // 0 = pawns, 2 = knights, 4 = bishops, 6 = rooks, 8 = queens, 10 = kings
-    uint64_t pieces[12];
+    std::array<uint64_t, 12> pieces;
 
     uint64_t empty;
 
     // 0 = white 1 = black
-    uint64_t allPieces[2];
+    std::array<uint64_t, 2> allPieces;
 
     // legal square a pawn can move to to take with enpassant
     int enpassantPos;
 
     // wk, bk, wq, bq
-    bool canCastle[4];
+    std::array<bool, 4> canCastle;
 
     // 0 = white 1 = black
     bool blackToMove;
@@ -33,8 +34,6 @@ public:
     // helpful for making/unmaking moves
     std::unique_ptr<BoardState> prevState;
     uint64_t hash;
-    //int highestRepeat;
-
 };
 
 #endif

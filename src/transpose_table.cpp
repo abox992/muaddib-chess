@@ -1,4 +1,5 @@
 #include "transpose_table.h"
+#include <cstdint>
 
 TranspositionTable::TranspositionTable(size_t mbSize) {
     this->clusterCount = mbSize * 1024 * 1024 / sizeof(Cluster);
@@ -6,6 +7,7 @@ TranspositionTable::TranspositionTable(size_t mbSize) {
 
     table = std::unique_ptr<Cluster[], Deleter>(
       static_cast<Cluster*>(std::aligned_alloc(4096, clusterCount * sizeof(Cluster))));
+    assert(std::popcount(clusterCount) == 1);
 }
 
 bool TranspositionTable::contains(uint64_t key) const {
@@ -46,7 +48,8 @@ void TranspositionTable::save(uint64_t key, TTEntry entry) {
 
     for (int i = 0; i < clusterSize; i++) {
         if (!cluster[i].isOccupied()) {
-            cluster[i] = entry;
+            cluster[i]       = entry;
+            cluster[i].key16 = uint16_t(key);
             size++;
             return;
         }
@@ -54,7 +57,7 @@ void TranspositionTable::save(uint64_t key, TTEntry entry) {
 
     // all are full, maybe replace one
     for (int i = 0; i < clusterSize; i++) {
-        if (cluster[i].depth < entry.depth || cluster[i].generation + 3 < curGen) {
+        if (cluster[i].depth < entry.depth || cluster[i].generation < curGen) {
             entry.generation = curGen;
             cluster[i]       = entry;
             return;
@@ -65,11 +68,9 @@ void TranspositionTable::save(uint64_t key, TTEntry entry) {
 }
 
 TTEntry* TranspositionTable::getCluster(uint64_t key) {
-    assert(std::popcount(clusterCount) == 1);
     return &table[key & (clusterCount - 1)].entry[0];
 }
 
 const TTEntry* TranspositionTable::getCluster(uint64_t key) const {
-    assert(std::popcount(clusterCount) == 1);
     return &table[key & (clusterCount - 1)].entry[0];
 }

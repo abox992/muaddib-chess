@@ -4,60 +4,102 @@
 #include "move_list.h"
 #include "transpose_table.h"
 #include <algorithm>
+#include <chrono>
+#include <cstdint>
+#include <thread>
 
-#define DEBUG 1
+#define DEBUG 0
 
 #define INF (20000)
-#define NEG_INF (-20000)
 #define WIN (10000)
+// -1 because if it has to choose between an even position and drawing,
+// it should choose the even position. (I want play to continue)
+#define DRAW (-1)
 
 std::tuple<Move, int> Searcher::getBestMove(Board& board, int depth) {
-    this->ttable.NewSearch();
-    Line line{};
-    auto result = alphaBeta(board, depth, 0, NEG_INF, INF, line);
+    ttable.NewSearch();
+    for (int i = 1; i < depth; i++) {
+        alphaBeta(board, i, 0, -INF, INF);
+    }
+    auto result = alphaBeta(board, depth, 0, -INF, INF);
 
-    /*for (int i = 0; i < line.curMove; i++) {*/
-    /*    std::cout << line.line[i] << ' ';*/
-    /*}*/
-    /*std::cout << std::endl;*/
-    std::vector<Move> pv;
+    pv.clear();
     pv.push_back(std::get<0>(result));
 
     board.makeMove(pv[0]);
     int count = 1;
 
-    while (this->ttable.contains(board.hash())) {
+    std::vector<uint64_t> pvHashes;
+
+    while (this->ttable.contains(board.hash()) && this->ttable.get(board.hash()).flag == TTEntry::EXACT) {
+        std::cout << "found pv move\n";
         auto entry = this->ttable.get(board.hash());
+        if (entry.move.isNull() || std::find(pvHashes.begin(), pvHashes.end(), board.hash()) != pvHashes.end()) {
+            break;
+        }
         pv.push_back(entry.move);
+        pvHashes.push_back(board.hash());
         count++;
         board.makeMove(entry.move);
     }
 
-    for (int i = 0; i < count; i++)
-        board.unmakeMove();
+    for (int i = 0; i < count; i++) {
+        board.undoMove();
+    }
 
     for (const auto& m : pv) {
         std::cout << m << ' ';
     }
     std::cout << std::endl;
 
+    std::cout << "size: " << ttable.getSize() << std::endl;
+
     return result;
 }
 
-std::tuple<Move, int> Searcher::alphaBeta(Board& board, const int depth, const int ply, int alpha,
-                                          int beta, Line& line) {
+std::tuple<Move, int> Searcher::iterativeDeepening(Board& board, std::chrono::milliseconds timeMs) {
+    ttable.NewSearch();
 
-    Move bestMove;
-    int  bestEval;
+    std::tuple<Move, int> result;
+    result = {Move(0), -INF};
 
-    bestMove = Move(0);
+    std::thread timer([this, &result, &board] {
+        for (int depth = 1; depth < 256; depth++) {
+            auto newResult = alphaBeta(board, depth, 0, -INF, INF);
+            if (!this->stopSearch) {
+                result = newResult;
+            } else {
+                break;
+            }
+        }
+    });
 
-    MoveList<ALL> moveList(board);
-    if (ply == 0) {
-        std::cout << moveList.size() << '\n';
+    std::this_thread::sleep_for(timeMs);
+
+    this->stopSearch = true;
+    timer.join();
+    this->stopSearch = false;
+
+    // fallback search
+    if (std::get<0>(result).isNull()) {
+        result = alphaBeta(board, 5, 0, -INF, INF);
     }
 
-    moveList.sort(board);
+    return result;
+}
+
+std::tuple<Move, int> Searcher::alphaBeta(Board& board, const int depth, const int ply, int alpha, int beta) {
+
+    Move bestMove = Move(0);
+    int  bestEval = -INF;
+
+    if (this->stopSearch) {
+        return {bestMove, bestEval};
+    }
+
+    MoveList<ALL> moveList(board);
+
+    moveList.sort(board, pv, ttable);
 
     // no moves means we are either in checkmate or a stalemate
     if (moveList.size() == 0) {
@@ -71,22 +113,19 @@ std::tuple<Move, int> Searcher::alphaBeta(Board& board, const int depth, const i
     }
 
     // depth limit reached, return evaluation
-    if (depth == 0) {
-        line.curMove = ply;
-        bestEval     = quiesce(board, alpha, beta);
+    if (depth <= 0) {
+        bestEval = quiesce(board, alpha, beta);
 
         return {bestMove, bestEval};
     }
 
-    if (board.getRepeats(board.hash()) == 2) {
-        // -1 because if it has to choose between an even position and drawing,
-        // it should choose the even position.
-        return {bestMove, -1};
+    if (board.getRepeats(board.hash()) == 3) {
+        return {bestMove, DRAW};
     }
 
     // check transposition table for already computed position
-    int       originalAlpha = alpha;
-    const int curHash       = board.hash();
+    int            originalAlpha = alpha;
+    const uint64_t curHash       = board.hash();
     if (ttable.contains(curHash)) {
         TTData entry = ttable.get(curHash);
 
@@ -103,39 +142,44 @@ std::tuple<Move, int> Searcher::alphaBeta(Board& board, const int depth, const i
             }
 
             if (alpha >= beta) {
-                line.line[ply] = bestMove;
                 return {entry.move, entry.eval};
             }
         }
     }
 
-    int maxEval = NEG_INF;
-
+    bool first = true;
     for (const auto& move : moveList) {
-        int extension = 0;
-
+        int curEval;
         board.makeMove(move);
+        uint64_t moveHash = board.hash();
 
-        int curEval =
-          -std::get<1>(alphaBeta(board, depth - 1 + extension, ply + 1, -beta, -alpha, line));
+        // ensure we don't grab a stale value from the ttable
+        if (board.getRepeats(board.hash()) == 2) {
+            curEval = DRAW;
+        } else {
+            if (first) {
+                curEval = -std::get<1>(Searcher::alphaBeta(board, depth - 1, ply + 1, -beta, -alpha));
+                first   = false;
+            } else {
+                curEval = -std::get<1>(Searcher::alphaBeta(board, depth - 1, ply + 1, -alpha - 1, -alpha));
 
-        board.unmakeMove();
-
-        if constexpr (DEBUG) {
-            if (ply == 0) {
-                std::cout << move << " " << curEval << '\n';
+                if (alpha < curEval && curEval < beta) {
+                    curEval = -std::get<1>(Searcher::alphaBeta(board, depth - 1, ply + 1, -beta, -alpha));
+                }
             }
         }
 
-        if (curEval > maxEval) {
-            maxEval  = curEval;
-            bestMove = move;
-            bestEval = maxEval;
+        board.undoMove();
+
+        if constexpr (DEBUG) {
+            if (ply == 0) {
+                std::cout << move << " " << curEval << " hash: " << moveHash << '\n';
+            }
         }
 
-        if (curEval > alpha) {
-            alpha          = curEval;
-            line.line[ply] = bestMove;
+        if (curEval > bestEval) {
+            bestMove = move;
+            bestEval = curEval;
         }
 
         alpha = std::max(alpha, curEval);
@@ -150,9 +194,9 @@ std::tuple<Move, int> Searcher::alphaBeta(Board& board, const int depth, const i
     entry.move = bestMove;
 
     // set flag
-    if (maxEval <= originalAlpha) {
+    if (bestEval <= originalAlpha) {
         entry.flag = TTEntry::UPPER;
-    } else if (maxEval >= beta) {
+    } else if (bestEval >= beta) {
         entry.flag = TTEntry::LOWER;
     } else {
         entry.flag = TTEntry::EXACT;
@@ -161,8 +205,10 @@ std::tuple<Move, int> Searcher::alphaBeta(Board& board, const int depth, const i
     // set depth
     entry.depth = depth;
 
-    /*ttable.put(curHash, entry);*/
     ttable.save(curHash, entry);
+    /*if (entry.eval == -20000) {*/
+    /*    std::cout << "Bad entry: " << curHash << " ply: " << ply << " alpha beta: " << alpha << " " << beta << "\n";*/
+    /*}*/
 
     return {bestMove, bestEval};
 }
@@ -170,6 +216,7 @@ std::tuple<Move, int> Searcher::alphaBeta(Board& board, const int depth, const i
 int Searcher::quiesce(Board& board, int alpha, int beta) {
     const int perspective = board.blackToMove() ? -1 : 1;
 
+    // from searcher's perspective, negative is bad and positive is good
     int standPat = evaluation(board) * perspective;
 
     if (standPat >= beta) {
@@ -185,7 +232,7 @@ int Searcher::quiesce(Board& board, int alpha, int beta) {
     for (auto& move : moveList) {
         board.makeMove(move);
         int eval = -quiesce(board, -beta, -alpha);
-        board.unmakeMove();
+        board.undoMove();
 
         if (eval >= beta) {
             return beta;

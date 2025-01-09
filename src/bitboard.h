@@ -5,6 +5,7 @@
 #include "board.h"
 #include <algorithm>
 #include <array>
+#include <map>
 #include <cassert>
 #include <cstdint>
 
@@ -53,9 +54,8 @@ constexpr inline int pawnPush() {
     return color == WHITE ? 8 : -8;
 }
 
-inline int pawnPush(Color color) {
-    return color == WHITE ? 8 : -8;
-}
+// white = 8, black = -8
+inline int pawnPush(Color color) { return color == WHITE ? 8 : -8; }
 
 /* INIT COMPILETIME PRECOMPUTED BITBOARDS */
 
@@ -74,8 +74,9 @@ constinit inline const Arr_2x64 pawnMoveMasks = [] {
             int dest       = color ? i - offset : i + offset;
             int doubleDest = color ? i - 16 : i + 16;
 
-            if (!isOk(dest))
+            if (!isOk(dest)) {
                 continue;
+            }
 
             if (safeDestination(i, dest)) {
                 mask |= maskForPos(dest);
@@ -100,8 +101,9 @@ constinit inline const Arr_2x64 pawnAttackMasks = [] {
             for (int offset : {9, 7}) {
                 int dest = color ? i - offset : i + offset;
 
-                if (!isOk(dest))
+                if (!isOk(dest)) {
                     continue;
+                }
 
                 if (safeDestination(i, dest)) {
                     mask |= maskForPos(dest);
@@ -125,8 +127,9 @@ constinit inline const Arr_64 knightMasks = [] {
 
             int dest = i + offset;
 
-            if (!isOk(dest))
+            if (!isOk(dest)) {
                 continue;
+            }
 
             if (distance(i, dest) == 2) {
                 mask |= maskForPos(dest);
@@ -146,8 +149,9 @@ constinit inline const Arr_64 kingMasks = [] {
         for (int offset : {9, 8, 7, 1, -1, -7, -8, -9}) {
             int dest = i + offset;
 
-            if (!isOk(dest))
+            if (!isOk(dest)) {
                 continue;
+            }
 
             if (safeDestination(i, dest)) {
                 mask |= maskForPos(i + offset);
@@ -451,7 +455,23 @@ constinit inline const std::array<uint64_t, 4> castleMasks = [] {
     return castleMasks;
 }();
 
-constinit inline const std::array<uint64_t, 4> castleSquares = [] {
+inline constexpr int rookPosToIndex(const int rookPos) {
+    if (rookPos == 0) {
+        return 0;
+    } else if (rookPos == 56) {
+        return 1;
+    } else if (rookPos == 7) {
+        return 2;
+    } else if (rookPos == 63) {
+        return 3;
+    }
+
+    assert(false && "bad rookPos given");
+
+    return -1;
+}
+
+constinit inline const std::array<uint64_t, 4> castledKingSquares = [] {
     std::array<uint64_t, 4> castleSquares{};
 
     castleSquares[0] = uint64_t(1) << 1;
@@ -463,7 +483,7 @@ constinit inline const std::array<uint64_t, 4> castleSquares = [] {
     return castleSquares;
 }();
 
-constinit inline const std::array<uint64_t, 4> castleRookSquares = [] {
+constinit inline const std::array<uint64_t, 4> castledRookSquares = [] {
     std::array<uint64_t, 4> castleRookSquares{};
 
     castleRookSquares[0] = uint64_t(1) << 2;
