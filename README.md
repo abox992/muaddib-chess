@@ -26,9 +26,9 @@ Run the engine:
 ```
 
 # Todo
-- [ ] Move ordering
-- [ ] PV tracking
-- [ ] Smarter TT replacement strategy
+- [X] Move ordering
+- [X] PV tracking
+- [X] Smarter TT replacement strategy
 - [ ] NNUE
 - [ ] Multithread
 - [X] CLI
