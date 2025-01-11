@@ -3,6 +3,7 @@
 #include "evaluate.h"
 #include "move_list.h"
 #include "transpose_table.h"
+#include "zobrist.h"
 #include <algorithm>
 #include <chrono>
 #include <cstdint>
@@ -19,9 +20,9 @@
 std::tuple<Move, int> Searcher::getBestMove(Board& board, int depth) {
     ttable.NewSearch();
     for (int i = 1; i < depth; i++) {
-        alphaBeta(board, i, 0, -INF, INF);
+        search(board, i, 0, -INF, INF);
     }
-    auto result = alphaBeta(board, depth, 0, -INF, INF);
+    auto result = search(board, depth, 0, -INF, INF);
 
     pv.clear();
     pv.push_back(std::get<0>(result));
@@ -65,7 +66,7 @@ std::tuple<Move, int> Searcher::iterativeDeepening(Board& board, std::chrono::mi
 
     std::thread timer([this, &result, &board] {
         for (int depth = 1; depth < 256; depth++) {
-            auto newResult = alphaBeta(board, depth, 0, -INF, INF);
+            auto newResult = search(board, depth, 0, -INF, INF);
             if (!this->stopSearch) {
                 result = newResult;
             } else {
@@ -80,16 +81,45 @@ std::tuple<Move, int> Searcher::iterativeDeepening(Board& board, std::chrono::mi
     timer.join();
     this->stopSearch = false;
 
-    // fallback search
-    if (std::get<0>(result).isNull()) {
-        result = alphaBeta(board, 5, 0, -INF, INF);
+    // not handling (unlikely) possibility of stopping search before even depth 1 finishes
+
+    pv.clear();
+    pv.push_back(std::get<0>(result));
+
+    if (pv[0].isNull()) return result;
+
+    board.makeMove(pv[0]);
+    int count = 1;
+
+    std::vector<uint64_t> pvHashes;
+
+    while (this->ttable.contains(board.hash()) && this->ttable.get(board.hash()).flag == TTEntry::EXACT) {
+        std::cout << "found pv move\n";
+        auto entry = this->ttable.get(board.hash());
+        if (entry.move.isNull() || std::find(pvHashes.begin(), pvHashes.end(), board.hash()) != pvHashes.end()) {
+            break;
+        }
+        pv.push_back(entry.move);
+        pvHashes.push_back(board.hash());
+        count++;
+        board.makeMove(entry.move);
     }
+
+    for (int i = 0; i < count; i++) {
+        board.undoMove();
+    }
+
+    for (const auto& m : pv) {
+        std::cout << m << ' ';
+    }
+    std::cout << std::endl;
+
+    std::cout << "size: " << ttable.getSize() << std::endl;
 
     return result;
 }
 
-std::tuple<Move, int> Searcher::alphaBeta(Board& board, const int depth, const int ply, int alpha, int beta) {
-
+std::tuple<Move, int> Searcher::search(Board& board, const int depth, const int ply, int alpha, int beta) {
     Move bestMove = Move(0);
     int  bestEval = -INF;
 
@@ -126,9 +156,10 @@ std::tuple<Move, int> Searcher::alphaBeta(Board& board, const int depth, const i
     // check transposition table for already computed position
     int            originalAlpha = alpha;
     const uint64_t curHash       = board.hash();
+    assert(curHash == Zobrist::zhash(board));
     if (ttable.contains(curHash)) {
         TTData entry = ttable.get(curHash);
-
+        
         if (entry.depth >= depth) {
             switch (entry.flag) {
             case TTEntry::EXACT :
@@ -157,14 +188,16 @@ std::tuple<Move, int> Searcher::alphaBeta(Board& board, const int depth, const i
         if (board.getRepeats(board.hash()) == 2) {
             curEval = DRAW;
         } else {
+
+            // Principal variation search
             if (first) {
-                curEval = -std::get<1>(Searcher::alphaBeta(board, depth - 1, ply + 1, -beta, -alpha));
+                curEval = -std::get<1>(Searcher::search(board, depth - 1, ply + 1, -beta, -alpha));
                 first   = false;
             } else {
-                curEval = -std::get<1>(Searcher::alphaBeta(board, depth - 1, ply + 1, -alpha - 1, -alpha));
+                curEval = -std::get<1>(Searcher::search(board, depth - 1, ply + 1, -alpha - 1, -alpha));
 
                 if (alpha < curEval && curEval < beta) {
-                    curEval = -std::get<1>(Searcher::alphaBeta(board, depth - 1, ply + 1, -beta, -alpha));
+                    curEval = -std::get<1>(Searcher::search(board, depth - 1, ply + 1, -beta, -alpha));
                 }
             }
         }
@@ -206,9 +239,6 @@ std::tuple<Move, int> Searcher::alphaBeta(Board& board, const int depth, const i
     entry.depth = depth;
 
     ttable.save(curHash, entry);
-    /*if (entry.eval == -20000) {*/
-    /*    std::cout << "Bad entry: " << curHash << " ply: " << ply << " alpha beta: " << alpha << " " << beta << "\n";*/
-    /*}*/
 
     return {bestMove, bestEval};
 }

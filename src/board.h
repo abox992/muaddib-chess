@@ -27,6 +27,7 @@ public:
     void setStartPos();
 
     void updateAllPieces();
+    void updatePieceOnSquare();
 
     void makeMove(const Move& move);
     void undoMove();

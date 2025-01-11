@@ -30,7 +30,7 @@ SortIncludes: false
 SortUsingDeclarations: false
 SpaceAfterCStyleCast: true
 SpaceAfterTemplateKeyword: false
-SpaceBeforeCaseColon: true
+SpaceBeforeCaseColon: false 
 SpaceBeforeCpp11BracedList: false
 SpaceBeforeInheritanceColon: false
 SpaceInEmptyBlock: false

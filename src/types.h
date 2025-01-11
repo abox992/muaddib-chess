@@ -1,13 +1,16 @@
 #ifndef TYPES_H
 #define TYPES_H
 
-enum PieceType {
-    PAWNS   = 0,
-    KNIGHTS = 2,
-    BISHOPS = 4,
-    ROOKS   = 6,
-    QUEENS  = 8,
-    KINGS   = 10
+#include <cstdint>
+
+enum PieceType : uint8_t {
+    PAWNS    = 0,
+    KNIGHTS  = 2,
+    BISHOPS  = 4,
+    ROOKS    = 6,
+    QUEENS   = 8,
+    KINGS    = 10,
+    NO_PIECE = 12
 };
 
 enum File {

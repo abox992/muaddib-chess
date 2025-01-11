@@ -1,6 +1,7 @@
 #ifndef BOARD_STATE_H
 #define BOARD_STATE_H
 
+#include "types.h"
 #include <cstdint>
 #include <memory>
 #include <array>
@@ -30,6 +31,8 @@ public:
 
     int halfMoves;
     int fullMoves;
+
+    std::array<PieceType, 64> pieceOnSquare;
 
     // helpful for making/unmaking moves
     std::unique_ptr<BoardState> prevState;

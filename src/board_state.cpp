@@ -5,6 +5,7 @@ BoardState::BoardState(const BoardState& source) {
     this->pieces = source.pieces;
     this->allPieces = source.allPieces;
     this->canCastle = source.canCastle;
+    this->pieceOnSquare = source.pieceOnSquare;
     this->enpassantPos = source.enpassantPos;
     this->empty = source.empty;
     this->blackToMove = source.blackToMove;

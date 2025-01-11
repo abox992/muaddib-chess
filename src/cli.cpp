@@ -34,7 +34,6 @@ void loop() {
 void asciiGameLoop() {
     std::ofstream logfile("log.txt");
     Board         board;
-    board.setStartPos();
 
     Searcher searcher;
 

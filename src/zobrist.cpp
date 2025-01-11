@@ -8,7 +8,7 @@ namespace Zobrist {
 
 void initZobrist() {
     PRNG generator(1070372);
-
+    /*PRNG generator(23848721498);*/
 
     for (int i = 0; i < 64; i++) {
         for (int j = 0; j < 12; j++) {

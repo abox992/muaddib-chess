@@ -3,9 +3,9 @@
 
 #include "bit_manip.h"
 #include "board.h"
+#include "types.h"
 #include <algorithm>
 #include <array>
-#include <map>
 #include <cassert>
 #include <cstdint>
 
@@ -56,6 +56,15 @@ constexpr inline int pawnPush() {
 
 // white = 8, black = -8
 inline int pawnPush(Color color) { return color == WHITE ? 8 : -8; }
+
+inline int colorPiece(Color color, PieceType piece) {
+    return static_cast<int>(color) + static_cast<int>(piece);
+}
+
+inline int colorPiece(Color color, int piece) {
+    assert(piece >= 0 && piece < 12);
+    return static_cast<int>(color) + piece;
+}
 
 /* INIT COMPILETIME PRECOMPUTED BITBOARDS */
 

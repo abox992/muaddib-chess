@@ -14,9 +14,10 @@ private:
 
 public:
     Searcher() :
-        ttable(512) {}
+        ttable(512),
+        stopSearch(false) {}
 
-    std::tuple<Move, int> alphaBeta(Board& board, const int depth, const int ply, int alpha, int beta);
+    std::tuple<Move, int> search(Board& board, const int depth, const int ply, int alpha, int beta);
     std::tuple<Move, int> getBestMove(Board& board, int depth);
     std::tuple<Move, int> iterativeDeepening(Board& board, std::chrono::milliseconds timeMs);
 
