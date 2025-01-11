@@ -10,7 +10,7 @@ enum PieceType : uint8_t {
     ROOKS    = 6,
     QUEENS   = 8,
     KINGS    = 10,
-    NO_PIECE = 12
+    NO_PIECE = 16
 };
 
 enum File {

@@ -219,14 +219,6 @@ inline int generateKingMoves(const Board& board, Move* moveList, const uint64_t 
         if (maskForPos(index) & board.getBB(color, ROOKS)) {  // taking our own rook -> castle move
             curMove = Move::make<CASTLE>(kingPos, index);
 
-            /*int pos = 0;*/
-            /*if (index == 56) {*/
-            /*    pos = 1;*/
-            /*} else if (index == 7) {*/
-            /*    pos = 2;*/
-            /*} else if (index == 63) {*/
-            /*    pos = 3;*/
-            /*}*/
             int pos = Bitboard::rookPosToIndex(index);
 
             index = tz_count(Bitboard::castledKingSquares[pos]);  // get the actual square the king will be on

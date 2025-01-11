@@ -475,6 +475,7 @@ inline constexpr int rookPosToIndex(const int rookPos) {
         return 3;
     }
 
+    std::cout << rookPos << std::endl;
     assert(false && "bad rookPos given");
 
     return -1;

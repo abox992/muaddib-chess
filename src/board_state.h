@@ -32,7 +32,7 @@ public:
     int halfMoves;
     int fullMoves;
 
-    std::array<PieceType, 64> pieceOnSquare;
+    std::array<uint8_t, 64> pieceOnSquare;
 
     // helpful for making/unmaking moves
     std::unique_ptr<BoardState> prevState;
