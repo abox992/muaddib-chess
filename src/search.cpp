@@ -93,7 +93,7 @@ std::tuple<Move, int> Searcher::iterativeDeepening(Board& board, std::chrono::mi
 
     std::vector<uint64_t> pvHashes;
 
-    while (this->ttable.contains(board.hash()) && this->ttable.get(board.hash()).flag == TTEntry::EXACT) {
+    while (this->ttable.contains(board.hash()) /*&& this->ttable.get(board.hash()).flag == TTEntry::EXACT*/) {
         std::cout << "found pv move\n";
         auto entry = this->ttable.get(board.hash());
         if (entry.move.isNull() || std::find(pvHashes.begin(), pvHashes.end(), board.hash()) != pvHashes.end()) {

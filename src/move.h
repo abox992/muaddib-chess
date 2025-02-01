@@ -65,4 +65,6 @@ public:
     friend std::ostream& operator<<(std::ostream& o, const Move& move);
 };
 
+std::string toString(Move move);
+
 #endif

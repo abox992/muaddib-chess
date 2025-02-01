@@ -1,4 +1,11 @@
 #include "move.h"
+#include <sstream>
+
+std::string toString(Move move) {
+    std::stringstream s; 
+    s << move;
+    return s.str();
+}
 
 std::ostream& operator<<(std::ostream& o, const Move& move) {
     const char file[] = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'};
@@ -26,16 +33,16 @@ std::ostream& operator<<(std::ostream& o, const Move& move) {
     if (move.moveType() == MoveType::PROMOTION) {
         switch (move.promotionPiece()) {
             case 0:
-                o << "->N";
+                o << "n";
                 break;
             case 1:
-                o << "->B";
+                o << "b";
                 break;
             case 2:
-                o << "->R";
+                o << "r";
                 break;
             case 3:
-                o << "->Q";
+                o << "q";
                 break;
         }
 

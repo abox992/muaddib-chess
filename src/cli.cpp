@@ -22,7 +22,10 @@ void loop() {
         std::transform(input.begin(), input.end(), input.begin(), [](unsigned char c) { return std::tolower(c); });
 
         if (input == "uci") {
-            runUCI();
+            int result = 0;
+            result = runUCI();
+            assert(result == 0);
+            return;
         } else if (input == "play") {
             asciiGameLoop();
         } else if (input == "test") {
@@ -66,7 +69,7 @@ void asciiGameLoop() {
 
         board.makeMove(bestMove);
 
-        std::cout << "\x1B[2J\x1B[H";  // clear screen
+        /*std::cout << "\x1B[2J\x1B[H";  // clear screen*/
         std::cout << board << std::endl;
         std::cout << moveNum << ". " << bestMove << std::endl;
         std::cout << "Eval: " << perspectiveEval << '\n';
