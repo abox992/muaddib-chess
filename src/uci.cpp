@@ -1,8 +1,11 @@
 #include "uci.h"
 #include "board.h"
-#include "search.h"
 #include "move_list.h"
+#include "search.h"
+
+#include <iostream>
 #include <sstream>
+#include <string>
 
 int runUCI() {
     Board board;
@@ -10,56 +13,68 @@ int runUCI() {
 
     Searcher searcher;
 
-    std::cout << "id name mangoEngine" << std::endl;
+    std::cout << "id name muaddibChess" << std::endl;
     std::cout << "id author abox992" << std::endl;
     std::cout << "uciok" << std::endl;
 
-    std::string input = "";
-    while (input != "isready") {
-        std::cin >> input;
-    }
-    std::cout << "readyok" << std::endl;
+    std::string line;
+    while (std::getline(std::cin, line)) {
+        if (!line.empty() && line.back() == '\r') {
+            line.pop_back();
+        }
+        if (line.empty()) {
+            continue;
+        }
 
-    while (input != "quit") {
-        input = "";
-        std::cin >> input;
+        std::istringstream stream(line);
+        std::string        command;
+        stream >> command;
 
-        // switch on input
-        if (input == "ucinewgame") {}
-        if (input.substr(0, 2) == "go") {
-            using namespace std::chrono_literals;
-            auto [bestMove, bestEval] = searcher.iterativeDeepening(board, 3000ms);
-            std::cout << "bestmove " << bestMove << std::endl;
-        } if (input == "position") {
-            std::string startPos;
-            std::cin >> startPos;
+        if (command == "quit") {
+            break;
+        }
 
-            if (startPos == "fen") {
+        if (command == "isready") {
+            std::cout << "readyok" << std::endl;
+            continue;
+        }
 
-            } else {
-                assert(startPos == "startpos");
-                board.setStartPos();
+        if (command == "ucinewgame") {
+            board.setStartPos();
+            continue;
+        }
 
-                std::string moves;
-                std::getline(std::cin, moves);
+        if (command == "position") {
+            std::string type;
+            stream >> type;
+            if (type != "startpos") {
+                continue;
+            }
 
-                if (moves == "") break;
+            board.setStartPos();
 
-                std::istringstream moveStream(moves);
+            std::string token;
+            stream >> token;
+            if (token != "moves") {
+                continue;
+            }
 
-                std::string move;
-                while (std::getline(moveStream, move, ' ')) {
-                    MoveList<ALL> moveList(board);
-
-                    for (auto m : moveList) {
-                        if (move == toString(m)) {
-                            board.makeMove(m);
-                            break;
-                        }
+            while (stream >> token) {
+                MoveList<ALL> moveList(board);
+                for (auto move : moveList) {
+                    if (token == toString(move)) {
+                        board.makeMove(move);
+                        break;
                     }
                 }
             }
-        } else {
+            continue;
+        }
+
+        if (command == "go") {
+            using namespace std::chrono_literals;
+            auto [bestMove, bestEval] = searcher.iterativeDeepening(board, 3000ms);
+            std::cout << "bestmove " << bestMove << std::endl;
         }
     }
 
