@@ -35,28 +35,14 @@ public:
         }
     }
 
-    void sort(Board& board, const std::vector<Move>& pv, const TranspositionTable& ttable) {
-        auto swapIter = moveList.begin();
-
-        // pv moves
-        for (auto pvIter = pv.cbegin(); pvIter != pv.cend(); pvIter++) {
-            auto iter = std::find(moveList.begin(), moveList.end(), *pvIter);
+    void sort(Board& board, const Move& ttableMove) {
+        // put ttable move at front if it exists
+        if (!ttableMove.isNull()) {
+            auto iter = std::find(moveList.begin(), moveList.end(), ttableMove);
             if (iter != moveList.end()) {
-                std::iter_swap(iter, swapIter);
-                swapIter++;
+                std::iter_swap(iter, moveList.begin());
             }
         }
-
-        // hash moves
-        /*for (auto iter = swapIter; iter != moveList.end(); iter++) {*/
-        /*    board.makeMove(*iter);*/
-        /*    uint64_t hash = board.hash();*/
-        /*    board.undoMove();*/
-        /*    if (ttable.contains(hash)) {*/
-        /*        std::iter_swap(iter, swapIter);*/
-        /*        swapIter++;*/
-        /*    }*/
-        /*}*/
     }
 
     MoveList(const MoveList&)            = delete;

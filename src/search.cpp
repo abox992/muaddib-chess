@@ -17,6 +17,28 @@
 // it should choose the even position. (I want play to continue)
 #define DRAW (-1)
 
+constexpr int MATE_BOUND = WIN / 2;  // 5000
+
+int evalToTT(int eval, int ply) {
+    if (eval > MATE_BOUND) {
+        return eval + ply;  // we mate
+    }
+    if (eval < -MATE_BOUND) {
+        return eval - ply;  // we get mated
+    }
+    return eval;
+}
+
+int evalFromTT(int eval, int ply) {
+    if (eval > MATE_BOUND) {
+        return eval - ply;
+    }
+    if (eval < -MATE_BOUND) {
+        return eval + ply;
+    }
+    return eval;
+}
+
 std::tuple<Move, int> Searcher::getBestMove(Board& board, int depth) {
     ttable.NewSearch();
     for (int i = 1; i < depth; i++) {
@@ -86,7 +108,9 @@ std::tuple<Move, int> Searcher::iterativeDeepening(Board& board, std::chrono::mi
     pv.clear();
     pv.push_back(std::get<0>(result));
 
-    if (pv[0].isNull()) return result;
+    if (pv[0].isNull()) {
+        return result;
+    }
 
     board.makeMove(pv[0]);
     int count = 1;
@@ -124,12 +148,51 @@ std::tuple<Move, int> Searcher::search(Board& board, const int depth, const int 
     int  bestEval = -INF;
 
     if (this->stopSearch) {
+        return {Move(0), 0};  // value unused
+    }
+
+    if (board.getRepeats(board.hash()) == 3) {
+        return {bestMove, DRAW};
+    }
+
+    // check transposition table for already computed position
+    int            originalAlpha = alpha;
+    const uint64_t curHash       = board.hash();
+    Move           bestMoveTT;
+    assert(curHash == Zobrist::zhash(board));
+    if (ttable.contains(curHash)) {
+        TTData entry = ttable.get(curHash);
+        bestMoveTT   = entry.move;
+
+        int eval = evalFromTT(entry.eval, ply);
+
+        if (entry.depth >= depth) {
+            switch (entry.flag) {
+            case TTEntry::EXACT:
+                return {entry.move, eval};
+            case TTEntry::UPPER:
+                beta = std::min(beta, eval);
+                break;
+            case TTEntry::LOWER:
+                alpha = std::max(alpha, eval);
+                break;
+            }
+
+            if (alpha >= beta) {
+                return {entry.move, eval};
+            }
+        }
+    }
+
+    // depth limit reached, return evaluation
+    if (depth <= 0) {
+        bestEval = quiesce(board, alpha, beta);
+
         return {bestMove, bestEval};
     }
 
     MoveList<ALL> moveList(board);
-
-    moveList.sort(board, pv, ttable);
+    moveList.sort(board, bestMoveTT);
 
     // no moves means we are either in checkmate or a stalemate
     if (moveList.size() == 0) {
@@ -142,41 +205,6 @@ std::tuple<Move, int> Searcher::search(Board& board, const int depth, const int 
         return {bestMove, 0};
     }
 
-    // depth limit reached, return evaluation
-    if (depth <= 0) {
-        bestEval = quiesce(board, alpha, beta);
-
-        return {bestMove, bestEval};
-    }
-
-    if (board.getRepeats(board.hash()) == 3) {
-        return {bestMove, DRAW};
-    }
-
-    // check transposition table for already computed position
-    int            originalAlpha = alpha;
-    const uint64_t curHash       = board.hash();
-    assert(curHash == Zobrist::zhash(board));
-    if (ttable.contains(curHash)) {
-        TTData entry = ttable.get(curHash);
-        
-        if (entry.depth >= depth) {
-            switch (entry.flag) {
-            case TTEntry::EXACT :
-                return {entry.move, entry.eval};
-            case TTEntry::UPPER :
-                beta = std::min(beta, entry.eval);
-                break;
-            case TTEntry::LOWER :
-                alpha = std::max(alpha, entry.eval);
-                break;
-            }
-
-            if (alpha >= beta) {
-                return {entry.move, entry.eval};
-            }
-        }
-    }
 
     bool first = true;
     for (const auto& move : moveList) {
@@ -204,6 +232,10 @@ std::tuple<Move, int> Searcher::search(Board& board, const int depth, const int 
 
         board.undoMove();
 
+        if (this->stopSearch) {
+            break;  // do not update bestEval / alpha with this child
+        }
+
         if constexpr (DEBUG) {
             if (ply == 0) {
                 std::cout << move << " " << curEval << " hash: " << moveHash << '\n';
@@ -221,9 +253,13 @@ std::tuple<Move, int> Searcher::search(Board& board, const int depth, const int 
         }
     }
 
+    if (this->stopSearch) {
+        return {bestMove, bestEval};
+    }
+
     // update transposition table with new values
     TTEntry entry;
-    entry.eval = bestEval;
+    entry.eval = evalToTT(bestEval, ply);
     entry.move = bestMove;
 
     // set flag
