@@ -23,7 +23,7 @@ struct TTEntry {
 
     Flags flag;
 
-    inline constexpr bool isOccupied() { return !move.isNull(); }
+    inline constexpr bool isOccupied() const { return depth != 0; }
 };
 
 struct TTData {
@@ -65,6 +65,7 @@ public:
     void save(uint64_t key, TTEntry entry);
     const TTEntry* getCluster(uint64_t key) const;
     TTEntry* getCluster(uint64_t key);
+    uint16_t getKeyTag(uint64_t key) const;
 
     inline size_t getSize() const {
         return size;
