@@ -329,6 +329,10 @@ void Board::makeMove(const Move& move) {
             this->curState->hash ^= Zobrist::randomTable[to][color];
 
             this->curState->pieceOnSquare[to] = Bitboard::colorPiece(color, promoPiece);
+
+            if ((this->getBB(WHITE, PAWNS) | this->getBB(BLACK, PAWNS)) == 0) {
+                this->curState->hash ^= Zobrist::noPawns;
+            }
         }
 
         // remove old enpassant file from hash
