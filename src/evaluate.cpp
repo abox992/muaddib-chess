@@ -2,26 +2,28 @@
 #include "bit_manip.h"
 #include "bitboard.h"
 #include "board.h"
+#include "eval_net.h"
 #include "move_list.h"
 #include "types.h"
 #include <bit>
 #include <cstdint>
 
 // returns an evaluation of board where positive is good for white and negative is good for black
-int evaluation(const Board& board) {
-
+int pstEvaluation(const Board& board) {
     int whiteValue = 2 * materialValue(board, Color::WHITE);
     int blackValue = 2 * materialValue(board, Color::BLACK);
 
-    int whitePosValue = piecePosValue(board, Color::WHITE);
-    int blackPosValue = piecePosValue(board, Color::BLACK);
+    whiteValue += piecePosValue(board, Color::WHITE);
+    blackValue += piecePosValue(board, Color::BLACK);
 
-    whiteValue += whitePosValue;
-    blackValue += blackPosValue;
+    return whiteValue - blackValue;
+}
 
-    int eval = whiteValue - blackValue;
-
-    return eval;
+int evaluation(const Board& board) {
+    if (EvalNet::loaded()) {
+        return EvalNet::evaluate(board);
+    }
+    return pstEvaluation(board);
 }
 
 const int pieceTables[8][64] = {

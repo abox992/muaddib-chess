@@ -82,6 +82,22 @@ std::tuple<Move, int> Searcher::getBestMove(Board& board, int depth) {
     return result;
 }
 
+std::tuple<Move, int> Searcher::searchDepth(Board& board, int depth) {
+    ttable.NewSearch();
+    killers = {};
+    collectRoot = true;
+    std::tuple<Move, int> result = {Move(0), -INF};
+    for (int i = 1; i <= depth; i++) {
+        rootMoves.clear();
+        result = search(board, i, 0, -INF, INF);
+        if (this->stopSearch) {
+            break;
+        }
+    }
+    collectRoot = false;
+    return result;
+}
+
 std::tuple<Move, int> Searcher::iterativeDeepening(Board& board, std::chrono::milliseconds timeMs) {
     ttable.NewSearch();
     killers = {};
@@ -163,7 +179,7 @@ std::tuple<Move, int> Searcher::search(Board& board, const int depth, const int 
     const uint64_t curHash       = board.hash();
     Move           bestMoveTT;
     assert(curHash == Zobrist::zhash(board));
-    if (ttable.contains(curHash)) {
+    if (!(collectRoot && ply == 0) && ttable.contains(curHash)) {
         TTData entry = ttable.get(curHash);
         bestMoveTT   = entry.move;
 
@@ -215,7 +231,6 @@ std::tuple<Move, int> Searcher::search(Board& board, const int depth, const int 
         return {bestMove, 0};
     }
 
-
     bool first = true;
     for (const auto& move : moveList) {
         int curEval;
@@ -225,18 +240,16 @@ std::tuple<Move, int> Searcher::search(Board& board, const int depth, const int 
         // ensure we don't grab a stale value from the ttable
         if (board.getRepeats(board.hash()) == 2) {
             curEval = DRAW;
+        } else if (collectRoot && ply == 0) {
+            curEval = -std::get<1>(Searcher::search(board, depth - 1, ply + 1, -INF, INF));
+        } else if (first) {
+            curEval = -std::get<1>(Searcher::search(board, depth - 1, ply + 1, -beta, -alpha));
+            first   = false;
         } else {
+            curEval = -std::get<1>(Searcher::search(board, depth - 1, ply + 1, -alpha - 1, -alpha));
 
-            // Principal variation search
-            if (first) {
+            if (alpha < curEval && curEval < beta) {
                 curEval = -std::get<1>(Searcher::search(board, depth - 1, ply + 1, -beta, -alpha));
-                first   = false;
-            } else {
-                curEval = -std::get<1>(Searcher::search(board, depth - 1, ply + 1, -alpha - 1, -alpha));
-
-                if (alpha < curEval && curEval < beta) {
-                    curEval = -std::get<1>(Searcher::search(board, depth - 1, ply + 1, -beta, -alpha));
-                }
             }
         }
 
@@ -252,13 +265,17 @@ std::tuple<Move, int> Searcher::search(Board& board, const int depth, const int 
             }
         }
 
+        if (collectRoot && ply == 0) {
+            rootMoves.push_back({move, curEval});
+        }
+
         if (curEval > bestEval) {
             bestMove = move;
             bestEval = curEval;
         }
 
         alpha = std::max(alpha, curEval);
-        if (alpha >= beta) {
+        if (!(collectRoot && ply == 0) && alpha >= beta) {
             if (ply < kMaxSearchPly && !See::isTactical(board, move)) {
                 if (killers[ply][0] != move) {
                     killers[ply][1] = killers[ply][0];

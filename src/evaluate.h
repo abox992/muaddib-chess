@@ -4,6 +4,7 @@
 #include "board.h"
 
 int evaluation(const Board& board);
+int pstEvaluation(const Board& board);
 int materialValue(const Board& board, const Color color);
 int piecePosValue(const Board& board, const Color color);
 int pieceScope(const Board& board);

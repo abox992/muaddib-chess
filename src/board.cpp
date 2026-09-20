@@ -8,6 +8,7 @@
 #include <cassert>
 #include <cstdint>
 #include <cstring>
+#include <string>
 
 Board::Board() { setStartPos(); }
 
@@ -143,6 +144,58 @@ void Board::set(const std::string fen) {
     this->_hash          = Zobrist::zhash(*this);
     this->_curPly        = 0;
     this->_keyHistory[0] = this->_hash;
+}
+
+std::string Board::toFen() const {
+    static const char printPiece[] = {'P', 'p', 'N', 'n', 'B', 'b', 'R', 'r', 'Q', 'q', 'K', 'k'};
+    std::string fen;
+
+    for (int rank = 7; rank >= 0; rank--) {
+        int empty = 0;
+        for (int file = 0; file < 8; file++) {
+            const int sq = rank * 8 + (7 - file);
+            const int piece = this->_pieceOnSquare[static_cast<size_t>(sq)];
+            if (piece == NO_PIECE) {
+                empty++;
+                continue;
+            }
+            if (empty) {
+                fen += static_cast<char>('0' + empty);
+                empty = 0;
+            }
+            fen += printPiece[piece];
+        }
+        if (empty) {
+            fen += static_cast<char>('0' + empty);
+        }
+        if (rank != 0) {
+            fen += '/';
+        }
+    }
+
+    fen += this->_blackToMove ? " b " : " w ";
+
+    std::string castle;
+    if (this->_canCastle[0]) castle += 'K';
+    if (this->_canCastle[2]) castle += 'Q';
+    if (this->_canCastle[1]) castle += 'k';
+    if (this->_canCastle[3]) castle += 'q';
+    fen += castle.empty() ? "-" : castle;
+
+    fen += ' ';
+    if (this->_enpassantPos) {
+        const int sq = this->_enpassantPos;
+        fen += static_cast<char>('h' - (sq & 7));
+        fen += static_cast<char>('1' + (sq >> 3));
+    } else {
+        fen += '-';
+    }
+
+    fen += ' ';
+    fen += std::to_string(this->_halfMoves);
+    fen += ' ';
+    fen += std::to_string(this->_fullMoves);
+    return fen;
 }
 
 void Board::setPieceSet(int i, uint64_t num) { this->_pieces[i] = num; }

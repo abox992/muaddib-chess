@@ -1,14 +1,17 @@
 #include "cli.h"
-#include <string>
-#include <iostream>
 #include "uci.h"
 #include "board.h"
+#include "eval_net.h"
 #include "search.h"
-#include <sstream>
-#include <fstream>
-#include <chrono>
 #include "helpers.h"
 #include "test_suite.h"
+
+#include <algorithm>
+#include <chrono>
+#include <fstream>
+#include <iostream>
+#include <sstream>
+#include <string>
 
 #define LOG 1
 
@@ -24,6 +27,14 @@ void loop() {
         if (input == "uci") {
             runUCI();
             return;
+        } else if (input == "eval") {
+            std::string path;
+            std::cin >> path;
+            if (!EvalNet::load(path)) {
+                std::cerr << "failed to load eval net " << path << '\n';
+            } else {
+                std::cerr << "using eval net " << path << '\n';
+            }
         } else if (input == "play") {
             asciiGameLoop();
         } else if (input == "test") {
@@ -37,6 +48,12 @@ void asciiGameLoop() {
     Board         board;
 
     Searcher searcher;
+
+    if (EvalNet::loaded()) {
+        std::cerr << "play: eval net " << EvalNet::path() << '\n';
+    } else {
+        std::cerr << "play: PST eval\n";
+    }
 
     auto start = std::chrono::high_resolution_clock::now();
 

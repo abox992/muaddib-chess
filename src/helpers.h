@@ -1,6 +1,7 @@
 #ifndef HELPERS_H
 #define HELPERS_H
 
+#include <cassert>
 #include <cstdint>
 #include <string>
 #include <vector>

@@ -43,6 +43,13 @@ uint64_t moveGenTestRecurrsive(int startDepth, int depth, Board& board) {
 
 void runTests() {
 
+    Board startBoard;
+    startBoard.setStartPos();
+    const std::string startFen = startBoard.toFen();
+    if (startFen != "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") {
+        std::cout << "FEN roundtrip startpos FAILED: " << startFen << std::endl;
+    }
+
     std::vector<std::tuple<int, uint64_t, std::string>> tests = {
       std::make_tuple(5, 4865609, "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"),                 /* 1 */
       std::make_tuple(6, 11030083, "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1"),                               /* 2 */

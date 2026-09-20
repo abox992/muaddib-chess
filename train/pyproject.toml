@@ -1,0 +1,19 @@
+[project]
+name = "muaddib-train"
+version = "0.1.0"
+description = "Self-play training and Jev start-position classification for muaddib"
+requires-python = ">=3.11"
+dependencies = [
+    "python-chess",
+    "requests",
+]
+
+[dependency-groups]
+train = [
+    "numpy",
+    "torch",
+]
+
+[tool.uv]
+package = false
+default-groups = []

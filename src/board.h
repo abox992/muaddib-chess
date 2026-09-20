@@ -9,6 +9,7 @@
 #include <array>
 #include <cstdint>
 #include <iostream>
+#include <string>
 
 class Board {
 private:
@@ -38,6 +39,7 @@ public:
 
     // https://en.wikipedia.org/wiki/Forsyth%E2%80%93Edwards_Notation
     void set(const std::string fen);
+    std::string toFen() const;
 
     void setPieceSet(int i, uint64_t num);
 

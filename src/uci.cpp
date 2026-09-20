@@ -1,11 +1,31 @@
 #include "uci.h"
 #include "board.h"
+#include "eval_net.h"
 #include "move_list.h"
 #include "search.h"
 
+#include <chrono>
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <tuple>
+
+namespace {
+
+void playMoves(Board& board, std::istringstream& stream) {
+    std::string token;
+    while (stream >> token) {
+        MoveList<ALL> moveList(board);
+        for (auto move : moveList) {
+            if (token == toString(move)) {
+                board.makeMove(move);
+                break;
+            }
+        }
+    }
+}
+
+}  // namespace
 
 void runUCI() {
     Board board;
@@ -15,6 +35,7 @@ void runUCI() {
 
     std::cout << "id name muaddibChess" << std::endl;
     std::cout << "id author abox992" << std::endl;
+    std::cout << "option name EvalFile type string default" << std::endl;
     std::cout << "uciok" << std::endl;
 
     std::string line;
@@ -44,28 +65,48 @@ void runUCI() {
             continue;
         }
 
+        if (command == "setoption") {
+            std::string nameTok, name, valueTok, value;
+            stream >> nameTok >> name >> valueTok;
+            std::getline(stream, value);
+            if (!value.empty() && value.front() == ' ') {
+                value.erase(0, 1);
+            }
+            if (nameTok == "name" && name == "EvalFile" && valueTok == "value") {
+                if (!EvalNet::load(value)) {
+                    std::cerr << "info string failed to load EvalFile " << value << std::endl;
+                }
+            }
+            continue;
+        }
+
         if (command == "position") {
             std::string type;
             stream >> type;
-            if (type != "startpos") {
-                continue;
-            }
-
-            board.setStartPos();
-
-            std::string token;
-            stream >> token;
-            if (token != "moves") {
-                continue;
-            }
-
-            while (stream >> token) {
-                MoveList<ALL> moveList(board);
-                for (auto move : moveList) {
-                    if (token == toString(move)) {
-                        board.makeMove(move);
+            if (type == "startpos") {
+                board.setStartPos();
+                std::string token;
+                if (stream >> token && token == "moves") {
+                    playMoves(board, stream);
+                }
+            } else if (type == "fen") {
+                std::string fen;
+                std::string part;
+                for (int i = 0; i < 6 && stream >> part; i++) {
+                    if (part == "moves") {
                         break;
                     }
+                    if (!fen.empty()) {
+                        fen += ' ';
+                    }
+                    fen += part;
+                }
+                board.set(fen);
+                std::string token;
+                if (part == "moves") {
+                    playMoves(board, stream);
+                } else if (stream >> token && token == "moves") {
+                    playMoves(board, stream);
                 }
             }
             continue;
@@ -73,8 +114,26 @@ void runUCI() {
 
         if (command == "go") {
             using namespace std::chrono_literals;
-            auto [bestMove, bestEval] = searcher.iterativeDeepening(board, 3000ms);
-            std::cout << "bestmove " << bestMove << std::endl;
+            int         depth    = 0;
+            int         movetime = 0;
+            std::string token;
+            while (stream >> token) {
+                if (token == "depth") {
+                    stream >> depth;
+                } else if (token == "movetime") {
+                    stream >> movetime;
+                }
+            }
+
+            std::tuple<Move, int> result;
+            if (depth > 0) {
+                result = searcher.searchDepth(board, depth);
+            } else if (movetime > 0) {
+                result = searcher.iterativeDeepening(board, std::chrono::milliseconds(movetime));
+            } else {
+                result = searcher.iterativeDeepening(board, 3000ms);
+            }
+            std::cout << "bestmove " << std::get<0>(result) << std::endl;
         }
     }
 }

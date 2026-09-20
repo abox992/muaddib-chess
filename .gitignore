@@ -20,3 +20,11 @@
 .DS_Store
 
 **/log.txt
+
+# secrets
+.env
+**/.env
+
+# python
+.venv/
+**/.venv/
