@@ -14,7 +14,7 @@ private:
 
 public:
     Searcher() :
-        ttable(512),
+        ttable(64),
         stopSearch(false) {}
 
     std::tuple<Move, int> search(Board& board, const int depth, const int ply, int alpha, int beta);
