@@ -16,7 +16,7 @@ private:
     std::array<uint64_t, 12> _pieces;
     std::array<uint64_t, 2>  _allPieces;
     uint64_t                 _empty;
-    std::array<uint8_t, 64>  _pieceOnSquare;
+    std::array<Piece, 64>    _pieceOnSquare;
 
     uint64_t    _hash;
     uint16_t    _halfMoves;
@@ -87,12 +87,14 @@ public:
 
     template<Color color>
     inline int kingPos() const {
-        return tz_count(_pieces[KINGS + static_cast<int>(color)]);
+        return tz_count(getBB(color, PieceType::KINGS));
     }
 
-    inline int kingPos(Color color) { return tz_count(_pieces[KINGS + static_cast<int>(color)]); }
+    inline int kingPos(Color color) { return tz_count(getBB(color, PieceType::KINGS)); }
 
     inline uint64_t hash() const { return _hash; }
+
+    inline Piece pieceOn(int square) const { return _pieceOnSquare[square]; }
 
     friend std::ostream& operator<<(std::ostream& o, Board& board);
 };

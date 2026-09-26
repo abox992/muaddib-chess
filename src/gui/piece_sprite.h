@@ -8,7 +8,7 @@ const std::string file[] = {"a", "b", "c", "d", "e", "f", "g", "h"};
 struct PieceSprite {
     sf::Sprite sprite;
 
-    bool isDragging;
+    bool         isDragging;
     sf::Vector2f mouseOffset;
 
     // used to determine if drag location (ie move) is valid or not

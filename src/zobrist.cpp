@@ -19,13 +19,13 @@ void initZobrist() {
     for (int i = 0; i < 8; i++) {
         enpassantFile[i] = generator.rand<uint64_t>();
     }
-    
+
     for (int i = 0; i < 4; i++) {
         castling[i] = generator.rand<uint64_t>();
     }
 
     randomBlackToMove = generator.rand<uint64_t>();
-    noPawns = generator.rand<uint64_t>();
+    noPawns           = generator.rand<uint64_t>();
 }
 
 uint64_t zhash(const Board& board) {
@@ -35,7 +35,7 @@ uint64_t zhash(const Board& board) {
         hash ^= randomBlackToMove;
     }
 
-    if ((board.getBB(WHITE, PAWNS) | board.getBB(BLACK, PAWNS)) == 0) {
+    if ((board.getBB(WHITE, PieceType::PAWNS) | board.getBB(BLACK, PieceType::PAWNS)) == 0) {
         hash ^= noPawns;
     }
 
@@ -45,7 +45,7 @@ uint64_t zhash(const Board& board) {
 
     for (int i = 0; i < 4; i++) {
         if (board.getCastle(i)) {
-            hash ^= castling[i]; 
+            hash ^= castling[i];
         }
     }
 

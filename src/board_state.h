@@ -3,14 +3,15 @@
 
 #include <cstdint>
 #include "move.h"
+#include "types.h"
 
 struct Undo {
-    uint64_t hash;      // position hash before this move
-    Move move;
+    uint64_t hash;  // position hash before this move
+    Move     move;
     uint16_t halfMoves;
-    uint8_t captured;   // NO_PIECE, or the piece pos/index that was removed
-    uint8_t castle;
-    uint8_t ep;
+    Piece    captured;  // NO_PIECE, or the piece pos/index that was removed
+    uint8_t  castle;
+    uint8_t  ep;
 };
 
 #endif

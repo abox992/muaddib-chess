@@ -41,11 +41,17 @@ int generateAllMoves(const Board& board, Move* moveList) {
 
     // if king is in double-check, only need to enumerate king moves
     if (attackersCount < 2) [[likely]] {
-        count += generatePawnMoves<color>(board, moveList + count, target, pinMask, kingPos);
-        count += generateMoves<KNIGHTS, color>(board, moveList + count, target, pinMask, kingPos);
-        count += generateMoves<BISHOPS, color>(board, moveList + count, target, pinMask, kingPos);
-        count += generateMoves<ROOKS, color>(board, moveList + count, target, pinMask, kingPos);
-        count += generateMoves<QUEENS, color>(board, moveList + count, target, pinMask, kingPos);
+        // Captures also include pawn pushes to the last rank so quiescence sees queen promotions.
+        uint64_t pawnTarget = target;
+        if constexpr (gt == CAPTURES) {
+            constexpr uint64_t promoRank = color == WHITE ? 0xFF00000000000000ULL : 0xFFULL;
+            pawnTarget |= board.getEmpty() & promoRank & checkMask;
+        }
+        count += generatePawnMoves<color>(board, moveList + count, pawnTarget, pinMask, kingPos);
+        count += generateMoves<PieceType::KNIGHTS, color>(board, moveList + count, target, pinMask, kingPos);
+        count += generateMoves<PieceType::BISHOPS, color>(board, moveList + count, target, pinMask, kingPos);
+        count += generateMoves<PieceType::ROOKS, color>(board, moveList + count, target, pinMask, kingPos);
+        count += generateMoves<PieceType::QUEENS, color>(board, moveList + count, target, pinMask, kingPos);
     }
     count += generateKingMoves<gt, color>(board, moveList + count, kingTarget, checkMask, kingPos);
 
@@ -60,7 +66,7 @@ inline int generatePawnMoves(const Board& board, Move* moveList, const uint64_t 
     constexpr Color enemyColor = static_cast<Color>(!color);
 
     // uint64_t bitboard = board.getBB(PAWNS + static_cast<int>(color));
-    uint64_t bitboard = board.getBB(color, PAWNS);
+    uint64_t bitboard = board.getBB(color, PieceType::PAWNS);
     while (bitboard) {  // bitloop
         const int currentSquare = tz_count(bitboard);
         pop_lsb(bitboard);  // we only need to get current square, can do this now
@@ -95,9 +101,9 @@ inline int generatePawnMoves(const Board& board, Move* moveList, const uint64_t 
                               | enpassantSquareMask;
 
             if (!(Bitboard::rookLegalMoves[kingPos][extract_bits(occupied, Bitboard::rookMasks[kingPos])]
-                  & (board.getBB(enemyColor, ROOKS, QUEENS)))
+                  & (board.getBB(enemyColor, PieceType::ROOKS, PieceType::QUEENS)))
                 && !(Bitboard::bishopLegalMoves[kingPos][extract_bits(occupied, Bitboard::bishopMasks[kingPos])]
-                     & (board.getBB(enemyColor, BISHOPS, QUEENS)))) {
+                     & (board.getBB(enemyColor, PieceType::BISHOPS, PieceType::QUEENS)))) {
                 pLegalMoves |= enpassantSquareMask;
             }
         }
@@ -216,7 +222,7 @@ inline int generateKingMoves(const Board& board, Move* moveList, const uint64_t 
 
         Move curMove = Move::make<NORMAL>(kingPos, index);
 
-        if (maskForPos(index) & board.getBB(color, ROOKS)) {  // taking our own rook -> castle move
+        if (maskForPos(index) & board.getBB(color, PieceType::ROOKS)) {  // taking our own rook -> castle move
             curMove = Move::make<CASTLE>(kingPos, index);
 
             int pos = Bitboard::rookPosToIndex(index);

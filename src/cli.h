@@ -4,7 +4,7 @@
 namespace cli {
 
 void loop();
-void asciiGameLoop(); 
+void asciiGameLoop();
 
 }
 

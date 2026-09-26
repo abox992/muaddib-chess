@@ -10,9 +10,9 @@
 void printBitboard(uint64_t bitboard) {
     for (int rank = 7; rank >= 0; rank--) {
         for (int file = 0; file < 8; file++) {
-            int i = ((7 - file) + (8 * rank));
+            int      i    = ((7 - file) + (8 * rank));
             uint64_t mask = uint64_t(1) << i;
-            int bit = ((bitboard & mask) >> i);
+            int      bit  = ((bitboard & mask) >> i);
             std::cout << bit << " ";
         }
 
@@ -20,10 +20,10 @@ void printBitboard(uint64_t bitboard) {
     }
 }
 
-std::vector<std::string> split(const std::string &s, char delim) {
+std::vector<std::string> split(const std::string& s, char delim) {
     std::vector<std::string> elems;
-    std::stringstream ss(s);
-    std::string item;
+    std::stringstream        ss(s);
+    std::string              item;
     while (getline(ss, item, delim)) {
         elems.push_back(item);
     }
@@ -33,10 +33,10 @@ std::vector<std::string> split(const std::string &s, char delim) {
 std::string movePretty(const Board& board, const Move& move) {
     std::stringstream result;
 
-    uint64_t fromMask = maskForPos(move.from());
-    uint64_t toMask = maskForPos(move.from());
-    const Color color = static_cast<Color>(board.blackToMove());
-    const Color opColor = static_cast<Color>(!color);
+    uint64_t    fromMask = maskForPos(move.from());
+    uint64_t    toMask   = maskForPos(move.from());
+    const Color color    = static_cast<Color>(board.blackToMove());
+    const Color opColor  = static_cast<Color>(!color);
 
     // figure out piece
     int pieceNum = 0;
@@ -53,16 +53,17 @@ std::string movePretty(const Board& board, const Move& move) {
 
     int fromFile = 7 - unsigned(move.from()) % 8;
     int fromRank = unsigned(move.from()) / 8;
-    int toRank = unsigned(move.to()) / 8;
-    int toFile = 7 - unsigned(move.to()) % 8;
+    int toRank   = unsigned(move.to()) / 8;
+    int toFile   = 7 - unsigned(move.to()) % 8;
 
     const std::string pieceChars[] = {"", "N", "B", "R", "Q", "K"};
     if (move.moveType() != MoveType::CASTLE) {
-        result << " " << pieceChars[pieceNum] << file[fromFile] << fromRank + 1 << capture << file[toFile] << toRank + 1;
+        result << " " << pieceChars[pieceNum] << file[fromFile] << fromRank + 1 << capture << file[toFile]
+               << toRank + 1;
     } else {
         result << " " << "O-O";
 
-        if (toFile == 0) { // queen side
+        if (toFile == 0) {  // queen side
             result << "-O";
         }
     }

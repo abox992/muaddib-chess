@@ -2,7 +2,7 @@
 #include <sstream>
 
 std::string toString(Move move) {
-    std::stringstream s; 
+    std::stringstream s;
     s << move;
     return s.str();
 }
@@ -20,30 +20,29 @@ std::ostream& operator<<(std::ostream& o, const Move& move) {
     if (move.moveType() == MoveType::CASTLE) {
         assert(toFile == 7 || toFile == 0);
 
-        if (toFile == 7) { // kingside
+        if (toFile == 7) {  // kingside
             toFile = 6;
-        } else { // queenside
+        } else {  // queenside
             toFile = 2;
         }
-
     }
 
     o << file[fromFile] << (fromRank + 1) << file[toFile] << (toRank + 1);
 
     if (move.moveType() == MoveType::PROMOTION) {
         switch (move.promotionPiece()) {
-            case 0:
-                o << "n";
-                break;
-            case 1:
-                o << "b";
-                break;
-            case 2:
-                o << "r";
-                break;
-            case 3:
-                o << "q";
-                break;
+        case 0:
+            o << "n";
+            break;
+        case 1:
+            o << "b";
+            break;
+        case 2:
+            o << "r";
+            break;
+        case 3:
+            o << "q";
+            break;
         }
 
         assert(move.moveType() == MoveType::PROMOTION);

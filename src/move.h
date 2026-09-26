@@ -31,36 +31,26 @@ private:
 
 public:
     Move() = default;
-    constexpr explicit Move(std::uint16_t d)
-        : data(d) { }
+    constexpr explicit Move(std::uint16_t d) :
+        data(d) { }
 
-    template <MoveType moveType>
+    template<MoveType moveType>
     static constexpr Move make(int from, int to, PromoPiece pt = PromoPiece::KNIGHT) {
         return Move((moveType << 14) | (pt << 12) | (to << 6) | from);
     }
 
-    inline constexpr int from() const {
-        return data & 0x3F;
-    }
+    inline constexpr int from() const { return data & 0x3F; }
 
-    inline constexpr int to() const {
-        return (data >> 6) & 0x3F;
-    }
+    inline constexpr int to() const { return (data >> 6) & 0x3F; }
 
-    inline constexpr PromoPiece promotionPiece() const {
-        return PromoPiece((data >> 12) & 3);
-    }
+    inline constexpr PromoPiece promotionPiece() const { return PromoPiece((data >> 12) & 3); }
 
-    inline constexpr MoveType moveType() const {
-        return MoveType((data >> 14) & 3);
-    }
+    inline constexpr MoveType moveType() const { return MoveType((data >> 14) & 3); }
 
-    inline constexpr bool isNull() const {
-        return data == 0;
-    }
+    inline constexpr bool isNull() const { return data == 0; }
 
     inline constexpr bool operator==(const Move& m) const { return data == m.data; }
-    constexpr bool operator!=(const Move& m) const { return data != m.data; }
+    constexpr bool        operator!=(const Move& m) const { return data != m.data; }
 
     friend std::ostream& operator<<(std::ostream& o, const Move& move);
 };

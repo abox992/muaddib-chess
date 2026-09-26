@@ -22,15 +22,13 @@ Game::Game() {
     }
 }
 
-Game::~Game() {
-    delete this->window;
-}
+Game::~Game() { delete this->window; }
 
 void Game::initWindow() {
     // create the window
     this->videoMode.height = WINDOW_HEIGHT;
-    this->videoMode.width = WINDOW_WIDTH;
-    this->window = new sf::RenderWindow(this->videoMode, "Chess", sf::Style::Titlebar | sf::Style::Close);
+    this->videoMode.width  = WINDOW_WIDTH;
+    this->window           = new sf::RenderWindow(this->videoMode, "Chess", sf::Style::Titlebar | sf::Style::Close);
 
     this->window->setPosition(sf::Vector2i(2690, 2030));
 
@@ -58,7 +56,6 @@ void Game::initTextures() {
 
         blackTextures.push_back(texture);
     }
-
 }
 
 void Game::initPieceSprites(Color color) {
@@ -70,25 +67,27 @@ void Game::initPieceSprites(Color color) {
     int backRank;
 
     if (color == Color::WHITE) {
-        textures = &whiteTextures;
-        pieces = &whitePieces;
+        textures  = &whiteTextures;
+        pieces    = &whitePieces;
         frontRank = 6;
-        backRank = 7;
+        backRank  = 7;
     } else {
-        textures = &blackTextures;
-        pieces = &blackPieces;
+        textures  = &blackTextures;
+        pieces    = &blackPieces;
         frontRank = 1;
-        backRank = 0;
+        backRank  = 0;
     }
 
     // initial dummy sprite with correct scale
     sf::Sprite sprite;
-    sprite.setScale(sf::Vector2f((float) BOARD_SQUARE_SIZE / PIECE_IMG_SIZE, (float) BOARD_SQUARE_SIZE / PIECE_IMG_SIZE));
+    sprite.setScale(
+      sf::Vector2f((float) BOARD_SQUARE_SIZE / PIECE_IMG_SIZE, (float) BOARD_SQUARE_SIZE / PIECE_IMG_SIZE));
 
     // pawns
     sprite.setTexture((*textures)[0]);
     for (int col = 0; col < 8; col++) {
-        sprite.setPosition({static_cast<float>(0 + col * BOARD_SQUARE_SIZE), static_cast<float>(BOARD_SQUARE_SIZE * frontRank)});
+        sprite.setPosition(
+          {static_cast<float>(0 + col * BOARD_SQUARE_SIZE), static_cast<float>(BOARD_SQUARE_SIZE * frontRank)});
         pieces->push_back(PieceSprite(sprite));
     }
 
@@ -132,13 +131,9 @@ void Game::initPieceSprites(Color color) {
     pieces->push_back(PieceSprite(sprite));
 }
 
-void Game::update() {
-    
-}
+void Game::update() { }
 
-void Game::render() {
-
-}
+void Game::render() { }
 
 bool Game::isMouseOver(const sf::Sprite& sprite) {
     int mouseX = sf::Mouse::getPosition(*this->window).x;
@@ -147,24 +142,26 @@ bool Game::isMouseOver(const sf::Sprite& sprite) {
     int spriteX = sprite.getPosition().x;
     int spriteY = sprite.getPosition().y;
 
-    int spriteWidth = sprite.getTexture()->getSize().x * sprite.getScale().x;
+    int spriteWidth  = sprite.getTexture()->getSize().x * sprite.getScale().x;
     int spriteHeight = sprite.getTexture()->getSize().y * sprite.getScale().y;
 
-    return (mouseX >= spriteX && mouseX <= (spriteX + spriteWidth)) && (mouseY >= spriteY && mouseY <= (spriteY + spriteHeight));
+    return (mouseX >= spriteX && mouseX <= (spriteX + spriteWidth))
+        && (mouseY >= spriteY && mouseY <= (spriteY + spriteHeight));
 }
 
 void Game::updateDraggingPos() {
 
     for (auto& p : this->pieces) {
         if (p->isDragging) {
-            p->sprite.setPosition(sf::Mouse::getPosition(*this->window).x - p->mouseOffset.x, sf::Mouse::getPosition(*this->window).y - p->mouseOffset.y); 
+            p->sprite.setPosition(sf::Mouse::getPosition(*this->window).x - p->mouseOffset.x,
+                                  sf::Mouse::getPosition(*this->window).y - p->mouseOffset.y);
         }
     }
 }
 
 void Game::drawBoard() {
-    sf::Color light(238,238,210);
-    sf::Color dark(118,150,86);
+    sf::Color light(238, 238, 210);
+    sf::Color dark(118, 150, 86);
 
     for (int row = 0; row < 8; row++) {
         for (int col = 0; col < 8; col++) {
@@ -193,7 +190,6 @@ void Game::drawPieces() {
     if (draggingIndex != -1) {
         window->draw(this->pieces[draggingIndex]->sprite);
     }
-
 }
 
 void Game::runGameLoop() {
@@ -203,58 +199,57 @@ void Game::runGameLoop() {
         // check all the window's events that were triggered since the last iteration of the loop
         while (window->pollEvent(event)) {
             switch (event.type) {
-                // "close requested" event: we close the window
-                case sf::Event::Closed:
-                    window->close();
-                    break;
-                case sf::Event::MouseButtonPressed:
-                    if (event.mouseButton.button == sf::Mouse::Left) {
-                        // handle piece started to drag
-                        for (auto& p : this->pieces) {
-                            if (isMouseOver(p->sprite)) {
-                                p->isDragging = true;
-                                sf::Vector2f spritePos = p->sprite.getPosition();
-                                p->mouseOffset = {sf::Mouse::getPosition(*this->window).x - spritePos.x, sf::Mouse::getPosition(*this->window).y - spritePos.y};
-                                
-                                p->prevLocation = p->currentLocation;
+            // "close requested" event: we close the window
+            case sf::Event::Closed:
+                window->close();
+                break;
+            case sf::Event::MouseButtonPressed:
+                if (event.mouseButton.button == sf::Mouse::Left) {
+                    // handle piece started to drag
+                    for (auto& p : this->pieces) {
+                        if (isMouseOver(p->sprite)) {
+                            p->isDragging          = true;
+                            sf::Vector2f spritePos = p->sprite.getPosition();
+                            p->mouseOffset         = {sf::Mouse::getPosition(*this->window).x - spritePos.x,
+                                                      sf::Mouse::getPosition(*this->window).y - spritePos.y};
 
-                                // change opacity
-                                p->sprite.setColor(sf::Color(255, 255, 255, 128));
-                            }
+                            p->prevLocation = p->currentLocation;
+
+                            // change opacity
+                            p->sprite.setColor(sf::Color(255, 255, 255, 128));
                         }
                     }
-                    break;
-                case sf::Event::MouseButtonReleased:
-                    // handle drag released
-                    if (event.mouseButton.button == sf::Mouse::Left) {
-                        for (auto& p : this->pieces) {
-                            if (p->isDragging) {
-                                p->disableDragging();
-                                int fileIndex = p->sprite.getPosition().x / BOARD_SQUARE_SIZE;
+                }
+                break;
+            case sf::Event::MouseButtonReleased:
+                // handle drag released
+                if (event.mouseButton.button == sf::Mouse::Left) {
+                    for (auto& p : this->pieces) {
+                        if (p->isDragging) {
+                            p->disableDragging();
+                            int fileIndex = p->sprite.getPosition().x / BOARD_SQUARE_SIZE;
 
-                                std::stringstream ss;
-                                ss << file[fileIndex] << 8 - p->sprite.getPosition().y / BOARD_SQUARE_SIZE;
+                            std::stringstream ss;
+                            ss << file[fileIndex] << 8 - p->sprite.getPosition().y / BOARD_SQUARE_SIZE;
 
-                                p->currentLocation = ss.str();
+                            p->currentLocation = ss.str();
 
-                                // change opacity
-                                p->sprite.setColor(sf::Color(255, 255, 255, 255));
+                            // change opacity
+                            p->sprite.setColor(sf::Color(255, 255, 255, 255));
 
-                                std::cout << p->prevLocation << p->currentLocation << std::endl;
+                            std::cout << p->prevLocation << p->currentLocation << std::endl;
 
-                                if (!buffer.loadFromFile("../sounds/move-self.wav")) {
-                                    //error
-                                }
-                                sound.setBuffer(buffer);
-                                sound.play();
-
+                            if (!buffer.loadFromFile("../sounds/move-self.wav")) {
+                                //error
                             }
+                            sound.setBuffer(buffer);
+                            sound.play();
                         }
                     }
-                    break;
-                default:
-                    break;
-
+                }
+                break;
+            default:
+                break;
             }
         }
 

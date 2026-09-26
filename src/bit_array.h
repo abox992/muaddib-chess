@@ -5,9 +5,9 @@
 #include <cstddef>
 #include <cstdint>
 
-// N bools in one byte. 
+// N bools in one byte.
 // bool b = flags[i] copies the bit. auto b = flags[i] names the proxy.
-template <std::size_t N>
+template<std::size_t N>
 class BitArray {
     static_assert(N >= 1 && N <= 8);
 
@@ -18,15 +18,16 @@ class BitArray {
         uint8_t  index_;
 
     public:
-        Reference(uint8_t& bits, std::size_t index) noexcept
-            : bits_(bits), index_(static_cast<uint8_t>(index)) {}
+        Reference(uint8_t& bits, std::size_t index) noexcept :
+            bits_(bits),
+            index_(static_cast<uint8_t>(index)) { }
 
         operator bool() const noexcept { return ((bits_ >> index_) & 1u) != 0; }
 
         Reference& operator=(bool value) noexcept {
             const uint8_t mask = static_cast<uint8_t>(1u << index_);
-            bits_ = static_cast<uint8_t>((bits_ & static_cast<uint8_t>(~mask)) |
-                                         (static_cast<uint8_t>(value) << index_));
+            bits_ =
+              static_cast<uint8_t>((bits_ & static_cast<uint8_t>(~mask)) | (static_cast<uint8_t>(value) << index_));
             return *this;
         }
 

@@ -64,7 +64,7 @@ void TranspositionTable::save(uint64_t key, TTEntry entry) {
     // find empty slot
     for (int i = 0; i < clusterSize; i++) {
         if (!cluster[i].isOccupied()) {
-            cluster[i]       = entry;
+            cluster[i] = entry;
             size++;
             return;
         }

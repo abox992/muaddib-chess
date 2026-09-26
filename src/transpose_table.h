@@ -9,7 +9,7 @@
 struct TTEntry {
     uint8_t depth;
     int16_t eval;
-    Move move;
+    Move    move;
 
     uint16_t key16;
 
@@ -27,8 +27,8 @@ struct TTEntry {
 };
 
 struct TTData {
-    int depth;
-    int eval;
+    int  depth;
+    int  eval;
     Move move;
 
     TTEntry::Flags flag;
@@ -43,7 +43,7 @@ struct Cluster {
 };
 
 struct Deleter {
-    template <typename T>
+    template<typename T>
     void operator()(T ptr) {
         return std::free(ptr);
     }
@@ -53,27 +53,23 @@ struct Deleter {
 class TranspositionTable {
 private:
     std::unique_ptr<Cluster[], Deleter> table;
-    size_t size;
-    size_t clusterCount;
-    uint8_t curGen;
+    size_t                              size;
+    size_t                              clusterCount;
+    uint8_t                             curGen;
 
 public:
     TranspositionTable(size_t mbSize);
 
-    bool contains(uint64_t key) const;
-    TTData get(uint64_t key) const;
-    void save(uint64_t key, TTEntry entry);
+    bool           contains(uint64_t key) const;
+    TTData         get(uint64_t key) const;
+    void           save(uint64_t key, TTEntry entry);
     const TTEntry* getCluster(uint64_t key) const;
-    TTEntry* getCluster(uint64_t key);
-    uint16_t getKeyTag(uint64_t key) const;
+    TTEntry*       getCluster(uint64_t key);
+    uint16_t       getKeyTag(uint64_t key) const;
 
-    inline size_t getSize() const {
-        return size;
-    }
+    inline size_t getSize() const { return size; }
 
-    inline void NewSearch() {
-        curGen++;
-    }
+    inline void NewSearch() { curGen++; }
 };
 
 #endif

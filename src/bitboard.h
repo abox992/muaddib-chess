@@ -57,8 +57,8 @@ constexpr inline int pawnPush() {
 // white = 8, black = -8
 inline int pawnPush(Color color) { return color == WHITE ? 8 : -8; }
 
-inline int colorPiece(Color color, PieceType piece) {
-    return static_cast<int>(color) + static_cast<int>(piece);
+inline Piece colorPiece(Color color, PieceType piece) {
+    return static_cast<Piece>(static_cast<int>(color) + static_cast<int>(piece));
 }
 
 inline int colorPiece(Color color, int piece) {
@@ -580,19 +580,19 @@ uint64_t attacksOnSquare(const Board& board, int square) {
     constexpr Color enemyColor = static_cast<Color>(!color);
 
     uint64_t opPawns, opKnights, opRQ, opBQ, opKing;
-    opPawns   = board.getBB(enemyColor, PAWNS);
-    opKnights = board.getBB(enemyColor, KNIGHTS);
-    opRQ = opBQ = board.getBB(enemyColor, QUEENS);
-    opRQ |= board.getBB(enemyColor, ROOKS);
-    opBQ |= board.getBB(enemyColor, BISHOPS);
-    opKing = board.getBB(enemyColor, KINGS);
+    opPawns   = board.getBB(enemyColor, PieceType::PAWNS);
+    opKnights = board.getBB(enemyColor, PieceType::KNIGHTS);
+    opRQ = opBQ = board.getBB(enemyColor, PieceType::QUEENS);
+    opRQ |= board.getBB(enemyColor, PieceType::ROOKS);
+    opBQ |= board.getBB(enemyColor, PieceType::BISHOPS);
+    opKing = board.getBB(enemyColor, PieceType::KINGS);
 
     uint64_t blockers;
 
     if constexpr (!ignoreKing) {
         blockers = (board.getOccupied()) & Bitboard::rookMasks[square];
     } else {
-        blockers = ((board.getOccupied()) & ~board.getBB(color, KINGS)) & Bitboard::rookMasks[square];
+        blockers = ((board.getOccupied()) & ~board.getBB(color, PieceType::KINGS)) & Bitboard::rookMasks[square];
     }
 
     uint64_t rookCompressedBlockers = extract_bits(blockers, Bitboard::rookMasks[square]);
@@ -600,7 +600,7 @@ uint64_t attacksOnSquare(const Board& board, int square) {
     if constexpr (!ignoreKing) {
         blockers = (board.getOccupied()) & Bitboard::bishopMasks[square];
     } else {
-        blockers = ((board.getOccupied()) & ~board.getBB(color, KINGS)) & Bitboard::bishopMasks[square];
+        blockers = ((board.getOccupied()) & ~board.getBB(color, PieceType::KINGS)) & Bitboard::bishopMasks[square];
     }
 
     uint64_t bishopCompressedBlockers = extract_bits(blockers, Bitboard::bishopMasks[square]);
@@ -620,11 +620,11 @@ uint64_t attacksToKing(const Board& board) {
     int kingPos = board.kingPos<color>();
 
     uint64_t opPawns, opKnights, opRQ, opBQ;
-    opPawns   = board.getBB(enemyColor, PAWNS);
-    opKnights = board.getBB(enemyColor, KNIGHTS);
-    opRQ = opBQ = board.getBB(enemyColor, QUEENS);
-    opRQ |= board.getBB(enemyColor, ROOKS);
-    opBQ |= board.getBB(enemyColor, BISHOPS);
+    opPawns   = board.getBB(enemyColor, PieceType::PAWNS);
+    opKnights = board.getBB(enemyColor, PieceType::KNIGHTS);
+    opRQ = opBQ = board.getBB(enemyColor, PieceType::QUEENS);
+    opRQ |= board.getBB(enemyColor, PieceType::ROOKS);
+    opBQ |= board.getBB(enemyColor, PieceType::BISHOPS);
 
     uint64_t blockers;
 
@@ -701,28 +701,28 @@ uint64_t generatePinMask(const Board& board) {
 // this function does not handle removal of own pieces
 template<PieceType pt>
 constexpr inline uint64_t getMovesBB(const Board& board, const int square) {
-    static_assert(pt != PAWNS);
+    static_assert(pt != PieceType::PAWNS);
 
     switch (pt) {
-    case KNIGHTS : {
+    case PieceType::KNIGHTS: {
         return knightMasks[square];
     }
-    case BISHOPS : {
+    case PieceType::BISHOPS: {
         uint64_t blockers           = (board.getOccupied()) & bishopMasks[square];
         uint64_t compressedBlockers = extract_bits(blockers, bishopMasks[square]);
 
         return bishopLegalMoves[square][compressedBlockers];
     }
-    case ROOKS : {
+    case PieceType::ROOKS: {
         uint64_t blockers           = (board.getOccupied()) & rookMasks[square];
         uint64_t compressedBlockers = extract_bits(blockers, rookMasks[square]);
 
         return rookLegalMoves[square][compressedBlockers];
     }
-    case QUEENS : {
-        return getMovesBB<BISHOPS>(board, square) | getMovesBB<ROOKS>(board, square);
+    case PieceType::QUEENS: {
+        return getMovesBB<PieceType::BISHOPS>(board, square) | getMovesBB<PieceType::ROOKS>(board, square);
     }
-    default :
+    default:
         return 0;
     }
 }

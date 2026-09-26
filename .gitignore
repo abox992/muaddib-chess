@@ -18,3 +18,5 @@
 
 # mac dsstore
 .DS_Store
+
+**/log.txt

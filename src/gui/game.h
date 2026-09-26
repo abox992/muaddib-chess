@@ -15,18 +15,18 @@
 class Game {
 private:
     sf::RenderWindow* window;
-    sf::VideoMode videoMode;
-    sf::Event event;
-    
-    sf::Sound sound;
+    sf::VideoMode     videoMode;
+    sf::Event         event;
+
+    sf::Sound       sound;
     sf::SoundBuffer buffer;
 
     // pawn, knight, bishop, rook, queen, king
     std::vector<sf::Texture> whiteTextures;
     std::vector<sf::Texture> blackTextures;
 
-    std::vector<PieceSprite> whitePieces;
-    std::vector<PieceSprite> blackPieces;
+    std::vector<PieceSprite>  whitePieces;
+    std::vector<PieceSprite>  blackPieces;
     std::vector<PieceSprite*> pieces;
 
     void initWindow();
@@ -38,8 +38,8 @@ private:
 
     bool isMouseOver(const sf::Sprite& sprite);
     void updateDraggingPos();
-public:
 
+public:
     Game();
     virtual ~Game();
 

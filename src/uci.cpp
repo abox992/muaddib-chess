@@ -7,7 +7,7 @@
 #include <sstream>
 #include <string>
 
-int runUCI() {
+void runUCI() {
     Board board;
     board.setStartPos();
 
@@ -77,6 +77,4 @@ int runUCI() {
             std::cout << "bestmove " << bestMove << std::endl;
         }
     }
-
-    return 0;
 }

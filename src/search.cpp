@@ -2,6 +2,7 @@
 #include "board.h"
 #include "evaluate.h"
 #include "move_list.h"
+#include "see.h"
 #include "transpose_table.h"
 #include "zobrist.h"
 #include <algorithm>
@@ -41,6 +42,7 @@ int evalFromTT(int eval, int ply) {
 
 std::tuple<Move, int> Searcher::getBestMove(Board& board, int depth) {
     ttable.NewSearch();
+    killers = {};
     for (int i = 1; i < depth; i++) {
         search(board, i, 0, -INF, INF);
     }
@@ -82,6 +84,7 @@ std::tuple<Move, int> Searcher::getBestMove(Board& board, int depth) {
 
 std::tuple<Move, int> Searcher::iterativeDeepening(Board& board, std::chrono::milliseconds timeMs) {
     ttable.NewSearch();
+    killers = {};
 
     std::tuple<Move, int> result;
     result = {Move(0), -INF};
@@ -186,13 +189,20 @@ std::tuple<Move, int> Searcher::search(Board& board, const int depth, const int 
 
     // depth limit reached, return evaluation
     if (depth <= 0) {
-        bestEval = quiesce(board, alpha, beta);
+        bestEval = quiesce(board, alpha, beta, ply);
 
         return {bestMove, bestEval};
     }
 
+    Move killer1{};
+    Move killer2{};
+    if (ply < kMaxSearchPly) {
+        killer1 = killers[ply][0];
+        killer2 = killers[ply][1];
+    }
+
     MoveList<ALL> moveList(board);
-    moveList.sort(board, bestMoveTT);
+    moveList.sort(board, bestMoveTT, killer1, killer2);
 
     // no moves means we are either in checkmate or a stalemate
     if (moveList.size() == 0) {
@@ -249,6 +259,12 @@ std::tuple<Move, int> Searcher::search(Board& board, const int depth, const int 
 
         alpha = std::max(alpha, curEval);
         if (alpha >= beta) {
+            if (ply < kMaxSearchPly && !See::isTactical(board, move)) {
+                if (killers[ply][0] != move) {
+                    killers[ply][1] = killers[ply][0];
+                    killers[ply][0] = move;
+                }
+            }
             break;
         }
     }
@@ -279,35 +295,72 @@ std::tuple<Move, int> Searcher::search(Board& board, const int depth, const int 
     return {bestMove, bestEval};
 }
 
-int Searcher::quiesce(Board& board, int alpha, int beta) {
-    const int perspective = board.blackToMove() ? -1 : 1;
+int Searcher::quiesce(Board& board, int alpha, int beta, int ply) {
+    const bool inCheck = board.inCheck();
 
-    // from searcher's perspective, negative is bad and positive is good
-    int standPat = evaluation(board) * perspective;
-
-    if (standPat >= beta) {
-        return beta;
+    // No stand-pat while in check: the position is illegal to evaluate, and quiet
+    // evasions are required. Otherwise the side to move may decline every capture.
+    int best = -INF;
+    if (!inCheck) {
+        const int perspective = board.blackToMove() ? -1 : 1;
+        best                  = evaluation(board) * perspective;
+        if (best >= beta) {
+            return best;
+        }
+        if (best > alpha) {
+            alpha = best;
+        }
     }
 
-    if (standPat > alpha) {
-        alpha = standPat;
+    Move killer1{};
+    Move killer2{};
+    if (ply < kMaxSearchPly) {
+        killer1 = killers[ply][0];
+        killer2 = killers[ply][1];
+    }
+
+    auto searchMoves = [&](auto& moveList) -> int {
+        if (inCheck && moveList.size() == 0) {
+            return -WIN + ply;
+        }
+
+        moveList.sort(board, Move(0), killer1, killer2);
+
+        for (std::size_t i = 0; i < moveList.size(); ++i) {
+            // Losing captures stay in the list so checks can try them, but a quiet
+            // node can stop once scores drop below zero.
+            if (!inCheck && moveList.scoreOf(i) < 0) {
+                break;
+            }
+
+            const Move move = moveList.get(i);
+            if (move.moveType() == MoveType::PROMOTION && move.promotionPiece() != PromoPiece::QUEEN) {
+                continue;
+            }
+
+            board.makeMove(move);
+            const int eval = -quiesce(board, -beta, -alpha, ply + 1);
+            board.undoMove();
+
+            if (eval > best) {
+                best = eval;
+            }
+            if (best >= beta) {
+                return best;
+            }
+            if (best > alpha) {
+                alpha = best;
+            }
+        }
+
+        return best;
+    };
+
+    if (inCheck) {
+        MoveList<ALL> moveList(board);
+        return searchMoves(moveList);
     }
 
     MoveList<CAPTURES> moveList(board);
-
-    for (auto& move : moveList) {
-        board.makeMove(move);
-        int eval = -quiesce(board, -beta, -alpha);
-        board.undoMove();
-
-        if (eval >= beta) {
-            return beta;
-        }
-
-        if (eval > alpha) {
-            alpha = eval;
-        }
-    }
-
-    return alpha;
+    return searchMoves(moveList);
 }
