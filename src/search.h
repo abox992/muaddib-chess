@@ -31,8 +31,10 @@ public:
 
     std::tuple<Move, int> search(Board& board, const int depth, const int ply, int alpha, int beta);
     std::tuple<Move, int> getBestMove(Board& board, int depth);
-    std::tuple<Move, int> searchDepth(Board& board, int depth);
+    std::tuple<Move, int> searchDepth(Board& board, int depth, bool collectRootMoves = false);
     std::tuple<Move, int> iterativeDeepening(Board& board, std::chrono::milliseconds timeMs);
+
+    void newSearch() { ttable.NewSearch(); }
 
     const std::vector<std::pair<Move, int>>& getRootMoves() const { return rootMoves; }
 

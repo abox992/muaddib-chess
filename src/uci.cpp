@@ -12,6 +12,13 @@
 
 namespace {
 
+void sendId() {
+    std::cout << "id name muaddibChess" << std::endl;
+    std::cout << "id author abox992" << std::endl;
+    std::cout << "option name EvalFile type string default" << std::endl;
+    std::cout << "uciok" << std::endl;
+}
+
 void playMoves(Board& board, std::istringstream& stream) {
     std::string token;
     while (stream >> token) {
@@ -33,11 +40,6 @@ void runUCI() {
 
     Searcher searcher;
 
-    std::cout << "id name muaddibChess" << std::endl;
-    std::cout << "id author abox992" << std::endl;
-    std::cout << "option name EvalFile type string default" << std::endl;
-    std::cout << "uciok" << std::endl;
-
     std::string line;
     while (std::getline(std::cin, line)) {
         if (!line.empty() && line.back() == '\r') {
@@ -53,6 +55,11 @@ void runUCI() {
 
         if (command == "quit") {
             break;
+        }
+
+        if (command == "uci") {
+            sendId();
+            continue;
         }
 
         if (command == "isready") {
@@ -127,12 +134,14 @@ void runUCI() {
 
             std::tuple<Move, int> result;
             if (depth > 0) {
+                searcher.newSearch();
                 result = searcher.searchDepth(board, depth);
             } else if (movetime > 0) {
                 result = searcher.iterativeDeepening(board, std::chrono::milliseconds(movetime));
             } else {
                 result = searcher.iterativeDeepening(board, 3000ms);
             }
+            std::cout << "info score cp " << std::get<1>(result) << std::endl;
             std::cout << "bestmove " << std::get<0>(result) << std::endl;
         }
     }

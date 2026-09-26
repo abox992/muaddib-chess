@@ -9,23 +9,33 @@
 #include <chrono>
 #include <cmath>
 #include <cstdint>
+#include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <mutex>
 #include <string>
+#include <thread>
 #include <utility>
 #include <vector>
 
 namespace {
 
 struct SelfPlayConfig {
-    int         games     = 10;
-    int         depth     = 4;
-    int         tempPlies = 12;
-    float       temp      = 150.f;
-    int         maxPly    = 512;
-    std::string out       = "train/data/games.jsonl";
-    std::string starts    = "train/data/starts.fen";
+    int         games       = 10;
+    int         depth       = 4;
+    int         tempPlies   = 12;
+    float       temp        = 150.f;
+    int         maxPly      = 120;
+    int         resignScore = 600;
+    int         resignPlies = 3;
+    int         drawScore   = 50;
+    int         drawPlies   = 8;
+    int         workers     = 1;
+    uint64_t    seed        = 0;
+    bool        hasSeed     = false;
+    std::string out         = "train/data/games.jsonl";
+    std::string starts      = "train/data/starts.fen";
     std::string evalFile;
 };
 
@@ -65,6 +75,27 @@ bool parseArgs(int argc, char* argv[], SelfPlayConfig& cfg) {
             const char* v = next("--max-ply");
             if (!v) return false;
             cfg.maxPly = std::stoi(v);
+        } else if (arg == "--resign-score") {
+            const char* v = next("--resign-score");
+            if (!v) return false;
+            cfg.resignScore = std::stoi(v);
+        } else if (arg == "--draw-score") {
+            const char* v = next("--draw-score");
+            if (!v) return false;
+            cfg.drawScore = std::stoi(v);
+        } else if (arg == "--draw-plies") {
+            const char* v = next("--draw-plies");
+            if (!v) return false;
+            cfg.drawPlies = std::stoi(v);
+        } else if (arg == "--seed") {
+            const char* v = next("--seed");
+            if (!v) return false;
+            cfg.seed    = std::stoull(v);
+            cfg.hasSeed = true;
+        } else if (arg == "--workers") {
+            const char* v = next("--workers");
+            if (!v) return false;
+            cfg.workers = std::stoi(v);
         } else if (arg == "--out") {
             const char* v = next("--out");
             if (!v) return false;
@@ -82,7 +113,7 @@ bool parseArgs(int argc, char* argv[], SelfPlayConfig& cfg) {
             return false;
         }
     }
-    return cfg.games > 0 && cfg.depth > 0;
+    return cfg.games > 0 && cfg.depth > 0 && cfg.workers > 0;
 }
 
 std::string extractFen(const std::string& line) {
@@ -168,6 +199,10 @@ Move sampleMove(const std::vector<std::pair<Move, int>>& roots, float temp, PRNG
 int playGame(Board& board, const SelfPlayConfig& cfg, Searcher& searcher, PRNG& rng,
              std::vector<PositionRecord>& records) {
     records.clear();
+    searcher.newSearch();
+
+    int resignCount = 0;
+    int drawCount   = 0;
 
     for (int ply = 0; ply < cfg.maxPly; ply++) {
         MoveList<ALL> legal(board);
@@ -181,15 +216,35 @@ int playGame(Board& board, const SelfPlayConfig& cfg, Searcher& searcher, PRNG& 
             return 0;
         }
 
-        auto [bestMove, stmScore] = searcher.searchDepth(board, cfg.depth);
+        const bool collectRoot = ply < cfg.tempPlies;
+        auto [bestMove, stmScore] = searcher.searchDepth(board, cfg.depth, collectRoot);
         if (bestMove.isNull()) {
             return 0;
         }
 
         records.push_back({board.toFen(), stmScore});
 
+        const int absScore = std::abs(stmScore);
+        if (absScore >= cfg.resignScore) {
+            resignCount++;
+            drawCount = 0;
+            if (resignCount >= cfg.resignPlies) {
+                const int whiteScore = board.blackToMove() ? -stmScore : stmScore;
+                return whiteScore > 0 ? 1 : -1;
+            }
+        } else if (absScore < cfg.drawScore) {
+            drawCount++;
+            resignCount = 0;
+            if (drawCount >= cfg.drawPlies) {
+                return 0;
+            }
+        } else {
+            resignCount = 0;
+            drawCount   = 0;
+        }
+
         Move chosen = bestMove;
-        if (ply < cfg.tempPlies) {
+        if (collectRoot) {
             const auto& roots = searcher.getRootMoves();
             if (!roots.empty()) {
                 chosen = sampleMove(roots, cfg.temp, rng);
@@ -206,6 +261,8 @@ int runSelfPlay(int argc, char* argv[]) {
     SelfPlayConfig cfg;
     if (!parseArgs(argc, argv, cfg)) {
         std::cerr << "usage: chess selfplay [--games N] [--depth N] [--temp T] [--temp-plies N]\n"
+                  << "                     [--max-ply N] [--resign-score N] [--draw-score N] [--draw-plies N]\n"
+                  << "                     [--seed N] [--workers K]\n"
                   << "                     [--out train/data/games.jsonl] [--starts train/data/starts.fen] [--eval net.muadnet]\n";
         return 1;
     }
@@ -236,21 +293,52 @@ int runSelfPlay(int argc, char* argv[]) {
         return 1;
     }
 
-    Searcher searcher;
-    PRNG     rng(static_cast<uint64_t>(std::chrono::steady_clock::now().time_since_epoch().count()) | 1ull);
-    std::vector<PositionRecord> records;
+    uint64_t seed = cfg.hasSeed
+        ? cfg.seed
+        : (static_cast<uint64_t>(std::chrono::steady_clock::now().time_since_epoch().count()) | 1ull);
+    if (seed == 0) {
+        seed = 1;
+    }
 
-    for (int g = 0; g < cfg.games; g++) {
-        const std::string& fen = starts[static_cast<size_t>(g) % starts.size()];
-        Board board(fen);
-        int   whiteResult = playGame(board, cfg, searcher, rng, records);
+    int nWorkers = cfg.workers;
+    if (nWorkers > cfg.games) {
+        nWorkers = cfg.games;
+    }
+    std::cerr << "selfplay: seed " << seed << " workers " << nWorkers << '\n';
 
-        for (const auto& rec : records) {
-            out << "{\"fen\":\"" << rec.fen << "\",\"stm_score\":" << rec.stmScore
-                << ",\"white_result\":" << whiteResult << "}\n";
+    std::mutex outMutex;
+
+    auto workerFn = [&](int workerId) {
+        Searcher searcher;
+        PRNG     rng((seed + static_cast<uint64_t>(workerId)) | 1ull);
+        std::vector<PositionRecord> records;
+
+        for (int g = workerId; g < cfg.games; g += nWorkers) {
+            const std::string& fen = starts[static_cast<size_t>(g) % starts.size()];
+            Board              board(fen);
+            int whiteResult = playGame(board, cfg, searcher, rng, records);
+
+            std::lock_guard<std::mutex> lock(outMutex);
+            for (const auto& rec : records) {
+                out << "{\"fen\":\"" << rec.fen << "\",\"stm_score\":" << rec.stmScore
+                    << ",\"white_result\":" << whiteResult << "}\n";
+            }
+            std::cerr << "selfplay: game " << (g + 1) << '/' << cfg.games << " positions " << records.size()
+                      << " result " << whiteResult << '\n';
         }
-        std::cerr << "selfplay: game " << (g + 1) << '/' << cfg.games << " positions " << records.size()
-                  << " result " << whiteResult << '\n';
+    };
+
+    if (nWorkers == 1) {
+        workerFn(0);
+    } else {
+        std::vector<std::thread> threads;
+        threads.reserve(static_cast<size_t>(nWorkers));
+        for (int w = 0; w < nWorkers; w++) {
+            threads.emplace_back(workerFn, w);
+        }
+        for (auto& t : threads) {
+            t.join();
+        }
     }
 
     std::cerr << "selfplay: wrote " << cfg.out << '\n';

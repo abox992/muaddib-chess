@@ -28,3 +28,7 @@
 # python
 .venv/
 **/.venv/
+**/__pycache__/
+
+# training runs (generation snapshots); pool/probe live under train/data/
+train/runs/

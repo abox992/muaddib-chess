@@ -82,10 +82,9 @@ std::tuple<Move, int> Searcher::getBestMove(Board& board, int depth) {
     return result;
 }
 
-std::tuple<Move, int> Searcher::searchDepth(Board& board, int depth) {
-    ttable.NewSearch();
+std::tuple<Move, int> Searcher::searchDepth(Board& board, int depth, bool collectRootMoves) {
     killers = {};
-    collectRoot = true;
+    collectRoot = collectRootMoves;
     std::tuple<Move, int> result = {Move(0), -INF};
     for (int i = 1; i <= depth; i++) {
         rootMoves.clear();

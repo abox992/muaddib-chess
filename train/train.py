@@ -16,38 +16,47 @@ import torch
 from torch.utils.data import DataLoader, Dataset
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from eval_net import EvalNet, encode_fen, save_muadnet
+from eval_net import EvalNet, encode_fen, load_muadnet, save_muadnet
 
 TRAIN_DIR = Path(__file__).resolve().parent
 DEFAULT_DATA = TRAIN_DIR / "data" / "games.jsonl"
 DEFAULT_OUT = TRAIN_DIR / "data" / "eval.muadnet"
 
 
+def training_target(fen: str, stm_score: float, white_result: float) -> float:
+    """Search score in pawns, mixed with the side-to-move game result.
+
+    stm_score is centipawns, as written by self-play.
+    """
+    stm_white = fen.split()[1] == "w"
+    stm_result = white_result if stm_white else -white_result
+    score = max(-15.0, min(15.0, stm_score / 100.0))
+    # Search value is lower variance; outcome keeps the ceiling on this engine.
+    return 0.7 * score + 0.3 * (stm_result * 5.0)
+
+
 class PositionDataset(Dataset):
-    def __init__(self, path: Path) -> None:
-        if not path.is_file():
+    def __init__(self, paths: list[Path]) -> None:
+        self.rows: list[tuple[np.ndarray, float]] = []
+        missing = [p for p in paths if not p.is_file()]
+        if missing:
+            shown = missing[0]
             raise SystemExit(
-                f"no self-play data at {path}\n"
+                f"no self-play data at {shown}\n"
                 "generate it first (from the repo root, PST eval is the baseline):\n"
                 "  ./build/chess selfplay --games 20 --depth 4 "
                 "--starts train/data/starts.fen --out train/data/games.jsonl"
             )
-        self.rows: list[tuple[np.ndarray, float]] = []
-        with path.open() as f:
-            for line in f:
-                line = line.strip()
-                if not line:
-                    continue
-                row = json.loads(line)
-                fen = row["fen"]
-                stm_white = fen.split()[1] == "w"
-                white_result = float(row["white_result"])
-                stm_result = white_result if stm_white else -white_result
-                stm_score = float(row["stm_score"]) / 100.0
-                stm_score = max(-15.0, min(15.0, stm_score))
-                # Search value is lower variance; outcome keeps the ceiling on this engine.
-                target = 0.7 * stm_score + 0.3 * (stm_result * 5.0)
-                self.rows.append((encode_fen(fen), target))
+        for path in paths:
+            with path.open() as f:
+                for line in f:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    row = json.loads(line)
+                    fen = row["fen"]
+                    target = training_target(fen, float(row["stm_score"]), float(row["white_result"]))
+                    self.rows.append((encode_fen(fen), target))
 
     def __len__(self) -> int:
         return len(self.rows)
@@ -59,23 +68,28 @@ class PositionDataset(Dataset):
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--data", type=Path, default=DEFAULT_DATA, help="self-play jsonl from ./chess selfplay")
+    parser.add_argument("--data", type=Path, nargs="+", default=None, help="self-play jsonl from ./chess selfplay")
     parser.add_argument("--out", type=Path, default=DEFAULT_OUT)
     parser.add_argument("--epochs", type=int, default=5)
     parser.add_argument("--batch", type=int, default=256)
     parser.add_argument("--lr", type=float, default=1e-3)
+    parser.add_argument("--init", type=Path, default=None, help="start from an existing .muadnet instead of random")
     parser.add_argument("--init-random", action="store_true", help="write a random net and exit")
     args = parser.parse_args()
+    data_paths = args.data or [DEFAULT_DATA]
 
-    model = EvalNet()
+    if args.init:
+        model = load_muadnet(args.init)
+    else:
+        model = EvalNet()
     if args.init_random:
         save_muadnet(model, args.out)
         print(f"wrote random weights to {args.out}")
         return
 
-    ds = PositionDataset(args.data)
+    ds = PositionDataset(data_paths)
     if len(ds) == 0:
-        raise SystemExit(f"no positions in {args.data}")
+        raise SystemExit(f"no positions in {data_paths}")
 
     loader = DataLoader(ds, batch_size=args.batch, shuffle=True, drop_last=False)
     opt = torch.optim.Adam(model.parameters(), lr=args.lr)

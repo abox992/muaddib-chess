@@ -25,6 +25,7 @@ import requests
 JEV_URL = "https://api.typesafe.ai/v1/systemone"
 ROOT = Path(__file__).resolve().parents[1]
 TRAIN_DIR = Path(__file__).resolve().parent
+sys.path.insert(0, str(TRAIN_DIR))
 LICHESS_UA = "muaddib-train (https://github.com/abox992/chess-engine)"
 
 
@@ -85,7 +86,9 @@ def piece_counts(board: chess.Board) -> dict[str, int]:
     return counts
 
 
-def sample_from_pgn(stream, max_positions: int, min_ply: int, max_ply: int) -> list[chess.Board]:
+def sample_from_pgn(
+    stream, max_positions: int, min_ply: int, max_ply: int, per_game: int = 1
+) -> list[chess.Board]:
     seen: set[str] = set()
     boards: list[chess.Board] = []
     while len(boards) < max_positions:
@@ -104,9 +107,15 @@ def sample_from_pgn(stream, max_positions: int, min_ply: int, max_ply: int) -> l
                     candidates.append(board.copy(stack=False))
         if not candidates:
             continue
-        pick = random.choice(candidates)
-        seen.add(pick.fen())
-        boards.append(pick)
+        random.shuffle(candidates)
+        for pick in candidates[: max(1, per_game)]:
+            fen = pick.fen()
+            if fen in seen:
+                continue
+            seen.add(fen)
+            boards.append(pick)
+            if len(boards) >= max_positions:
+                break
     return boards
 
 
@@ -191,25 +200,92 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--pgn", type=Path, help="local PGN file")
     parser.add_argument("--lichess-user", default="DrNykterstein", help="public Lichess username to export")
-    parser.add_argument("--max-games", type=int, default=80)
+    parser.add_argument("--max-games", type=int, default=None)
     parser.add_argument("--max-positions", type=int, default=200)
     parser.add_argument("--min-ply", type=int, default=8)
     parser.add_argument("--max-ply", type=int, default=24)
+    parser.add_argument("--per-game", type=int, default=1, help="unique FENs to keep from each game")
+    parser.add_argument("--pool-size", type=int, default=0, help="write pool.fen with this many unique FENs (no Jev)")
+    parser.add_argument("--probe", type=int, default=0, help="hold out this many FENs into probe.fen if it does not exist")
+    parser.add_argument("--append-pool", action="store_true", help="add unique FENs to an existing pool.fen")
+    parser.add_argument("--seed", type=int, default=None)
     parser.add_argument("--out-dir", type=Path, default=TRAIN_DIR / "data")
     parser.add_argument("--no-jev", action="store_true", help="sample FENs only, skip Jev")
     args = parser.parse_args()
     load_env(ROOT / ".env")
     load_env(Path.cwd() / ".env")
+    if args.seed is not None:
+        random.seed(args.seed)
 
+    building_pool = args.pool_size > 0 or args.append_pool
+    if building_pool:
+        args.no_jev = True
+        if args.per_game == 1:
+            args.per_game = 8
+        if args.max_ply == 24:
+            args.max_ply = 40
+
+    max_games = args.max_games
+    if max_games is None:
+        if building_pool:
+            max_games = max(400, (args.pool_size or 5000) // max(args.per_game, 1) + 100)
+        else:
+            max_games = 80
+
+    if args.pool_size > 0:
+        want = args.pool_size
+    elif args.append_pool:
+        want = 5000
+    else:
+        want = args.max_positions
     if args.pgn:
         with args.pgn.open() as f:
-            boards = sample_from_pgn(f, args.max_positions, args.min_ply, args.max_ply)
+            boards = sample_from_pgn(f, want, args.min_ply, args.max_ply, args.per_game)
     else:
-        print(f"fetching {args.max_games} games from lichess.org/api/games/user/{args.lichess_user}")
-        pgn = fetch_lichess_pgn(args.lichess_user, args.max_games)
-        boards = sample_from_pgn(io.StringIO(pgn), args.max_positions, args.min_ply, args.max_ply)
+        print(f"fetching {max_games} games from lichess.org/api/games/user/{args.lichess_user}")
+        pgn = fetch_lichess_pgn(args.lichess_user, max_games)
+        boards = sample_from_pgn(io.StringIO(pgn), want, args.min_ply, args.max_ply, args.per_game)
 
     print(f"sampled {len(boards)} unique positions")
+    args.out_dir.mkdir(parents=True, exist_ok=True)
+
+    if building_pool:
+        from fenio import load_fens, save_fens
+
+        pool_path = args.out_dir / "pool.fen"
+        probe_path = args.out_dir / "probe.fen"
+        starts_path = args.out_dir / "starts.fen"
+        fens: list[str] = []
+        seen: set[str] = set()
+        if args.append_pool:
+            for fen in load_fens(pool_path):
+                if fen not in seen:
+                    seen.add(fen)
+                    fens.append(fen)
+        for fen in load_fens(starts_path):
+            if fen not in seen:
+                seen.add(fen)
+                fens.append(fen)
+        for board in boards:
+            fen = board.fen()
+            if fen not in seen:
+                seen.add(fen)
+                fens.append(fen)
+        probe = load_fens(probe_path)
+        if args.probe > 0 and not probe:
+            if len(fens) < args.probe:
+                raise SystemExit(f"need {args.probe} FENs for probe, sampled {len(fens)}")
+            probe = random.sample(fens, args.probe)
+            save_fens(probe_path, probe)
+            print(f"wrote {len(probe)} probe FENs to {probe_path}")
+        probe_set = set(probe)
+        fens = [fen for fen in fens if fen not in probe_set]
+        if args.pool_size > 0 and not args.append_pool:
+            fens = fens[: args.pool_size]
+        save_fens(pool_path, fens)
+        print(f"wrote {len(fens)} pool FENs to {pool_path}")
+        return
+
     api_key = os.environ.get("TYPESAFE_API_KEY", "")
     rows: list[dict[str, Any]] = []
     for i, board in enumerate(boards):
@@ -229,7 +305,6 @@ def main() -> None:
             print(f"classified {i + 1}/{len(boards)}")
 
     picked = stratified(rows, args.max_positions) if not args.no_jev else rows
-    args.out_dir.mkdir(parents=True, exist_ok=True)
     jsonl_path = args.out_dir / "starts.jsonl"
     fen_path = args.out_dir / "starts.fen"
     with jsonl_path.open("w") as jf, fen_path.open("w") as ff:
