@@ -1,42 +1,16 @@
 #ifndef BOARD_STATE_H
 #define BOARD_STATE_H
 
-#include "types.h"
 #include <cstdint>
-#include <memory>
-#include <array>
+#include "move.h"
 
-class BoardState {
-public:
-    BoardState() = default;
-    BoardState& operator=(const BoardState&) = delete;
-    explicit BoardState(const BoardState&);
-
-    // 0 = pawns, 2 = knights, 4 = bishops, 6 = rooks, 8 = queens, 10 = kings
-    std::array<uint64_t, 12> pieces;
-
-    uint64_t empty;
-
-    // 0 = white 1 = black
-    std::array<uint64_t, 2> allPieces;
-
-    // legal square a pawn can move to to take with enpassant
-    int enpassantPos;
-
-    // wk, bk, wq, bq
-    std::array<bool, 4> canCastle;
-
-    // 0 = white 1 = black
-    bool blackToMove;
-
-    int halfMoves;
-    int fullMoves;
-
-    std::array<uint8_t, 64> pieceOnSquare;
-
-    // helpful for making/unmaking moves
-    std::unique_ptr<BoardState> prevState;
-    uint64_t hash;
+struct Undo {
+    uint64_t hash;      // position hash before this move
+    Move move;
+    uint16_t halfMoves;
+    uint8_t captured;   // NO_PIECE, or the piece pos/index that was removed
+    uint8_t castle;
+    uint8_t ep;
 };
 
 #endif

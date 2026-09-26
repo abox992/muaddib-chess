@@ -5,37 +5,15 @@
 #include "move.h"
 #include "types.h"
 #include "zobrist.h"
+#include <cassert>
 #include <cstdint>
 #include <cstring>
-#include <memory>
 
-Board::Board() {
-    curState = nullptr;
-    setStartPos();
-}
+Board::Board() { setStartPos(); }
 
-Board::Board(const Board& source) {
-    this->curState = std::make_unique<BoardState>(*source.curState);
-    if (source.curState->prevState == nullptr) {
-        this->curState->prevState = nullptr;
-        return;
-    }
-    auto cur       = this->curState.get();
-    auto sourceCur = source.curState->prevState.get();
+Board::Board(const Board& source) = default;
 
-    while (sourceCur) {
-        cur->prevState = std::make_unique<BoardState>(*sourceCur);
-        cur            = cur->prevState.get();
-        sourceCur      = sourceCur->prevState.get();
-    }
-}
-
-Board::Board(const std::string fen) {
-    curState = nullptr;
-    setStartPos();
-
-    this->set(fen);
-}
+Board::Board(const std::string fen) { this->set(fen); }
 
 void Board::set(const std::string fen) {
     this->setStartPos();  // reset the board
@@ -65,7 +43,7 @@ void Board::set(const std::string fen) {
                 char pieceChars[] = {'P', 'p', 'N', 'n', 'B', 'b', 'R', 'r', 'Q', 'q', 'K', 'k'};
                 for (int j = 0; j < 12; j++) {
                     if (currentChar == pieceChars[j]) {
-                        this->setPieceSet(j, this->curState->pieces[j] | (uint64_t(1) << currentPos));
+                        this->setPieceSet(j, this->_pieces[j] | (uint64_t(1) << currentPos));
                     }
                 }
 
@@ -80,9 +58,9 @@ void Board::set(const std::string fen) {
                 char currentChar = tokens[field][i];
 
                 if (currentChar == 'w') {
-                    this->curState->blackToMove = false;
+                    this->_blackToMove = false;
                 } else {
-                    this->curState->blackToMove = true;
+                    this->_blackToMove = true;
                 }
             }
 
@@ -91,7 +69,7 @@ void Board::set(const std::string fen) {
         case 2: {  // castling
 
             for (int i = 0; i < 4; i++) {
-                this->curState->canCastle[i] = false;
+                this->_canCastle[i] = false;
             }
 
             for (int i = 0; i < int(tokens[field].length()); i++) {
@@ -102,13 +80,13 @@ void Board::set(const std::string fen) {
                 }
 
                 if (currentChar == 'K') {
-                    this->curState->canCastle[0] = true;
+                    this->_canCastle[0] = true;
                 } else if (currentChar == 'Q') {
-                    this->curState->canCastle[2] = true;
+                    this->_canCastle[2] = true;
                 } else if (currentChar == 'k') {
-                    this->curState->canCastle[1] = true;
+                    this->_canCastle[1] = true;
                 } else if (currentChar == 'q') {
-                    this->curState->canCastle[3] = true;
+                    this->_canCastle[3] = true;
                 }
             }
 
@@ -120,7 +98,7 @@ void Board::set(const std::string fen) {
                 char currentChar = tokens[field][i];
 
                 if (currentChar == '-') {
-                    this->curState->enpassantPos = 0;
+                    this->_enpassantPos = 0;
                     break;
                 }
 
@@ -130,7 +108,7 @@ void Board::set(const std::string fen) {
 
                 if (i == 1) {
                     pos += 8 * ((currentChar - '0') - 1);
-                    this->curState->enpassantPos = pos;
+                    this->_enpassantPos = pos;
                 }
             }
 
@@ -141,7 +119,7 @@ void Board::set(const std::string fen) {
             for (int i = 0; i < int(tokens[field].length()); i++) {
                 char currentChar = tokens[field][i];
 
-                this->curState->halfMoves = int(currentChar - '0');
+                this->_halfMoves = int(currentChar - '0');
             }
 
             break;
@@ -151,7 +129,7 @@ void Board::set(const std::string fen) {
             for (int i = 0; i < int(tokens[field].length()); i++) {
                 char currentChar = tokens[field][i];
 
-                this->curState->fullMoves = int(currentChar - '0');
+                this->_fullMoves = int(currentChar - '0');
             }
 
             break;
@@ -162,70 +140,71 @@ void Board::set(const std::string fen) {
     this->updateAllPieces();
     this->updatePieceOnSquare();
 
-    this->curState->hash = Zobrist::zhash(*this);
+    this->_hash        = Zobrist::zhash(*this);
+    this->_curPly      = 0;
+    this->_keyHistory[0] = this->_hash;
 }
 
-void Board::setPieceSet(int i, uint64_t num) { this->curState->pieces[i] = num; }
+void Board::setPieceSet(int i, uint64_t num) { this->_pieces[i] = num; }
 
 void Board::setStartPos() {
-    this->curState            = std::make_unique<BoardState>();
-    this->curState->prevState = nullptr;
-
-    this->curState->pieces[PAWNS]       = 0x000000000000FF00;
-    this->curState->pieces[PAWNS + 1]   = 0x00FF000000000000;
-    this->curState->pieces[KNIGHTS]     = 0x0000000000000042;
-    this->curState->pieces[KNIGHTS + 1] = 0x4200000000000000;
-    this->curState->pieces[BISHOPS]     = 0x0000000000000024;
-    this->curState->pieces[BISHOPS + 1] = 0x2400000000000000;
-    this->curState->pieces[ROOKS]       = 0x0000000000000081;
-    this->curState->pieces[ROOKS + 1]   = 0x8100000000000000;
-    this->curState->pieces[QUEENS]      = 0x0000000000000010;
-    this->curState->pieces[QUEENS + 1]  = 0x1000000000000000;
-    this->curState->pieces[KINGS]       = 0x000000000000008;
-    this->curState->pieces[KINGS + 1]   = 0x800000000000000;
+    this->_pieces[PAWNS]       = 0x000000000000FF00;
+    this->_pieces[PAWNS + 1]   = 0x00FF000000000000;
+    this->_pieces[KNIGHTS]     = 0x0000000000000042;
+    this->_pieces[KNIGHTS + 1] = 0x4200000000000000;
+    this->_pieces[BISHOPS]     = 0x0000000000000024;
+    this->_pieces[BISHOPS + 1] = 0x2400000000000000;
+    this->_pieces[ROOKS]       = 0x0000000000000081;
+    this->_pieces[ROOKS + 1]   = 0x8100000000000000;
+    this->_pieces[QUEENS]      = 0x0000000000000010;
+    this->_pieces[QUEENS + 1]  = 0x1000000000000000;
+    this->_pieces[KINGS]       = 0x000000000000008;
+    this->_pieces[KINGS + 1]   = 0x800000000000000;
 
     updateAllPieces();
     updatePieceOnSquare();
 
     // while 0 is a position on the board, it is not possible for enpessant sqaure to be 0, so this fine
-    this->curState->enpassantPos = 0;
+    this->_enpassantPos = 0;
 
     for (int i = 0; i < 4; i++) {
-        this->curState->canCastle[i] = true;
+        this->_canCastle[i] = true;
     }
 
-    this->curState->blackToMove = false;
+    this->_blackToMove = false;
 
-    this->curState->halfMoves = 0;
-    this->curState->fullMoves = 1;
+    this->_halfMoves = 0;
+    this->_fullMoves = 1;
 
-    this->curState->hash = Zobrist::zhash(*this);
+    this->_hash          = Zobrist::zhash(*this);
+    this->_curPly        = 0;
+    this->_keyHistory[0] = this->_hash;
 }
 
 void Board::updateAllPieces() {
-    curState->allPieces[0] = 0;
-    curState->allPieces[1] = 0;
+    _allPieces[0] = 0;
+    _allPieces[1] = 0;
     for (int i = 0; i < 12; i += 2) {
-        curState->allPieces[0] |= curState->pieces[i];
-        curState->allPieces[1] |= curState->pieces[i + 1];
+        _allPieces[0] |= _pieces[i];
+        _allPieces[1] |= _pieces[i + 1];
     }
 
-    this->curState->empty = ~(this->curState->allPieces[0] | this->curState->allPieces[1]);
+    this->_empty = ~(this->_allPieces[0] | this->_allPieces[1]);
 }
 
 void Board::updatePieceOnSquare() {
     for (int i = 0; i < 64; i++) {
-        curState->pieceOnSquare[i] = NO_PIECE;
+        _pieceOnSquare[i] = NO_PIECE;
     }
 
     for (int i = 0; i < 12; i++) {
-        uint64_t bitboard = curState->pieces[i];
+        uint64_t bitboard = _pieces[i];
 
         while (bitboard) {
             const int currentSquare = tz_count(bitboard);
             pop_lsb(bitboard);
 
-            curState->pieceOnSquare[currentSquare] = i;
+            _pieceOnSquare[currentSquare] = i;
         }
     }
 }
@@ -233,11 +212,7 @@ void Board::updatePieceOnSquare() {
 // move is assumed to be legal, undefinded behavior with an illegal/null move
 void Board::makeMove(const Move& move) {
     assert(!move.isNull());
-
-    // create a copy of the current state (add to head of list)
-    std::unique_ptr<BoardState> newState = std::make_unique<BoardState>(*this->curState);
-    newState->prevState                  = std::move(this->curState);
-    this->curState                       = std::move(newState);
+    assert(_curPly + 1 < kMaxPly);
 
     const int       from          = move.from();
     const int       to            = move.to();
@@ -245,47 +220,59 @@ void Board::makeMove(const Move& move) {
     const uint64_t  toMask        = maskForPos(to);
     const Color     color         = this->blackToMove() ? BLACK : WHITE;
     const Color     enemyColor    = static_cast<Color>(!color);
-    const PieceType piece         = static_cast<PieceType>(this->curState->pieceOnSquare[from] - color);
+    const PieceType piece         = static_cast<PieceType>(this->_pieceOnSquare[from] - color);
     const int       colorPiece    = Bitboard::colorPiece(color, piece);
-    const int       capturedPiece = this->curState->pieceOnSquare[to];
+    const int       capturedPiece = this->_pieceOnSquare[to];
+
+    // Snapshot the position we are leaving
+    uint8_t undoCaptured = NO_PIECE;
+    if (move.moveType() == MoveType::EN_PASSANT) {
+        undoCaptured = static_cast<uint8_t>(Bitboard::colorPiece(enemyColor, PAWNS));
+    } else if (move.moveType() != MoveType::CASTLE && capturedPiece != NO_PIECE && capturedPiece % 2 == enemyColor) {
+        undoCaptured = static_cast<uint8_t>(capturedPiece);
+    }
+
+    this->_undoStack[this->_curPly] = {
+        this->_hash, move, this->_halfMoves, undoCaptured, this->_canCastle.raw(), this->_enpassantPos,
+    };
 
     // update my pieces
-    this->curState->pieces[colorPiece] &= ~fromMask;  // remove old position
-    this->curState->pieces[colorPiece] |= toMask;     // add new position
+    this->_pieces[colorPiece] &= ~fromMask;  // remove old position
+    this->_pieces[colorPiece] |= toMask;     // add new position
 
-    this->curState->allPieces[color] &= ~fromMask;
-    this->curState->allPieces[color] |= toMask;
+    this->_allPieces[color] &= ~fromMask;
+    this->_allPieces[color] |= toMask;
 
-    this->curState->hash ^= Zobrist::randomTable[from][colorPiece];
-    this->curState->hash ^= Zobrist::randomTable[to][colorPiece];
+    this->_hash ^= Zobrist::randomTable[from][colorPiece];
+    this->_hash ^= Zobrist::randomTable[to][colorPiece];
 
-    this->curState->pieceOnSquare[from] = NO_PIECE;
-    this->curState->pieceOnSquare[to]   = colorPiece;
+    this->_pieceOnSquare[from] = NO_PIECE;
+    this->_pieceOnSquare[to]   = colorPiece;
 
     // update opponent pieces (if its a capture)
     if (capturedPiece != NO_PIECE && capturedPiece % 2 == enemyColor) {
         // remove the piece
-        this->curState->pieces[capturedPiece] &= ~toMask;
+        this->_pieces[capturedPiece] &= ~toMask;
 
-        this->curState->allPieces[enemyColor] &= ~toMask;
+        this->_allPieces[enemyColor] &= ~toMask;
 
         // capture, reset halfmoves
-        this->curState->halfMoves = 0;
+        this->_halfMoves = 0;
 
-        this->curState->hash ^= Zobrist::randomTable[to][capturedPiece];
+        this->_hash ^= Zobrist::randomTable[to][capturedPiece];
 
         if (capturedPiece == Bitboard::colorPiece(enemyColor, PAWNS)) {
             // if a pawn is captured, check if its the last pawn on the board
             if ((this->getBB(WHITE, PAWNS) | this->getBB(BLACK, PAWNS)) == 0) {
-                this->curState->hash ^= Zobrist::noPawns;
+                this->_hash ^= Zobrist::noPawns;
             }
         } else if (capturedPiece == Bitboard::colorPiece(enemyColor, ROOKS)) [[unlikely]] {
             // if we captured the enemies rook, they can no longer castle
             for (auto side : {0 /* king side */, 2 /* queen side */}) {
                 if ((toMask & Bitboard::originalRookSquares[enemyColor + side]) != 0) {
-                    if (this->curState->canCastle[enemyColor + side]) {
-                        this->curState->canCastle[enemyColor + side] = false;
-                        this->curState->hash ^= Zobrist::castling[enemyColor + side];
+                    if (this->_canCastle[enemyColor + side]) {
+                        this->_canCastle[enemyColor + side] = false;
+                        this->_hash ^= Zobrist::castling[enemyColor + side];
                     }
                 }
             }
@@ -293,164 +280,259 @@ void Board::makeMove(const Move& move) {
     }
 
     // half moves are incremented on every move
-    this->curState->halfMoves++;
+    this->_halfMoves++;
     // we increment full moves after each black move
     if (color == BLACK) {
-        this->curState->fullMoves++;
+        this->_fullMoves++;
     }
 
     // piece specific special cases
     switch (piece) {
     case PAWNS:
         // if pawn move, reset halfmoves
-        this->curState->halfMoves = 0;
+        this->_halfMoves = 0;
 
         // special pawn move handling
         if (move.moveType() == MoveType::EN_PASSANT) [[unlikely]] {  
             // pawn was already moved above, just have to get rid of the piece it took
-            int capturedPawnPos = this->curState->enpassantPos - Bitboard::pawnPush(color);
+            int capturedPawnPos = this->_enpassantPos - Bitboard::pawnPush(color);
 
-            this->curState->pieces[enemyColor] &= ~maskForPos(capturedPawnPos);
+            this->_pieces[enemyColor] &= ~maskForPos(capturedPawnPos);
 
-            this->curState->allPieces[enemyColor] &= ~maskForPos(capturedPawnPos);
+            this->_allPieces[enemyColor] &= ~maskForPos(capturedPawnPos);
 
-            this->curState->hash ^= Zobrist::randomTable[capturedPawnPos][enemyColor];
+            this->_hash ^= Zobrist::randomTable[capturedPawnPos][enemyColor];
 
-            this->curState->pieceOnSquare[capturedPawnPos] = NO_PIECE;
+            this->_pieceOnSquare[capturedPawnPos] = NO_PIECE;
         } else if (move.moveType() == MoveType::PROMOTION) [[unlikely]] {
             PieceType promoPiece = static_cast<PieceType>(move.promotionPiece() * 2 + 2);
 
             // add the new piece
-            this->curState->pieces[Bitboard::colorPiece(color, promoPiece)] |= toMask;
+            this->_pieces[Bitboard::colorPiece(color, promoPiece)] |= toMask;
             // remove the pawn we added by default
-            this->curState->pieces[color] &= ~toMask;
+            this->_pieces[color] &= ~toMask;
 
-            this->curState->hash ^= Zobrist::randomTable[to][Bitboard::colorPiece(color, promoPiece)];
-            this->curState->hash ^= Zobrist::randomTable[to][color];
+            this->_hash ^= Zobrist::randomTable[to][Bitboard::colorPiece(color, promoPiece)];
+            this->_hash ^= Zobrist::randomTable[to][color];
 
-            this->curState->pieceOnSquare[to] = Bitboard::colorPiece(color, promoPiece);
+            this->_pieceOnSquare[to] = Bitboard::colorPiece(color, promoPiece);
 
             if ((this->getBB(WHITE, PAWNS) | this->getBB(BLACK, PAWNS)) == 0) {
-                this->curState->hash ^= Zobrist::noPawns;
+                this->_hash ^= Zobrist::noPawns;
             }
         }
 
         // remove old enpassant file from hash
-        if (this->curState->enpassantPos) [[unlikely]] {
-            this->curState->hash ^= Zobrist::enpassantFile[Bitboard::fileOf(this->curState->enpassantPos)];
+        if (this->_enpassantPos) [[unlikely]] {
+            this->_hash ^= Zobrist::enpassantFile[Bitboard::fileOf(this->_enpassantPos)];
         }
-        this->curState->enpassantPos = 0;
+        this->_enpassantPos = 0;
 
         // pawn double push, need to set enpassant pos
         if (abs(to - from) > 9) {
-            this->curState->enpassantPos = to - Bitboard::pawnPush(color);
+            this->_enpassantPos = to - Bitboard::pawnPush(color);
 
             // update hash with new enpassant file
-            this->curState->hash ^= Zobrist::enpassantFile[Bitboard::fileOf(this->curState->enpassantPos)];
+            this->_hash ^= Zobrist::enpassantFile[Bitboard::fileOf(this->_enpassantPos)];
         }
 
         break;
     case ROOKS:
         // remove old enpassant file from hash
-        if (this->curState->enpassantPos) [[unlikely]] {
-            this->curState->hash ^= Zobrist::enpassantFile[Bitboard::fileOf(this->curState->enpassantPos)];
+        if (this->_enpassantPos) [[unlikely]] {
+            this->_hash ^= Zobrist::enpassantFile[Bitboard::fileOf(this->_enpassantPos)];
         }
-        this->curState->enpassantPos = 0;
+        this->_enpassantPos = 0;
 
         // rook move, can no longer castle on that side
-        if (this->curState->canCastle[color]) {
+        if (this->_canCastle[color]) {
             // if king side rook not on original square
-            if ((Bitboard::originalRookSquares[color] & this->curState->pieces[colorPiece]) == 0) {
-                this->curState->canCastle[color] = false;
-                this->curState->hash ^= Zobrist::castling[color];
+            if ((Bitboard::originalRookSquares[color] & this->_pieces[colorPiece]) == 0) {
+                this->_canCastle[color] = false;
+                this->_hash ^= Zobrist::castling[color];
             }
         }
 
-        if (this->curState->canCastle[color + 2]) {
-            if ((Bitboard::originalRookSquares[color + 2] & this->curState->pieces[colorPiece])
+        if (this->_canCastle[color + 2]) {
+            if ((Bitboard::originalRookSquares[color + 2] & this->_pieces[colorPiece])
                 == 0) {  // if queen side...
-                this->curState->canCastle[color + 2] = false;
-                this->curState->hash ^= Zobrist::castling[color + 2];
+                this->_canCastle[color + 2] = false;
+                this->_hash ^= Zobrist::castling[color + 2];
             }
         }
         break;
     case KINGS:
         // remove old enpassant file from hash
-        if (this->curState->enpassantPos) [[unlikely]] {
-            this->curState->hash ^= Zobrist::enpassantFile[Bitboard::fileOf(this->curState->enpassantPos)];
+        if (this->_enpassantPos) [[unlikely]] {
+            this->_hash ^= Zobrist::enpassantFile[Bitboard::fileOf(this->_enpassantPos)];
         }
-        this->curState->enpassantPos = 0;
+        this->_enpassantPos = 0;
 
         // update castle bitboards
         if (move.moveType() == MoveType::CASTLE) [[unlikely]] {
             int index = Bitboard::rookPosToIndex(to);
 
             // update king and rook pos
-            this->curState->pieces[Bitboard::colorPiece(color, KINGS)] = Bitboard::castledKingSquares[index];
-            this->curState->pieces[Bitboard::colorPiece(color, ROOKS)] |= Bitboard::castledRookSquares[index];
-            this->curState->pieces[Bitboard::colorPiece(color, ROOKS)] &= ~Bitboard::originalRookSquares[index];
+            this->_pieces[Bitboard::colorPiece(color, KINGS)] = Bitboard::castledKingSquares[index];
+            this->_pieces[Bitboard::colorPiece(color, ROOKS)] |= Bitboard::castledRookSquares[index];
+            this->_pieces[Bitboard::colorPiece(color, ROOKS)] &= ~Bitboard::originalRookSquares[index];
 
-            this->curState->allPieces[color] &= ~toMask;
-            this->curState->allPieces[color] |= Bitboard::castledKingSquares[index];
-            this->curState->allPieces[color] |= Bitboard::castledRookSquares[index];
+            this->_allPieces[color] &= ~toMask;
+            this->_allPieces[color] |= Bitboard::castledKingSquares[index];
+            this->_allPieces[color] |= Bitboard::castledRookSquares[index];
 
             // undo from earlier
-            this->curState->hash ^= Zobrist::randomTable[to][colorPiece];
+            this->_hash ^= Zobrist::randomTable[to][colorPiece];
             // add real pos
-            this->curState->hash ^=
+            this->_hash ^=
               Zobrist::randomTable[tz_count(Bitboard::castledKingSquares[index])][Bitboard::colorPiece(color, KINGS)];
             // update rook
-            this->curState->hash ^=
+            this->_hash ^=
               Zobrist::randomTable[tz_count(Bitboard::castledRookSquares[index])][Bitboard::colorPiece(color, ROOKS)];
-            this->curState->hash ^=
+            this->_hash ^=
               Zobrist::randomTable[tz_count(Bitboard::originalRookSquares[index])][Bitboard::colorPiece(color, ROOKS)];
 
-            this->curState->pieceOnSquare[to]                                            = NO_PIECE;
-            this->curState->pieceOnSquare[tz_count(Bitboard::castledKingSquares[index])] = colorPiece;
-            this->curState->pieceOnSquare[tz_count(Bitboard::castledRookSquares[index])] =
+            this->_pieceOnSquare[to]                                            = NO_PIECE;
+            this->_pieceOnSquare[tz_count(Bitboard::castledKingSquares[index])] = colorPiece;
+            this->_pieceOnSquare[tz_count(Bitboard::castledRookSquares[index])] =
               Bitboard::colorPiece(color, ROOKS);
         }
 
         // king move, can no longer castle
-        if (this->curState->canCastle[color]) {
-            this->curState->canCastle[color] = false;
-            this->curState->hash ^= Zobrist::castling[color];
+        if (this->_canCastle[color]) {
+            this->_canCastle[color] = false;
+            this->_hash ^= Zobrist::castling[color];
         }
-        if (this->curState->canCastle[color + 2]) {
-            this->curState->canCastle[color + 2] = false;
-            this->curState->hash ^= Zobrist::castling[color + 2];
+        if (this->_canCastle[color + 2]) {
+            this->_canCastle[color + 2] = false;
+            this->_hash ^= Zobrist::castling[color + 2];
         }
         break;
     default:
         // remove old enpassant file from hash
-        if (this->curState->enpassantPos) [[unlikely]] {
-            this->curState->hash ^= Zobrist::enpassantFile[Bitboard::fileOf(this->curState->enpassantPos)];
+        if (this->_enpassantPos) [[unlikely]] {
+            this->_hash ^= Zobrist::enpassantFile[Bitboard::fileOf(this->_enpassantPos)];
         }
-        this->curState->enpassantPos = 0;
+        this->_enpassantPos = 0;
         break;
     }
 
     // update black to move
-    this->curState->blackToMove = enemyColor;
-    this->curState->hash ^= Zobrist::randomBlackToMove;
+    this->_blackToMove = enemyColor;
+    this->_hash ^= Zobrist::randomBlackToMove;
 
-    // update empty squares bitboard 
-    this->curState->empty = ~(this->curState->allPieces[0] | this->curState->allPieces[1]);
+    // update empty squares bitboard
+    this->_empty = ~(this->_allPieces[0] | this->_allPieces[1]);
+
+    this->_curPly++;
+    this->_keyHistory[this->_curPly] = this->_hash;
 }
 
 void Board::undoMove() {
+    assert(this->_curPly > 0);
+    this->_curPly--;
+    const Undo undo = this->_undoStack[this->_curPly];
 
-    if (this->curState == nullptr || this->curState->prevState == nullptr) {
-        return;
+    const Move     move     = undo.move;
+    const int      from     = move.from();
+    const int      to       = move.to();
+    const uint64_t fromMask = maskForPos(from);
+    const uint64_t toMask   = maskForPos(to);
+
+    // Side to move is the opponent of the side that just moved.
+    const Color color      = this->_blackToMove ? WHITE : BLACK;
+    const Color enemyColor = static_cast<Color>(!color);
+
+    if (move.moveType() == MoveType::CASTLE) {
+        const int      index         = Bitboard::rookPosToIndex(to);
+        const int      kingDest      = tz_count(Bitboard::castledKingSquares[index]);
+        const int      rookDest      = tz_count(Bitboard::castledRookSquares[index]);
+        const uint64_t kingDestMask  = maskForPos(kingDest);
+        const uint64_t rookDestMask  = maskForPos(rookDest);
+        const int      kingPiece     = Bitboard::colorPiece(color, KINGS);
+        const int      rookPiece     = Bitboard::colorPiece(color, ROOKS);
+
+        this->_pieces[kingPiece] = fromMask;
+        this->_pieces[rookPiece] &= ~rookDestMask;
+        this->_pieces[rookPiece] |= toMask;
+
+        this->_allPieces[color] &= ~kingDestMask;
+        this->_allPieces[color] &= ~rookDestMask;
+        this->_allPieces[color] |= fromMask | toMask;
+
+        this->_pieceOnSquare[kingDest] = NO_PIECE;
+        this->_pieceOnSquare[rookDest] = NO_PIECE;
+        this->_pieceOnSquare[from]     = static_cast<uint8_t>(kingPiece);
+        this->_pieceOnSquare[to]       = static_cast<uint8_t>(rookPiece);
+    } else if (move.moveType() == MoveType::PROMOTION) {
+        const PieceType promoPiece = static_cast<PieceType>(move.promotionPiece() * 2 + 2);
+        const int       promoIndex = Bitboard::colorPiece(color, promoPiece);
+        const int       pawnIndex  = Bitboard::colorPiece(color, PAWNS);
+
+        this->_pieces[promoIndex] &= ~toMask;
+        this->_pieces[pawnIndex] |= fromMask;
+
+        this->_allPieces[color] &= ~toMask;
+        this->_allPieces[color] |= fromMask;
+
+        this->_pieceOnSquare[to]   = NO_PIECE;
+        this->_pieceOnSquare[from] = static_cast<uint8_t>(pawnIndex);
+
+        if (undo.captured != NO_PIECE) {
+            this->_pieces[undo.captured] |= toMask;
+            this->_allPieces[enemyColor] |= toMask;
+            this->_pieceOnSquare[to] = undo.captured;
+        }
+    } else if (move.moveType() == MoveType::EN_PASSANT) {
+        const int      pawnIndex       = Bitboard::colorPiece(color, PAWNS);
+        const int      capturedPawnPos = undo.ep - Bitboard::pawnPush(color);
+        const uint64_t capturedMask    = maskForPos(capturedPawnPos);
+
+        this->_pieces[pawnIndex] &= ~toMask;
+        this->_pieces[pawnIndex] |= fromMask;
+        this->_allPieces[color] &= ~toMask;
+        this->_allPieces[color] |= fromMask;
+
+        this->_pieces[undo.captured] |= capturedMask;
+        this->_allPieces[enemyColor] |= capturedMask;
+
+        this->_pieceOnSquare[to]              = NO_PIECE;
+        this->_pieceOnSquare[from]            = static_cast<uint8_t>(pawnIndex);
+        this->_pieceOnSquare[capturedPawnPos] = undo.captured;
+    } else [[likely]] {
+        const int movedPiece = this->_pieceOnSquare[to];
+
+        this->_pieces[movedPiece] &= ~toMask;
+        this->_pieces[movedPiece] |= fromMask;
+        this->_allPieces[color] &= ~toMask;
+        this->_allPieces[color] |= fromMask;
+
+        this->_pieceOnSquare[to]   = NO_PIECE;
+        this->_pieceOnSquare[from] = static_cast<uint8_t>(movedPiece);
+
+        if (undo.captured != NO_PIECE) {
+            this->_pieces[undo.captured] |= toMask;
+            this->_allPieces[enemyColor] |= toMask;
+            this->_pieceOnSquare[to] = undo.captured;
+        }
     }
 
-    this->curState = std::move(this->curState->prevState);
+    if (color == BLACK) {
+        this->_fullMoves--;
+    }
+
+    this->_hash         = undo.hash;
+    this->_halfMoves    = undo.halfMoves;
+    this->_canCastle.setRaw(undo.castle);
+    this->_enpassantPos = undo.ep;
+    this->_blackToMove  = static_cast<uint8_t>(color);
+    this->_empty        = ~(this->_allPieces[0] | this->_allPieces[1]);
 }
 
 int Board::getRepeats(uint64_t hash) const {
     int count = 0;
-    for (BoardState* temp = this->curState.get(); temp != nullptr; temp = temp->prevState.get()) {
-        if (temp->hash == hash) {
+    for (int i = this->_curPly; i >= 0 && (this->_curPly - i) <= this->_halfMoves; i -= 2) {
+        if (this->_keyHistory[i] == hash) {
             count++;
         }
     }
@@ -459,7 +541,7 @@ int Board::getRepeats(uint64_t hash) const {
 }
 
 bool Board::inCheck() const {
-    if (this->curState->blackToMove) {
+    if (this->_blackToMove) {
         return Bitboard::attacksToKing<Color::BLACK, false>(*this);
     }
 
@@ -485,7 +567,7 @@ std::ostream& operator<<(std::ostream& o, Board& board) {
             bool foundPiece = false;
 
             for (int piece = 0; piece < 12; piece++) {
-                uint64_t currentBB = board.curState->pieces[piece];
+                uint64_t currentBB = board._pieces[piece];
 
                 if ((currentBB & mask) != 0) {
                     if (piece % 2 == 1) {
