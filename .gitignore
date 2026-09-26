@@ -32,3 +32,9 @@
 
 # training runs (generation snapshots); pool/probe live under train/data/
 train/runs/
+
+# Byte-compiled / optimized / DLL files
+train/__pycache__/
+*.py[cod]
+*$py.class
+
