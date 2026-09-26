@@ -4,26 +4,27 @@
 Muaddib will *eventually* have a GUI for easy play against the engine.
 
 # Requirements/Dependencies
-- Cmake version >= 3.5.1
+- Cmake version >= 3.21 (for presets)
 - C++20
 
 # Compile/Build
 **This project is intended to be built on Unix-like systems.**
 
-Create and navigate to the build directory:
+From the `src` directory:
+
+Debug keeps assertions and skips optimization:
 ```
-mkdir build
-cd build
+cmake --preset debug
+cmake --build --preset debug
 ```
-Build with cmake:
+
+Release is `-O3` and defines `NDEBUG`, which removes `assert()`:
 ```
-cmake ../src
-make
+cmake --preset release
+cmake --build --preset release
 ```
-Run the engine:
-```
-./chess
-```
+
+Binaries are `build/debug/chess` and `build/release/chess`. A configure with no preset is Release.
 
 # Todo
 - [X] Move ordering

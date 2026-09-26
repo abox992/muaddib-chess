@@ -23,6 +23,7 @@ void loop() {
 
         if (input == "uci") {
             int result = 0;
+
             result = runUCI();
             assert(result == 0);
             return;
@@ -50,7 +51,7 @@ void asciiGameLoop() {
 
         using namespace std::chrono_literals;
         auto [bestMove, bestEval] = searcher.iterativeDeepening(board, 500ms);
-        int perspectiveEval = board.blackToMove() ? bestEval * -1 : bestEval;
+        int perspectiveEval       = board.blackToMove() ? bestEval * -1 : bestEval;
 
         if (bestMove.isNull()) {  // no moves available
             break;
